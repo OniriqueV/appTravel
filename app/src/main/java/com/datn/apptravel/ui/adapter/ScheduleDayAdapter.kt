@@ -2,15 +2,16 @@ package com.datn.apptravel.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.databinding.ItemScheduleDayBinding
 import com.datn.apptravel.model.ScheduleDay
-import java.text.SimpleDateFormat
-import java.util.Locale
 
 class ScheduleDayAdapter(
     private var scheduleDays: List<ScheduleDay>
 ) : RecyclerView.Adapter<ScheduleDayAdapter.ScheduleDayViewHolder>() {
+
+    private var currentSelectedDay = 0
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ScheduleDayViewHolder {
         val binding = ItemScheduleDayBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -18,42 +19,56 @@ class ScheduleDayAdapter(
     }
 
     override fun onBindViewHolder(holder: ScheduleDayViewHolder, position: Int) {
-        holder.bind(scheduleDays[position])
+        holder.bind(scheduleDays)
     }
 
-    override fun getItemCount(): Int = scheduleDays.size
+    override fun getItemCount(): Int = if (scheduleDays.isNotEmpty()) 1 else 0
 
     fun updateScheduleDays(newScheduleDays: List<ScheduleDay>) {
         scheduleDays = newScheduleDays
+        currentSelectedDay = 0
         notifyDataSetChanged()
     }
 
     inner class ScheduleDayViewHolder(private val binding: ItemScheduleDayBinding) : RecyclerView.ViewHolder(binding.root) {
         
-        fun bind(scheduleDay: ScheduleDay) {
+        private var dateTabAdapter: DateTabAdapter? = null
+        
+        fun bind(allScheduleDays: List<ScheduleDay>) {
             binding.apply {
-                tvDayNumber.text = "Day ${scheduleDay.dayNumber}"
-                tvDayTitle.text = scheduleDay.title
-                tvDate.text = formatDate(scheduleDay.date)
+                // Setup date tabs
+                val dateTabs = allScheduleDays.map { day ->
+                    DateTab(
+                        date = day.date,
+                        dayNumber = day.dayNumber,
+                        isSelected = day.dayNumber - 1 == currentSelectedDay
+                    )
+                }
                 
-                // Setup the activities RecyclerView if needed
-                if (scheduleDay.activities.isNotEmpty()) {
-                    val activitiesAdapter = ScheduleActivityAdapter(scheduleDay.activities)
-                    rvScheduleActivities.adapter = activitiesAdapter
-                    rvScheduleActivities.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(binding.root.context)
+                dateTabAdapter = DateTabAdapter(dateTabs) { selectedPosition ->
+                    currentSelectedDay = selectedPosition
+                    updateActivities(allScheduleDays[selectedPosition])
+                }
+                
+                rvDateTabs.apply {
+                    adapter = dateTabAdapter
+                    layoutManager = LinearLayoutManager(binding.root.context, LinearLayoutManager.HORIZONTAL, false)
+                }
+                
+                // Show activities for the first day by default
+                if (allScheduleDays.isNotEmpty()) {
+                    updateActivities(allScheduleDays[currentSelectedDay])
                 }
             }
         }
         
-        private fun formatDate(dateString: String): String {
-            // Format the date as needed, e.g. convert "2023-06-10" to "June 10, 2023"
-            try {
-                val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val outputFormat = SimpleDateFormat("MMMM d, yyyy", Locale.getDefault())
-                val date = inputFormat.parse(dateString)
-                return date?.let { outputFormat.format(it) } ?: dateString
-            } catch (e: Exception) {
-                return dateString
+        private fun updateActivities(scheduleDay: ScheduleDay) {
+            binding.apply {
+                if (scheduleDay.activities.isNotEmpty()) {
+                    val activitiesAdapter = ScheduleActivityAdapter(scheduleDay.activities)
+                    rvScheduleActivities.adapter = activitiesAdapter
+                    rvScheduleActivities.layoutManager = LinearLayoutManager(binding.root.context)
+                }
             }
         }
     }

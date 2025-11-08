@@ -38,16 +38,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.datn.apptravel.ui.view.SemiCirclePlanMenuView
+    <com.datn.apptravel.ui.planselection.SemiCirclePlanMenuView
         android:id="@+id/semiCircleMenu"
         android:layout_width="120dp"
         android:layout_height="240dp"
         android:elevation="16dp"
         android:background="@android:color/transparent"
         app:layout_constraintStart_toStartOf="parent"
+        android:translationX="-20dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent" />
-    
+
     <!-- Search Bar (Top Center) -->
     <androidx.cardview.widget.CardView
         android:id="@+id/searchCard"

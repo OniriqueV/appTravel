@@ -88,9 +88,7 @@ class PlanSelectionActivity : AppCompatActivity() {
         binding.btnBack.setOnClickListener {
             finish()
         }
-        
         // Set up semi-circle menu
-        // Menu now automatically shows all 13 plan types, 3 at a time
         binding.semiCircleMenu.setOnPlanSelectedListener { planType ->
             // When plan type changes, reload places with current search query (if any)
             viewModel.selectPlanType(planType, currentLatitude, currentLongitude)
