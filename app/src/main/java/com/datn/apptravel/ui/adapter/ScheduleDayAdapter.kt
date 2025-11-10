@@ -5,7 +5,7 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.databinding.ItemScheduleDayBinding
-import com.datn.apptravel.model.ScheduleDay
+import com.datn.apptravel.ui.model.ScheduleDay
 
 class ScheduleDayAdapter(
     private var scheduleDays: List<ScheduleDay>

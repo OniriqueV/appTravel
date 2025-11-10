@@ -3,7 +3,7 @@ package com.datn.apptravel.ui.viewmodel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.domain.repository.AuthRepository
+import com.datn.apptravel.data.repository.AuthRepository
 import com.datn.apptravel.ui.base.BaseViewModel
 import kotlinx.coroutines.launch
 
@@ -32,12 +32,8 @@ class MainViewModel(private val authRepository: AuthRepository) : BaseViewModel(
         viewModelScope.launch {
             setLoading(true)
             try {
-                val success = authRepository.logout()
-                if (success) {
-                    _isUserLoggedIn.value = false
-                } else {
-                    setError("Failed to logout")
-                }
+                authRepository.logout()
+                _isUserLoggedIn.value = false
             } catch (e: Exception) {
                 setError("Error logging out: ${e.message}")
             } finally {

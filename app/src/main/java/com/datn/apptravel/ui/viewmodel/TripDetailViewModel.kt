@@ -2,8 +2,8 @@ package com.datn.apptravel.ui.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.datn.apptravel.model.ScheduleActivity
-import com.datn.apptravel.model.ScheduleDay
+import com.datn.apptravel.ui.model.ScheduleActivity
+import com.datn.apptravel.ui.model.ScheduleDay
 import com.datn.apptravel.ui.activity.MainActivity
 import com.datn.apptravel.ui.base.BaseViewModel
 import com.datn.apptravel.util.Trip

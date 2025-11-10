@@ -40,7 +40,7 @@ class OnboardingFragment : Fragment() {
         }
     }
 
-    private fun updateUI(data: com.datn.apptravel.domain.model.OnboardingData) {
+    private fun updateUI(data: com.datn.apptravel.ui.model.OnboardingData) {
         binding.imageOnboarding.setImageResource(data.imageRes)
         binding.textTitle.text = data.title
         binding.textDesc.text = data.description

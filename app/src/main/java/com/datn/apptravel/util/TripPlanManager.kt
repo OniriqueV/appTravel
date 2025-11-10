@@ -1,7 +1,7 @@
 package com.datn.apptravel.util
 
 import com.datn.apptravel.R
-import com.datn.apptravel.model.PlanLocation
+import com.datn.apptravel.ui.model.PlanLocation
 
 object TripPlanManager {
     

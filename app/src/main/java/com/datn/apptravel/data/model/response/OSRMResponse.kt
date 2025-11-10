@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.model
+package com.datn.apptravel.data.model.response
 
 import com.google.gson.JsonElement
 

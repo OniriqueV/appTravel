@@ -4,7 +4,7 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.databinding.ItemScheduleActivityBinding
-import com.datn.apptravel.model.ScheduleActivity
+import com.datn.apptravel.ui.model.ScheduleActivity
 
 class ScheduleActivityAdapter(
     private val activities: List<ScheduleActivity>

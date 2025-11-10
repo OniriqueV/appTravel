@@ -3,7 +3,7 @@ package com.datn.apptravel.ui.viewmodel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.datn.apptravel.R
-import com.datn.apptravel.domain.model.OnboardingData
+import com.datn.apptravel.ui.model.OnboardingData
 import com.datn.apptravel.ui.base.BaseViewModel
 
 class OnboardingViewModel : BaseViewModel() {

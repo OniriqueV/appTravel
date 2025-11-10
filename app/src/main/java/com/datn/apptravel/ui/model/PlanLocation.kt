@@ -1,4 +1,4 @@
-package com.datn.apptravel.model
+package com.datn.apptravel.ui.model
 
 data class PlanLocation(
     val name: String,

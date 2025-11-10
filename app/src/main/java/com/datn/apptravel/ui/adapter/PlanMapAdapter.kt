@@ -6,7 +6,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ItemPlanMapHorizontalBinding
-import com.datn.apptravel.model.PlanLocation
+import com.datn.apptravel.ui.model.PlanLocation
 
 class PlanMapAdapter(
     private val plans: List<PlanLocation>,

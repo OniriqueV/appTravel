@@ -3,8 +3,7 @@ package com.datn.apptravel.di
 import com.datn.apptravel.data.api.ApiService
 import com.datn.apptravel.data.api.RetrofitClient
 import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.domain.repository.AuthRepository
-import com.datn.apptravel.data.repository.AuthRepositoryImpl
+import com.datn.apptravel.data.repository.AuthRepository
 import com.datn.apptravel.ui.viewmodel.SplashViewModel
 import com.datn.apptravel.ui.viewmodel.MainViewModel
 import com.datn.apptravel.ui.viewmodel.GuidesViewModel
@@ -31,9 +30,8 @@ val appModule = module {
     single { SessionManager(androidContext()) }
     
     // Repositories
-    single<AuthRepository> { AuthRepositoryImpl(get()) }
     single { com.datn.apptravel.data.repository.PlacesRepository(get()) }
-    single { com.datn.apptravel.data.repository.AuthRepository(androidContext()) }
+    single { AuthRepository(androidContext()) }
     
     // ViewModels
     viewModel { SplashViewModel(get()) }
@@ -43,7 +41,7 @@ val appModule = module {
     viewModel { NotificationViewModel() }
     viewModel { ProfileViewModel(get()) }
     viewModel { TripsViewModel() }
-    viewModel { AuthViewModel(get<com.datn.apptravel.data.repository.AuthRepository>()) }
+    viewModel { AuthViewModel(get()) }
     viewModel { TripViewModel() }
     viewModel { TripDetailViewModel() }
     viewModel { PlanViewModel(get()) }

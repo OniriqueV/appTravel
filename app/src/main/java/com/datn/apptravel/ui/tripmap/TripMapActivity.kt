@@ -8,10 +8,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.R
 import com.datn.apptravel.data.api.OSRMRetrofitClient
 import com.datn.apptravel.databinding.ActivityTripMapBinding
-import com.datn.apptravel.model.PlanLocation
+import com.datn.apptravel.ui.model.PlanLocation
 import com.datn.apptravel.ui.adapter.PlanMapAdapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

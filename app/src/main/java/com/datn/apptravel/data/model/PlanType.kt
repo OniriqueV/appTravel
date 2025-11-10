@@ -3,9 +3,6 @@ package com.datn.apptravel.data.model
 import androidx.annotation.DrawableRes
 import com.datn.apptravel.R
 
-/**
- * Enum representing different plan types with their Geoapify categories
- */
 enum class PlanType(
     val displayName: String,
     @DrawableRes val iconRes: Int,
