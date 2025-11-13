@@ -32,6 +32,17 @@ class TripDetailActivity : AppCompatActivity() {
         setupObservers()
         
         // Load trip details
+        loadTripData()
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        
+        // Reload trip data when returning from other screens
+        loadTripData()
+    }
+    
+    private fun loadTripData() {
         tripId?.let { 
             viewModel.getTripDetails(it) 
         } ?: run {

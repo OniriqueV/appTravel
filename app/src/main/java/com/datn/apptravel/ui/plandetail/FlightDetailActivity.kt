@@ -3,19 +3,25 @@ package com.datn.apptravel.ui.plandetail
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.datn.apptravel.R
+import androidx.lifecycle.lifecycleScope
+import com.datn.apptravel.data.model.PlanType
+import com.datn.apptravel.data.model.request.CreatePlanRequest
+import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityFlightDetailBinding
-import com.datn.apptravel.ui.viewmodel.FlightViewModel
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import java.util.Calendar
 
 class FlightDetailActivity : AppCompatActivity() {
     
-    private val viewModel: FlightViewModel by viewModel()
     private var tripId: String? = null
+    private var tripStartDate: String? = null
+    private var tripEndDate: String? = null
     private lateinit var binding: ActivityFlightDetailBinding
+    private val tripRepository: TripRepository by inject()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,8 +30,25 @@ class FlightDetailActivity : AppCompatActivity() {
         
         tripId = intent.getStringExtra("tripId")
         
+        // Load trip dates
+        tripId?.let { id ->
+            lifecycleScope.launch {
+                tripRepository.getTripById(id).onSuccess { trip ->
+                    tripStartDate = trip.startDate
+                    tripEndDate = trip.endDate
+                }
+            }
+        }
+        
+        // Get place data from intent
+        val placeName = intent.getStringExtra("placeName")
+        val placeAddress = intent.getStringExtra("placeAddress")
+        
+        // Pre-fill place data
+        placeName?.let { binding.etAirline.setText(it) }
+        placeAddress?.let { binding.etAddress.setText(it) }
+        
         setupUI()
-        setupObservers()
     }
     
     private fun setupUI() {
@@ -39,31 +62,11 @@ class FlightDetailActivity : AppCompatActivity() {
             saveFlightDetails()
         }
         
-        // Setup date pickers
-        setupDatePickers()
-        
-        // Setup time pickers
-        setupTimePickers()
+        // Setup date/time pickers
+        setupDateTimePickers()
     }
     
-    private fun setupObservers() {
-        // Observe add flight result
-        viewModel.addFlightResult.observe(this) { success ->
-            if (success) {
-                Toast.makeText(this, "Flight added to your trip", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "Failed to add flight", Toast.LENGTH_SHORT).show()
-            }
-        }
-        
-        // Observe loading state
-        viewModel.isLoading.observe(this) { isLoading ->
-            // Show/hide loading indicator if needed
-        }
-    }
-    
-    private fun setupDatePickers() {
+    private fun setupDateTimePickers() {
         // Departure date picker
         binding.etDepartureDate.setOnClickListener {
             showDatePicker(binding.etDepartureDate)
@@ -73,9 +76,7 @@ class FlightDetailActivity : AppCompatActivity() {
         binding.etArrivalDate.setOnClickListener {
             showDatePicker(binding.etArrivalDate)
         }
-    }
-    
-    private fun setupTimePickers() {
+        
         // Arrival time picker
         binding.etArrivalTime.setOnClickListener {
             showTimePicker(binding.etArrivalTime)
@@ -106,39 +107,95 @@ class FlightDetailActivity : AppCompatActivity() {
     }
 
     private fun saveFlightDetails() {
+        Log.d("FlightDetail", "========== SAVE BUTTON CLICKED ==========")
+        
         // Validate inputs
-        if (binding.etDepartureDate.text.isNullOrEmpty() || binding.etAirline.text.isNullOrEmpty()) {
+        if (binding.etAirline.text.isNullOrEmpty() ||
+            binding.etDepartureDate.text.isNullOrEmpty() ||
+            binding.etArrivalDate.text.isNullOrEmpty() ||
+            binding.etArrivalTime.text.isNullOrEmpty()) {
+            Log.e("FlightDetail", "Validation failed - missing required fields")
             Toast.makeText(this, "Please fill out required fields", Toast.LENGTH_SHORT).show()
             return
         }
         
-        // Add flight to trip
         tripId?.let { id ->
-            // Create flight details from form inputs
-            val flightDetails = mapOf(
-                "airline" to binding.etAirline.text.toString(),
-                "departureDate" to binding.etDepartureDate.text.toString(),
-                "departureAddress" to binding.etAddress.text.toString(),
-                "arrivalDate" to binding.etArrivalDate.text.toString(),
-                "arrivalTime" to binding.etArrivalTime.text.toString(),
-                "arrivalAddress" to binding.etArrivalAddress.text.toString(),
-                "expense" to binding.etExpense.text.toString().ifEmpty { "0" }
+            val departureDate = binding.etDepartureDate.text.toString()
+            val departureTime = "09:00" // Default departure time
+            val arrivalDate = binding.etArrivalDate.text.toString()
+            val arrivalTime = binding.etArrivalTime.text.toString()
+            
+            // Validate dates are within trip dates
+            if (!isDateWithinTripRange(departureDate) || !isDateWithinTripRange(arrivalDate)) {
+                Toast.makeText(this, "Ngoài thời gian của chuyến đi", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
+            // Convert to ISO format
+            val startTimeISO = convertDateTimeToISO(departureDate, departureTime)
+            val endTimeISO = convertDateTimeToISO(arrivalDate, arrivalTime)
+            
+            val request = CreatePlanRequest(
+                tripId = id,
+                title = binding.etAirline.text.toString(),
+                address = binding.etAddress.text.toString(),
+                location = null, // Will be geocoded from address
+                startTime = startTimeISO,
+                endTime = endTimeISO,
+                expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                photoUrl = null,
+                type = PlanType.FLIGHT.name
             )
             
-            viewModel.addFlightToTrip(id, flightDetails.toString())
+            Log.d("FlightDetail", "Creating plan for tripId: $id")
+            Log.d("FlightDetail", "Request: $request")
+            
+            lifecycleScope.launch {
+                try {
+                    val result = tripRepository.createPlan(id, request)
+                    result.onSuccess { plan ->
+                        Log.d("FlightDetail", "Plan created successfully: ${plan.id}")
+                        Toast.makeText(this@FlightDetailActivity, "Flight saved", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }.onFailure { exception ->
+                        Log.e("FlightDetail", "Failed to create plan", exception)
+                        Toast.makeText(this@FlightDetailActivity, exception.message ?: "Failed to save", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("FlightDetail", "Exception during plan creation", e)
+                    Toast.makeText(this@FlightDetailActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         } ?: run {
             Toast.makeText(this, "Trip ID is missing", Toast.LENGTH_SHORT).show()
         }
     }
-
-    private fun loadFlightOptions() {
-        // Here we would load flight options based on trip details
-        viewModel.getFlightOptions(
-            origin = "NYC",
-            destination = "PAR",
-            departureDate = "2025-10-10",
-            returnDate = "2025-10-15",
-            travelers = 2
-        )
+    
+    private fun convertDateTimeToISO(date: String, time: String): String {
+        // Convert dd/MM/yyyy and HH:mm to yyyy-MM-dd'T'HH:mm:ss
+        val dateParts = date.split("/")
+        if (dateParts.size == 3) {
+            val day = dateParts[0]
+            val month = dateParts[1]
+            val year = dateParts[2]
+            return "$year-$month-${day}T$time:00"
+        }
+        return ""
+    }
+    
+    private fun isDateWithinTripRange(date: String): Boolean {
+        if (tripStartDate == null || tripEndDate == null) return true
+        
+        try {
+            // Convert dd/MM/yyyy to yyyy-MM-dd for comparison
+            val parts = date.split("/")
+            if (parts.size != 3) return true
+            
+            val planDate = "${parts[2]}-${parts[1]}-${parts[0]}"
+            
+            return planDate >= tripStartDate!! && planDate <= tripEndDate!!
+        } catch (e: Exception) {
+            return true
+        }
     }
 }

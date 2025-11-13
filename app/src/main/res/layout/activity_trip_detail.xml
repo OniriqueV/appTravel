@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FA"
+    android:background="#F2C594"
     tools:context=".ui.tripdetail.TripDetailActivity">
 
     <!-- Top Navigation Bar -->
@@ -12,7 +12,7 @@
         android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@android:color/white"
+        android:background="#F2C594"
         android:elevation="4dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -86,7 +86,7 @@
             android:layout_marginTop="16dp"
             android:layout_marginBottom="16dp"
             android:scaleType="centerCrop"
-            android:src="@drawable/placeholder_reef"
+            android:src="@drawable/bg_a"
             android:background="@drawable/rounded_image_background"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -132,14 +132,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/trip_header">
 
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnAddNewPlan"
             android:layout_width="0dp"
             android:layout_height="48dp"
-            android:background="@drawable/blue_button_background"
+            android:background="@drawable/bg_date_tab_unselected"
             android:text="Add new plan"
             android:textAllCaps="false"
-            android:textColor="@android:color/white"
+            android:textColor="@color/black"
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toStartOf="@+id/btnSaveTrip"
@@ -148,17 +148,20 @@
 
         <ImageButton
             android:id="@+id/btnSaveTrip"
-            android:layout_width="48dp"
+            android:layout_width="70dp"
             android:layout_height="48dp"
             android:layout_marginStart="8dp"
-            android:background="@drawable/blue_button_background"
-            android:contentDescription="Save trip"
-            android:src="@drawable/ic_bookmark"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/btnAddNewPlan"
-            app:layout_constraintTop_toTopOf="parent"
-            app:tint="@android:color/white" />
+            android:background="@drawable/bg_date_tab_unselected"
+        android:contentDescription="Save trip"
+        app:srcCompat="@drawable/ic_share"
+        android:scaleType="centerInside"
+        android:adjustViewBounds="true"
+        app:tint="@color/black"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btnAddNewPlan"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:padding="0dp"  />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Schedule RecyclerView -->
@@ -188,7 +191,7 @@
             android:layout_width="240dp"
             android:layout_height="160dp"
             android:layout_marginBottom="24dp"
-            android:src="@drawable/illustration_empty_plans" />
+            android:src="@drawable/bg_a" />
 
         <TextView
             android:layout_width="wrap_content"

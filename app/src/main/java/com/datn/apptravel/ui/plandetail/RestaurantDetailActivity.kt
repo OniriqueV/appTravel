@@ -3,15 +3,25 @@ package com.datn.apptravel.ui.plandetail
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.datn.apptravel.data.model.PlanType
+import com.datn.apptravel.data.model.request.CreatePlanRequest
+import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityRestaurantDetailBinding
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import java.util.Calendar
 
 class RestaurantDetailActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityRestaurantDetailBinding
     private var tripId: String? = null
+    private var tripStartDate: String? = null
+    private var tripEndDate: String? = null
+    private val tripRepository: TripRepository by inject()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -19,6 +29,24 @@ class RestaurantDetailActivity : AppCompatActivity() {
         setContentView(binding.root)
         
         tripId = intent.getStringExtra("tripId")
+        
+        // Load trip dates
+        tripId?.let { id ->
+            lifecycleScope.launch {
+                tripRepository.getTripById(id).onSuccess { trip ->
+                    tripStartDate = trip.startDate
+                    tripEndDate = trip.endDate
+                }
+            }
+        }
+        
+        // Get place data from intent
+        val placeName = intent.getStringExtra("placeName")
+        val placeAddress = intent.getStringExtra("placeAddress")
+        
+        // Pre-fill place data
+        placeName?.let { binding.etRestaurantName.setText(it) }
+        placeAddress?.let { binding.etAddress.setText(it) }
         
         setupUI()
     }
@@ -70,26 +98,99 @@ class RestaurantDetailActivity : AppCompatActivity() {
 
     private fun saveRestaurantDetails() {
         // Validate inputs
-        if (binding.etRestaurantName.text.isNullOrEmpty()) {
+        if (binding.etRestaurantName.text.isNullOrEmpty() ||
+            binding.etDate.text.isNullOrEmpty() ||
+            binding.etTime.text.isNullOrEmpty()) {
             Toast.makeText(this, "Please fill out required fields", Toast.LENGTH_SHORT).show()
             return
         }
         
-        // Add restaurant to trip
         tripId?.let { id ->
-            val restaurantDetails = mapOf(
-                "restaurantName" to binding.etRestaurantName.text.toString(),
-                "date" to binding.etDate.text.toString(),
-                "time" to binding.etTime.text.toString(),
-                "expense" to binding.etExpense.text.toString().ifEmpty { "0" },
-                "address" to binding.etAddress.text.toString()
+            val date = binding.etDate.text.toString()
+            val time = binding.etTime.text.toString()
+            
+            // Validate date is within trip dates
+            if (!isDateWithinTripRange(date)) {
+                Toast.makeText(this, "Ngoài thời gian của chuyến đi", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
+            // Combine date and time to ISO format
+            val startTimeISO = convertToISO(date, time)
+            val endTimeISO = convertToISO(date, addOneHour(time))
+            
+            val request = CreatePlanRequest(
+                tripId = id,
+                title = binding.etRestaurantName.text.toString(),
+                address = binding.etAddress.text.toString(),
+                location = null, // Will be geocoded from address
+                startTime = startTimeISO,
+                endTime = endTimeISO,
+                expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                photoUrl = null,
+                type = PlanType.RESTAURANT.name
             )
             
-            // TODO: Call ViewModel to save restaurant
-            Toast.makeText(this, "Restaurant saved", Toast.LENGTH_SHORT).show()
-            finish()
+            Log.d("RestaurantDetail", "Creating plan for tripId: $id")
+            Log.d("RestaurantDetail", "Request: $request")
+            
+            lifecycleScope.launch {
+                try {
+                    val result = tripRepository.createPlan(id, request)
+                    result.onSuccess { plan ->
+                        Log.d("RestaurantDetail", "Plan created successfully: ${plan.id}")
+                        Toast.makeText(this@RestaurantDetailActivity, "Restaurant saved", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }.onFailure { exception ->
+                        Log.e("RestaurantDetail", "Failed to create plan", exception)
+                        Toast.makeText(this@RestaurantDetailActivity, exception.message ?: "Failed to save", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("RestaurantDetail", "Exception during plan creation", e)
+                    Toast.makeText(this@RestaurantDetailActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         } ?: run {
             Toast.makeText(this, "Trip ID is missing", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun convertToISO(date: String, time: String): String {
+        // Convert dd/MM/yyyy and HH:mm to yyyy-MM-dd'T'HH:mm:ss
+        val parts = date.split("/")
+        if (parts.size == 3) {
+            val day = parts[0]
+            val month = parts[1]
+            val year = parts[2]
+            return "$year-$month-${day}T$time:00"
+        }
+        return ""
+    }
+    
+    private fun addOneHour(time: String): String {
+        val parts = time.split(":")
+        if (parts.size == 2) {
+            var hour = parts[0].toIntOrNull() ?: 0
+            val minute = parts[1]
+            hour = (hour + 1) % 24
+            return String.format("%02d:%s", hour, minute)
+        }
+        return time
+    }
+    
+    private fun isDateWithinTripRange(date: String): Boolean {
+        if (tripStartDate == null || tripEndDate == null) return true
+        
+        try {
+            // Convert dd/MM/yyyy to yyyy-MM-dd for comparison
+            val parts = date.split("/")
+            if (parts.size != 3) return true
+            
+            val planDate = "${parts[2]}-${parts[1]}-${parts[0]}"
+            
+            return planDate >= tripStartDate!! && planDate <= tripEndDate!!
+        } catch (e: Exception) {
+            return true
         }
     }
 }

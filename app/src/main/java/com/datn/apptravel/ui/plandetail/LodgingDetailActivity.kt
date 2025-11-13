@@ -3,18 +3,25 @@ package com.datn.apptravel.ui.plandetail
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
+import com.datn.apptravel.data.model.PlanType
+import com.datn.apptravel.data.model.request.CreatePlanRequest
+import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityLodgingDetailBinding
-import com.datn.apptravel.ui.viewmodel.LodgingViewModel
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.Calendar
 
 class LodgingDetailActivity : AppCompatActivity() {
-    
-    private val viewModel: LodgingViewModel by viewModel()
     private var tripId: String? = null
+    private var tripStartDate: String? = null
+    private var tripEndDate: String? = null
     private lateinit var binding: ActivityLodgingDetailBinding
+    private val tripRepository: TripRepository by inject()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,6 +29,24 @@ class LodgingDetailActivity : AppCompatActivity() {
         setContentView(binding.root)
         
         tripId = intent.getStringExtra("tripId")
+        
+        // Load trip dates
+        tripId?.let { id ->
+            lifecycleScope.launch {
+                tripRepository.getTripById(id).onSuccess { trip ->
+                    tripStartDate = trip.startDate
+                    tripEndDate = trip.endDate
+                }
+            }
+        }
+        
+        // Get place data from intent
+        val placeName = intent.getStringExtra("placeName")
+        val placeAddress = intent.getStringExtra("placeAddress")
+        
+        // Pre-fill place data
+        placeName?.let { binding.etLodgingName.setText(it) }
+        placeAddress?.let { binding.etAddress.setText(it) }
         
         setupUI()
         setupObservers()
@@ -46,20 +71,7 @@ class LodgingDetailActivity : AppCompatActivity() {
     }
     
     private fun setupObservers() {
-        // Observe save lodging result
-        viewModel.saveLodgingResult.observe(this) { success ->
-            if (success) {
-                Toast.makeText(this, "Lodging added to your trip", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "Failed to add lodging", Toast.LENGTH_SHORT).show()
-            }
-        }
-        
-        // Observe loading state
-        viewModel.isLoading.observe(this) { isLoading ->
-            // Show/hide loading indicator if needed
-        }
+
     }
     
     private fun setupDatePickers() {
@@ -110,30 +122,96 @@ class LodgingDetailActivity : AppCompatActivity() {
     }
 
     private fun saveLodgingDetails() {
+        Log.d("LodgingDetail", "========== SAVE BUTTON CLICKED ==========")
+        
         // Validate inputs
-        if (binding.etLodgingName.text.isNullOrEmpty() || binding.etCheckInDate.text.isNullOrEmpty() 
-            || binding.etCheckoutDate.text.isNullOrEmpty()) {
+        if (binding.etLodgingName.text.isNullOrEmpty() || 
+            binding.etCheckInDate.text.isNullOrEmpty() ||
+            binding.etCheckInTime.text.isNullOrEmpty() ||
+            binding.etCheckoutDate.text.isNullOrEmpty() ||
+            binding.etCheckoutTime.text.isNullOrEmpty()) {
+            Log.e("LodgingDetail", "Validation failed - missing required fields")
             Toast.makeText(this, "Please fill out required fields", Toast.LENGTH_SHORT).show()
             return
         }
         
-        // Add lodging to trip
         tripId?.let { id ->
-            // Create lodging details from form inputs
-            val lodgingDetails = mapOf(
-                "name" to binding.etLodgingName.text.toString(),
-                "checkInDate" to binding.etCheckInDate.text.toString(),
-                "checkInTime" to binding.etCheckInTime.text.toString(),
-                "checkoutDate" to binding.etCheckoutDate.text.toString(),
-                "checkoutTime" to binding.etCheckoutTime.text.toString(),
-                "expense" to binding.etExpense.text.toString().ifEmpty { "0" },
-                "address" to binding.etAddress.text.toString(),
-                "phone" to binding.etPhone.text.toString()
+            val checkInDate = binding.etCheckInDate.text.toString()
+            val checkInTime = binding.etCheckInTime.text.toString()
+            val checkoutDate = binding.etCheckoutDate.text.toString()
+            val checkoutTime = binding.etCheckoutTime.text.toString()
+            
+            // Validate dates are within trip dates
+            if (!isDateWithinTripRange(checkInDate) || !isDateWithinTripRange(checkoutDate)) {
+                Toast.makeText(this, "Ngoài thời gian của chuyến đi", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
+            // Convert to ISO format
+            val startTimeISO = convertDateTimeToISO(checkInDate, checkInTime)
+            val endTimeISO = convertDateTimeToISO(checkoutDate, checkoutTime)
+            
+            val request = CreatePlanRequest(
+                tripId = id,
+                title = binding.etLodgingName.text.toString(),
+                address = binding.etAddress.text.toString(),
+                location = null, // Will be geocoded from address
+                startTime = startTimeISO,
+                endTime = endTimeISO,
+                expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                photoUrl = null,
+                type = PlanType.LODGING.name
             )
             
-            viewModel.saveLodging(id, lodgingDetails.toString())
+            Log.d("LodgingDetail", "Creating plan for tripId: $id")
+            Log.d("LodgingDetail", "Request: $request")
+            
+            lifecycleScope.launch {
+                try {
+                    val result = tripRepository.createPlan(id, request)
+                    result.onSuccess { plan ->
+                        Log.d("LodgingDetail", "Plan created successfully: ${plan.id}")
+                        Toast.makeText(this@LodgingDetailActivity, "Lodging saved", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }.onFailure { exception ->
+                        Log.e("LodgingDetail", "Failed to create plan", exception)
+                        Toast.makeText(this@LodgingDetailActivity, exception.message ?: "Failed to save", Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    Log.e("LodgingDetail", "Exception during plan creation", e)
+                    Toast.makeText(this@LodgingDetailActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
         } ?: run {
             Toast.makeText(this, "Trip ID is missing", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun convertDateTimeToISO(date: String, time: String): String {
+        // Convert dd/MM/yyyy and HH:mm to yyyy-MM-dd'T'HH:mm:ss
+        val dateParts = date.split("/")
+        if (dateParts.size == 3) {
+            val day = dateParts[0]
+            val month = dateParts[1]
+            val year = dateParts[2]
+            return "$year-$month-${day}T$time:00"
+        }
+        return ""
+    }
+    
+    private fun isDateWithinTripRange(date: String): Boolean {
+        if (tripStartDate == null || tripEndDate == null) return true
+        
+        try {
+            // Convert dd/MM/yyyy to yyyy-MM-dd for comparison
+            val parts = date.split("/")
+            if (parts.size != 3) return true
+            
+            val planDate = "${parts[2]}-${parts[1]}-${parts[0]}"
+            
+            return planDate >= tripStartDate!! && planDate <= tripEndDate!!
+        } catch (e: Exception) {
+            return true
         }
     }
 }

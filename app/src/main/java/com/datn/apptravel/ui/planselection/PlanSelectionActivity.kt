@@ -1,6 +1,7 @@
 package com.datn.apptravel.ui.planselection
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -21,6 +22,7 @@ import com.datn.apptravel.R
 import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.response.MapPlace
 import com.datn.apptravel.databinding.ActivityPlanSelectionBinding
+import com.datn.apptravel.ui.plandetail.*
 import com.datn.apptravel.ui.viewmodel.PlanViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -42,12 +44,8 @@ class PlanSelectionActivity : AppCompatActivity() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private var myLocationOverlay: MyLocationNewOverlay? = null
     
-    private var currentLatitude = 21.0285 // Default to Hanoi
+    private var currentLatitude = 21.0285
     private var currentLongitude = 105.8542
-    
-    companion object {
-        private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
-    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -226,12 +224,42 @@ class PlanSelectionActivity : AppCompatActivity() {
         
         // Set add button click listener
         btnAddPlace.setOnClickListener {
-            // TODO: Implement add place to trip logic
-            Toast.makeText(this, "Added ${place.name} to trip", Toast.LENGTH_SHORT).show()
             bottomSheetDialog.dismiss()
+            openDetailActivity(place)
         }
         
         bottomSheetDialog.show()
+    }
+    
+    /**
+     * Open appropriate detail activity based on selected plan type
+     */
+    private fun openDetailActivity(place: MapPlace) {
+        val intent = when (viewModel.selectedPlanType.value) {
+            PlanType.RESTAURANT -> Intent(this, RestaurantDetailActivity::class.java)
+            PlanType.LODGING -> Intent(this, LodgingDetailActivity::class.java)
+            PlanType.FLIGHT -> Intent(this, FlightDetailActivity::class.java)
+            PlanType.BOAT -> Intent(this, BoatDetailActivity::class.java)
+            PlanType.CAR_RENTAL -> Intent(this, CarRentalDetailActivity::class.java)
+            PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING, 
+            PlanType.CAMPING, PlanType.RELIGION -> Intent(this, ActivityDetailActivity::class.java)
+            else -> {
+                Toast.makeText(this, "Please select a plan type first", Toast.LENGTH_SHORT).show()
+                return
+            }
+        }
+        
+        intent.putExtra(EXTRA_TRIP_ID, tripId)
+        intent.putExtra(EXTRA_PLACE_NAME, place.name)
+        intent.putExtra(EXTRA_PLACE_ADDRESS, place.address)
+        startActivity(intent)
+    }
+    
+    companion object {
+        private const val LOCATION_PERMISSION_REQUEST_CODE = 1001
+        const val EXTRA_TRIP_ID = "tripId"
+        const val EXTRA_PLACE_NAME = "placeName"
+        const val EXTRA_PLACE_ADDRESS = "placeAddress"
     }
     
     /**

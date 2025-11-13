@@ -1,35 +1,53 @@
 package com.datn.apptravel.ui.tripmap
 
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.datn.apptravel.R
 import com.datn.apptravel.data.api.OSRMRetrofitClient
+import com.datn.apptravel.data.model.Plan
+import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityTripMapBinding
 import com.datn.apptravel.ui.model.PlanLocation
-import com.datn.apptravel.ui.adapter.PlanMapAdapter
+import com.datn.apptravel.ui.model.ScheduleItem
+import com.datn.apptravel.ui.adapter.ScheduleAdapter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.android.ext.android.inject
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class TripMapActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTripMapBinding
-    private lateinit var planAdapter: PlanMapAdapter
+    private lateinit var scheduleAdapter: ScheduleAdapter
     private val plans = mutableListOf<PlanLocation>()
+    private val scheduleItems = mutableListOf<ScheduleItem>()
     private val routePolylines = mutableListOf<Polyline>()
+    private val routeSegments = mutableListOf<List<GeoPoint>>() // Store each segment's points
     private val markers = mutableListOf<Marker>()
     private var highlightedPolyline: Polyline? = null
+    
+    private val tripRepository: TripRepository by inject()
+    private val setZoom = 17.0
+    private var tripId: String? = null
+    private var startDate: String = ""
+    private var endDate: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,17 +69,19 @@ class TripMapActivity : AppCompatActivity() {
         }
 
         // Setup RecyclerView with HORIZONTAL layout and scroll listener
-        planAdapter = PlanMapAdapter(plans) { position, plan ->
-            onPlanClicked(position, plan)
-        }
+        scheduleAdapter = ScheduleAdapter(
+            items = scheduleItems,
+            onPlanClick = { position, plan ->
+                onPlanClicked(position, plan)
+            },
+            onConnectorClick = { fromPos, toPos ->
+                onConnectorClicked(fromPos, toPos)
+            }
+        )
 
         binding.rvPlans.apply {
             layoutManager = LinearLayoutManager(this@TripMapActivity, LinearLayoutManager.HORIZONTAL, false)
-            adapter = planAdapter
-            
-            // Add snap helper to center items when scrolling
-            val snapHelper = androidx.recyclerview.widget.LinearSnapHelper()
-            snapHelper.attachToRecyclerView(this)
+            adapter = scheduleAdapter
             
             // Detect scroll to highlight plans
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -72,7 +92,7 @@ class TripMapActivity : AppCompatActivity() {
                 
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     super.onScrollStateChanged(recyclerView, newState)
-                    // When scroll stops, highlight the centered item
+                    // When scroll stops, highlight the most visible item
                     if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                         highlightVisiblePlan()
                     }
@@ -91,33 +111,213 @@ class TripMapActivity : AppCompatActivity() {
             rotationGestureOverlay.isEnabled = true
             overlays.add(rotationGestureOverlay)
             
-            controller.setZoom(13.0)
+            controller.setZoom(setZoom)
         }
     }
 
     private fun loadSampleData() {
         // Get trip info from intent
-        val tripId = intent.getStringExtra("tripId")
-        val tripTitle = intent.getStringExtra("tripTitle") ?: "Sample Trip"
+        tripId = intent.getStringExtra("tripId")
+        val tripTitle = intent.getStringExtra("tripTitle") ?: "Trip"
         
-        // Load plans with real coordinates
-        plans.clear()
-        plans.addAll(
-            com.datn.apptravel.util.TripPlanManager.getPlansByTripId(tripId ?: "", tripTitle)
-        )
+        if (tripId == null) {
+            Toast.makeText(this, "Trip ID not found", Toast.LENGTH_SHORT).show()
+            finish()
+            return
+        }
+        
+        // Show loading
+        binding.progressBar.visibility = View.VISIBLE
+        
+        // Load trip details and plans
+        lifecycleScope.launch {
+            // Load trip to get start/end dates
+            tripRepository.getTripById(tripId!!).onSuccess { trip ->
+                startDate = trip.startDate
+                endDate = trip.endDate
+            }
+            
+            // Load real plans from API
+            tripRepository.getPlansByTripId(tripId!!).onSuccess { apiPlans ->
+                // Convert API plans to PlanLocation with geocoding
+                val planLocations = convertPlansToLocations(apiPlans)
+                
+                withContext(Dispatchers.Main) {
+                    plans.clear()
+                    plans.addAll(planLocations)
+                    
+                    // Build schedule items: Start + Plans + End
+                    scheduleItems.clear()
+                    
+                    // Add Start date
+                    scheduleItems.add(
+                        ScheduleItem.DateItem(
+                            label = "Start",
+                            date = formatDate(startDate)
+                        )
+                    )
+                    
+                    // Add all plans with connectors between them
+                    planLocations.forEachIndexed { index, plan ->
+                        // Add connector before this plan (except for the first plan)
+                        if (index > 0) {
+                            scheduleItems.add(
+                                ScheduleItem.ConnectorItem(
+                                    fromPlanPosition = index - 1,
+                                    toPlanPosition = index
+                                )
+                            )
+                        }
+                        
+                        scheduleItems.add(
+                            ScheduleItem.PlanItem(
+                                plan = plan,
+                                position = index
+                            )
+                        )
+                    }
+                    
+                    // Add End date
+                    scheduleItems.add(
+                        ScheduleItem.DateItem(
+                            label = "End",
+                            date = formatDate(endDate)
+                        )
+                    )
+                    
+                    scheduleAdapter.notifyDataSetChanged()
+                    
+                    if (plans.isEmpty()) {
+                        binding.progressBar.visibility = View.GONE
+                        Toast.makeText(
+                            this@TripMapActivity,
+                            "No plans found for this trip",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        return@withContext
+                    }
+                    
+                    // Add markers to map
+                    addMarkersToMap()
+                    
+                    // Draw route
+                    drawRoute()
+                    
+                    // Center map
+                    val centerPoint = GeoPoint(plans[0].latitude, plans[0].longitude)
+                    binding.mapView.controller.setCenter(centerPoint)
+                    
+                    binding.progressBar.visibility = View.GONE
+                }
+            }.onFailure { error ->
+                withContext(Dispatchers.Main) {
+                    binding.progressBar.visibility = View.GONE
+                    Toast.makeText(
+                        this@TripMapActivity,
+                        "Failed to load plans: ${error.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    Log.e("TripMapActivity", "Error loading plans", error)
+                }
+            }
+        }
+    }
+    
 
-        planAdapter.notifyDataSetChanged()
-        
-        // Add markers to map
-        addMarkersToMap()
-        
-        // Draw route
-        drawRoute()
-        
-        // Center map
-        if (plans.isNotEmpty()) {
-            val centerPoint = GeoPoint(plans[0].latitude, plans[0].longitude)
-            binding.mapView.controller.setCenter(centerPoint)
+    private fun formatDate(dateString: String): String {
+        return try {
+            val date = java.time.LocalDate.parse(dateString)
+            date.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        } catch (e: Exception) {
+            dateString
+        }
+    }
+    
+    private suspend fun convertPlansToLocations(apiPlans: List<Plan>): List<PlanLocation> {
+        return withContext(Dispatchers.IO) {
+            apiPlans.mapNotNull { plan ->
+                try {
+                    // Parse time from ISO format
+                    val time = try {
+                        val dateTime = LocalDateTime.parse(
+                            plan.startTime,
+                            DateTimeFormatter.ISO_DATE_TIME
+                        )
+                        String.format("%02d:%02d", dateTime.hour, dateTime.minute)
+                    } catch (e: Exception) {
+                        "00:00"
+                    }
+                    
+                    // Geocode address to get coordinates
+                    val coordinates = geocodeLocation(plan.address ?: plan.title)
+                    
+                    if (coordinates != null) {
+                        PlanLocation(
+                            name = plan.title,
+                            time = time,
+                            detail = plan.address ?: "",
+                            latitude = coordinates.first,
+                            longitude = coordinates.second,
+                            iconResId = getIconForPlanType(plan.type)
+                        )
+                    } else {
+                        Log.w("TripMapActivity", "Could not geocode: ${plan.address}")
+                        null
+                    }
+                } catch (e: Exception) {
+                    Log.e("TripMapActivity", "Error converting plan: ${plan.title}", e)
+                    null
+                }
+            }
+        }
+    }
+    
+    private suspend fun geocodeLocation(address: String): Pair<Double, Double>? {
+        return try {
+            // Use Nominatim (OpenStreetMap) geocoding API
+            val response = withContext(Dispatchers.IO) {
+                val url = "https://nominatim.openstreetmap.org/search?q=${
+                    java.net.URLEncoder.encode(address, "UTF-8")
+                }&format=json&limit=1"
+                
+                val connection = java.net.URL(url).openConnection() as java.net.HttpURLConnection
+                connection.setRequestProperty("User-Agent", packageName)
+                connection.connect()
+                
+                val responseText = connection.inputStream.bufferedReader().readText()
+                connection.disconnect()
+                responseText
+            }
+            
+            // Parse JSON response
+            val jsonArray = com.google.gson.Gson().fromJson(
+                response,
+                com.google.gson.JsonArray::class.java
+            )
+            
+            if (jsonArray.size() > 0) {
+                val firstResult = jsonArray[0].asJsonObject
+                val lat = firstResult.get("lat").asDouble
+                val lon = firstResult.get("lon").asDouble
+                Pair(lat, lon)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("TripMapActivity", "Geocoding error for: $address", e)
+            null
+        }
+    }
+    
+    private fun getIconForPlanType(planType: com.datn.apptravel.data.model.PlanType): Int {
+        return when (planType) {
+            com.datn.apptravel.data.model.PlanType.RESTAURANT -> R.drawable.ic_restaurant
+            com.datn.apptravel.data.model.PlanType.LODGING -> R.drawable.ic_lodging
+            com.datn.apptravel.data.model.PlanType.FLIGHT -> R.drawable.ic_flight
+            com.datn.apptravel.data.model.PlanType.BOAT -> R.drawable.ic_boat
+            com.datn.apptravel.data.model.PlanType.CAR_RENTAL -> R.drawable.ic_car
+            com.datn.apptravel.data.model.PlanType.ACTIVITY -> R.drawable.ic_attraction
+            else -> R.drawable.ic_location
         }
     }
 
@@ -153,38 +353,42 @@ class TripMapActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
+            // Clear existing polylines and segments
+            routePolylines.forEach { binding.mapView.overlays.remove(it) }
+            routePolylines.clear()
+            routeSegments.clear()
+            
             try {
-                // Build coordinates string for OSRM: "lon1,lat1;lon2,lat2;..."
-                val coordinates = plans.joinToString(";") { plan ->
-                    "${plan.longitude},${plan.latitude}"
-                }
+                // Draw each segment between consecutive plans separately
+                for (i in 0 until plans.size - 1) {
+                    val fromPlan = plans[i]
+                    val toPlan = plans[i + 1]
+                    
+                    // Build coordinates string for this segment only
+                    val coordinates = "${fromPlan.longitude},${fromPlan.latitude};${toPlan.longitude},${toPlan.latitude}"
 
-                val response = withContext(Dispatchers.IO) {
-                    OSRMRetrofitClient.apiService.getRoute(
-                        coordinates = coordinates,
-                        overview = "full",
-                        geometries = "geojson",  // Changed to geojson for easier parsing
-                        steps = true
-                    )
-                }
+                    val response = withContext(Dispatchers.IO) {
+                        OSRMRetrofitClient.apiService.getRoute(
+                            coordinates = coordinates,
+                            overview = "full",
+                            geometries = "geojson",
+                            steps = true
+                        )
+                    }
 
-                if (response.isSuccessful && response.body()?.code == "Ok") {
-                    val route = response.body()?.routes?.firstOrNull()
-                    route?.let {
-                        // OSRM returns geometry in GeoJSON format
-                        drawRouteFromGeoJSON(it.geometry)
+                    if (response.isSuccessful && response.body()?.code == "Ok") {
+                        val route = response.body()?.routes?.firstOrNull()
+                        route?.let {
+                            // Parse and draw this segment
+                            drawSegmentFromGeoJSON(it.geometry, i)
+                        }
+                    } else {
+                        // Fallback: draw straight line for this segment
+                        drawStraightSegment(i)
                     }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@TripMapActivity,
-                            "Route API failed, showing straight lines",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                    // Fallback: draw straight lines between points
-                    drawStraightLines()
                 }
+                
+                binding.progressBar.visibility = View.GONE
             } catch (e: Exception) {
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
@@ -194,24 +398,19 @@ class TripMapActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-                // Fallback: draw straight lines
+                // Fallback: draw all straight lines
                 drawStraightLines()
-            } finally {
                 binding.progressBar.visibility = View.GONE
             }
         }
     }
 
     private fun drawRouteOnMap(encodedPolyline: String) {
-        // This function is now deprecated, use drawRouteFromGeoJSON instead
+        // This function is now deprecated, use drawSegmentFromGeoJSON instead
         drawStraightLines()
     }
 
-    private fun drawRouteFromGeoJSON(geometryJson: com.google.gson.JsonElement) {
-        // Clear existing polylines
-        routePolylines.forEach { binding.mapView.overlays.remove(it) }
-        routePolylines.clear()
-
+    private fun drawSegmentFromGeoJSON(geometryJson: com.google.gson.JsonElement, segmentIndex: Int) {
         try {
             // Parse GeoJSON geometry
             val geometryObj = geometryJson.asJsonObject
@@ -226,14 +425,17 @@ class TripMapActivity : AppCompatActivity() {
             }
 
             if (geoPoints.isEmpty()) {
-                drawStraightLines()
+                drawStraightSegment(segmentIndex)
                 return
             }
 
-            // Draw the entire route as one polyline
+            // Store segment points
+            routeSegments.add(geoPoints)
+            
+            // Draw this segment
             val polyline = Polyline().apply {
                 setPoints(geoPoints)
-                outlinePaint.color = Color.parseColor("#2563EB")
+                outlinePaint.color = Color.parseColor("#DC2626") // Red default
                 outlinePaint.strokeWidth = 10f
                 outlinePaint.isAntiAlias = true
                 outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
@@ -241,16 +443,45 @@ class TripMapActivity : AppCompatActivity() {
             }
             
             routePolylines.add(polyline)
-            binding.mapView.overlays.add(0, polyline) // Add at index 0 so markers are on top
-
+            binding.mapView.overlays.add(0, polyline)
             binding.mapView.invalidate()
             
-            // Adjust map bounds to show entire route
-            adjustMapBounds(geoPoints)
         } catch (e: Exception) {
             e.printStackTrace()
-            drawStraightLines()
+            drawStraightSegment(segmentIndex)
         }
+    }
+    
+    private fun drawStraightSegment(segmentIndex: Int) {
+        if (segmentIndex >= plans.size - 1) return
+        
+        val fromPlan = plans[segmentIndex]
+        val toPlan = plans[segmentIndex + 1]
+        
+        val segmentPoints = listOf(
+            GeoPoint(fromPlan.latitude, fromPlan.longitude),
+            GeoPoint(toPlan.latitude, toPlan.longitude)
+        )
+        
+        routeSegments.add(segmentPoints)
+        
+        val polyline = Polyline().apply {
+            setPoints(segmentPoints)
+            outlinePaint.color = Color.parseColor("#DC2626") // Red default
+            outlinePaint.strokeWidth = 10f
+            outlinePaint.isAntiAlias = true
+            outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
+            outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+        }
+
+        routePolylines.add(polyline)
+        binding.mapView.overlays.add(0, polyline)
+        binding.mapView.invalidate()
+    }
+
+    private fun drawRouteFromGeoJSON(geometryJson: com.google.gson.JsonElement) {
+        // This function is deprecated - now using drawSegmentFromGeoJSON for each segment
+        drawStraightLines()
     }
 
     private fun adjustMapBounds(points: List<GeoPoint>) {
@@ -265,34 +496,25 @@ class TripMapActivity : AppCompatActivity() {
     private fun drawStraightLines() {
         routePolylines.forEach { binding.mapView.overlays.remove(it) }
         routePolylines.clear()
+        routeSegments.clear()
 
-        // Draw as one continuous line through all points
-        val allPoints = plans.map { GeoPoint(it.latitude, it.longitude) }
-        
-        val polyline = Polyline().apply {
-            setPoints(allPoints)
-            outlinePaint.color = Color.parseColor("#2563EB")
-            outlinePaint.strokeWidth = 10f
-            outlinePaint.isAntiAlias = true
-            outlinePaint.strokeCap = android.graphics.Paint.Cap.ROUND
-            outlinePaint.strokeJoin = android.graphics.Paint.Join.ROUND
+        // Draw separate lines between each pair of consecutive plans
+        for (i in 0 until plans.size - 1) {
+            drawStraightSegment(i)
         }
 
-        routePolylines.add(polyline)
-        binding.mapView.overlays.add(0, polyline)
-
-        binding.mapView.invalidate()
-        
         // Adjust map bounds
+        val allPoints = plans.map { GeoPoint(it.latitude, it.longitude) }
         adjustMapBounds(allPoints)
     }
 
     private fun onPlanClicked(position: Int, plan: PlanLocation) {
         // Highlight plan in list
-        planAdapter.highlightPlan(position)
+        scheduleAdapter.highlightPlan(position)
         
-        // Scroll to plan if not visible
-        binding.rvPlans.smoothScrollToPosition(position)
+        // Calculate adapter position: Start date (1) + plan position + connectors before it
+        val adapterPosition = 1 + position + position
+        binding.rvPlans.smoothScrollToPosition(adapterPosition)
         
         // Center map on plan
         val geoPoint = GeoPoint(plan.latitude, plan.longitude)
@@ -303,6 +525,27 @@ class TripMapActivity : AppCompatActivity() {
         
         // Highlight route segments
         highlightRouteSegment(position)
+    }
+    
+    private fun onConnectorClicked(fromPos: Int, toPos: Int) {
+        // Calculate adapter position for this connector
+        val connectorAdapterPos = 1 + toPos + (toPos - 1)
+        scheduleAdapter.highlightConnector(connectorAdapterPos)
+        
+        // Scroll to connector
+        binding.rvPlans.smoothScrollToPosition(connectorAdapterPos)
+        
+        // Highlight route segment between two plans on map
+        highlightRouteSegmentBetween(fromPos, toPos)
+        
+        // Center map on midpoint between the two plans
+        if (fromPos in plans.indices && toPos in plans.indices) {
+            val fromPlan = plans[fromPos]
+            val toPlan = plans[toPos]
+            val midLat = (fromPlan.latitude + toPlan.latitude) / 2
+            val midLon = (fromPlan.longitude + toPlan.longitude) / 2
+            binding.mapView.controller.animateTo(GeoPoint(midLat, midLon))
+        }
     }
 
     private fun highlightVisiblePlan() {
@@ -316,19 +559,46 @@ class TripMapActivity : AppCompatActivity() {
         val firstVisible = layoutManager.findFirstVisibleItemPosition()
         val lastVisible = layoutManager.findLastVisibleItemPosition()
         
+        var closestItem: ScheduleItem? = null
+        var closestItemAdapterPos = -1
+        
         for (i in firstVisible..lastVisible) {
+            // Skip date items (first and last)
+            if (i == 0 || i == scheduleItems.size - 1) continue
+            
+            val item = scheduleItems.getOrNull(i) ?: continue
+            
             val view = layoutManager.findViewByPosition(i) ?: continue
             val viewCenter = (view.left + view.right) / 2
             val distance = Math.abs(recyclerViewCenter - viewCenter)
             
             if (distance < closestDistance) {
                 closestDistance = distance
-                closestPosition = i
+                closestItem = item
+                closestItemAdapterPos = i
+                if (item is ScheduleItem.PlanItem) {
+                    closestPosition = item.position
+                }
             }
         }
         
-        if (closestPosition >= 0 && closestPosition < plans.size) {
-            planAdapter.highlightPlan(closestPosition)
+        // Handle connector items
+        if (closestItem is ScheduleItem.ConnectorItem) {
+            scheduleAdapter.highlightConnector(closestItemAdapterPos)
+            highlightRouteSegmentBetween(closestItem.fromPlanPosition, closestItem.toPlanPosition)
+            
+            // Center map on midpoint
+            if (closestItem.fromPlanPosition in plans.indices && closestItem.toPlanPosition in plans.indices) {
+                val fromPlan = plans[closestItem.fromPlanPosition]
+                val toPlan = plans[closestItem.toPlanPosition]
+                val midLat = (fromPlan.latitude + toPlan.latitude) / 2
+                val midLon = (fromPlan.longitude + toPlan.longitude) / 2
+                binding.mapView.controller.animateTo(GeoPoint(midLat, midLon))
+            }
+        }
+        // Handle plan items
+        else if (closestPosition >= 0 && closestPosition < plans.size) {
+            scheduleAdapter.highlightPlan(closestPosition)
             highlightMarker(closestPosition)
             highlightRouteSegment(closestPosition)
             
@@ -356,20 +626,35 @@ class TripMapActivity : AppCompatActivity() {
     }
 
     private fun highlightRouteSegment(planPosition: Int) {
-        // Clear previous highlight
-        highlightedPolyline?.let {
-            it.outlinePaint.color = Color.parseColor("#2563EB")
-            it.outlinePaint.strokeWidth = 10f
+        // Reset all segments to red (no special highlight for individual plans)
+        routePolylines.forEach { polyline ->
+            polyline.outlinePaint.color = Color.parseColor("#DC2626") // Red
+            polyline.outlinePaint.strokeWidth = 10f
         }
-
-        // With full route, we highlight the whole route when any plan is selected
-        if (routePolylines.isNotEmpty()) {
-            val polyline = routePolylines[0]
-            polyline.outlinePaint.color = Color.parseColor("#DC2626") // Red highlight
-            polyline.outlinePaint.strokeWidth = 14f
-            highlightedPolyline = polyline
+        
+        highlightedPolyline = null
+        binding.mapView.invalidate()
+    }
+    
+    private fun highlightRouteSegmentBetween(fromPos: Int, toPos: Int) {
+        // Reset all segments to red
+        routePolylines.forEach { polyline ->
+            polyline.outlinePaint.color = Color.parseColor("#DC2626") // Red
+            polyline.outlinePaint.strokeWidth = 10f
         }
-
+        
+        // Highlight the specific segment in yellow
+        if (fromPos in plans.indices && toPos in plans.indices) {
+            // The segment index is fromPos (segment from plan[fromPos] to plan[toPos])
+            val segmentIndex = fromPos
+            if (segmentIndex in routePolylines.indices) {
+                val polyline = routePolylines[segmentIndex]
+                polyline.outlinePaint.color = Color.parseColor("#FFC107") // Yellow highlight
+                polyline.outlinePaint.strokeWidth = 14f
+                highlightedPolyline = polyline
+            }
+        }
+        
         binding.mapView.invalidate()
     }
 

@@ -1,7 +1,9 @@
 package com.datn.apptravel.data.api
 
 
+import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.Trip
+import com.datn.apptravel.data.model.request.CreatePlanRequest
 import com.datn.apptravel.data.model.request.CreateTripRequest
 import com.datn.apptravel.data.model.response.TripResponse
 import retrofit2.Response
@@ -34,4 +36,16 @@ interface TripApiService {
     suspend fun deleteTrip(
         @Path("id") tripId: String
     ): Response<Void>
+    
+    // Plans endpoints
+    @POST("api/trips/{tripId}/plans")
+    suspend fun createPlan(
+        @Path("tripId") tripId: String,
+        @Body request: CreatePlanRequest
+    ): Response<Plan>
+    
+    @GET("api/trips/{tripId}/plans")
+    suspend fun getPlansByTripId(
+        @Path("tripId") tripId: String
+    ): Response<List<Plan>>
 }

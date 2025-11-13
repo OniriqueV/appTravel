@@ -14,10 +14,6 @@ import com.datn.apptravel.ui.viewmodel.AuthViewModel
 import com.datn.apptravel.ui.viewmodel.CreateTripViewModel
 import com.datn.apptravel.ui.viewmodel.TripDetailViewModel
 import com.datn.apptravel.ui.viewmodel.PlanViewModel
-import com.datn.apptravel.ui.viewmodel.FlightViewModel
-import com.datn.apptravel.ui.viewmodel.LodgingViewModel
-import com.datn.apptravel.ui.viewmodel.BoatViewModel
-import com.datn.apptravel.ui.viewmodel.TrainViewModel
 import com.datn.apptravel.ui.viewmodel.OnboardingViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
@@ -48,8 +44,4 @@ val appModule = module {
     viewModel { CreateTripViewModel(get(), get()) }
     viewModel { TripDetailViewModel(get()) }
     viewModel { PlanViewModel(get()) }
-    viewModel { FlightViewModel() }
-    viewModel { LodgingViewModel() }
-    viewModel { BoatViewModel() }
-    viewModel { TrainViewModel() }
 }

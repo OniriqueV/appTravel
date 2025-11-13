@@ -2,9 +2,10 @@ package com.datn.apptravel.data.model
 
 
 data class Plan(
-    val id: Long,
-    val tripId: Long,
+    val id: String? = null,
+    val tripId: String,
     val title: String,
+    val address: String? = null,
     val location: String? = null,
     val startTime: String,          //  format: yyyy-MM-dd'T'HH:mm:ss
     val endTime: String,            //  format: yyyy-MM-dd'T'HH:mm:ss
