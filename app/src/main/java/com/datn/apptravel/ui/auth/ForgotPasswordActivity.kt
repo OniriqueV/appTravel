@@ -8,7 +8,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.datn.apptravel.R
-import com.datn.apptravel.ui.viewmodel.AuthViewModel
+import com.datn.apptravel.ui.auth.AuthViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 

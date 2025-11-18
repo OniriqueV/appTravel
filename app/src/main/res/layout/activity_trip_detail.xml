@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F2C594"
-    tools:context=".ui.tripdetail.TripDetailActivity">
+    tools:context=".ui.trip.detail.tripdetail.TripDetailActivity">
 
     <!-- Top Navigation Bar -->
     <androidx.constraintlayout.widget.ConstraintLayout

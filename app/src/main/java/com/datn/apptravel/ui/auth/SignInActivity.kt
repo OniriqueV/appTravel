@@ -13,7 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import com.datn.apptravel.R
 import com.datn.apptravel.data.local.SessionManager
 import com.datn.apptravel.ui.activity.MainActivity
-import com.datn.apptravel.ui.viewmodel.AuthViewModel
+import com.datn.apptravel.ui.auth.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient

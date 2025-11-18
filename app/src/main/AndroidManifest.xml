@@ -81,35 +81,35 @@
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
 
         <activity
-            android:name=".ui.tripdetail.TripDetailActivity"
+            android:name=".ui.trip.detail.tripdetail.TripDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
 
         <activity
-            android:name=".ui.tripmap.TripMapActivity"
+            android:name=".ui.trip.map.TripMapActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
 
         <activity
-            android:name=".ui.planselection.PlanSelectionActivity"
+            android:name=".ui.trip.list.PlanSelectionActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
             
         <!-- Flight Detail Activity -->
         <activity
-            android:name=".ui.plandetail.FlightDetailActivity"
+            android:name=".ui.trip.detail.plandetail.FlightDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
             
         <!-- Lodging Detail Activity -->
         <activity
-            android:name=".ui.plandetail.LodgingDetailActivity"
+            android:name=".ui.trip.detail.plandetail.LodgingDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
             
         <!-- Boat Detail Activity -->
         <activity
-            android:name=".ui.plandetail.BoatDetailActivity"
+            android:name=".ui.trip.detail.plandetail.BoatDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
             
@@ -121,19 +121,19 @@
             
         <!-- Activity Detail Activity -->
         <activity
-            android:name=".ui.plandetail.ActivityDetailActivity"
+            android:name=".ui.trip.detail.plandetail.ActivityDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
             
         <!-- Restaurant Detail Activity -->
         <activity
-            android:name=".ui.plandetail.RestaurantDetailActivity"
+            android:name=".ui.trip.detail.plandetail.RestaurantDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
             
         <!-- Car Rental Detail Activity -->
         <activity
-            android:name=".ui.plandetail.CarRentalDetailActivity"
+            android:name=".ui.trip.detail.plandetail.CarRentalDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
             

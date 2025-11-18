@@ -6,11 +6,11 @@ import androidx.fragment.app.Fragment
 import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ActivityMainBinding
 import com.datn.apptravel.ui.base.BaseActivity
-import com.datn.apptravel.ui.fragment.GuidesFragment
-import com.datn.apptravel.ui.fragment.NotificationFragment
-import com.datn.apptravel.ui.fragment.ProfileFragment
-import com.datn.apptravel.ui.fragment.TripsFragment
-import com.datn.apptravel.ui.viewmodel.MainViewModel
+import com.datn.apptravel.ui.discover.DiscoverFragment
+import com.datn.apptravel.ui.notification.NotificationFragment
+import com.datn.apptravel.ui.profile.ProfileFragment
+import com.datn.apptravel.ui.trip.TripsFragment
+import com.datn.apptravel.ui.app.MainViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
@@ -79,8 +79,8 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
                     startActivity(intent)
                     true
                 }
-                R.id.nav_guides -> {
-                    replaceFragment(GuidesFragment())
+                R.id.nav_discover -> {
+                    replaceFragment(DiscoverFragment())
                     currentTripsFragment = null
                     true
                 }

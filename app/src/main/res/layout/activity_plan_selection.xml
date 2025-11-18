@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF"
-    tools:context=".ui.planselection.PlanSelectionActivity">
+    tools:context=".ui.trip.list.PlanSelectionActivity">
     
     <!-- OpenStreetMap View -->
 
@@ -38,7 +38,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.datn.apptravel.ui.planselection.SemiCirclePlanMenuView
+    <com.datn.apptravel.ui.trip.list.SemiCirclePlanMenuView
         android:id="@+id/semiCircleMenu"
         android:layout_width="120dp"
         android:layout_height="240dp"

@@ -7,8 +7,8 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
 import com.datn.apptravel.databinding.ActivityOnboardingBinding
 import com.datn.apptravel.ui.base.BaseActivity
-import com.datn.apptravel.ui.fragment.OnboardingFragment
-import com.datn.apptravel.ui.viewmodel.OnboardingViewModel
+import com.datn.apptravel.ui.auth.OnboardingFragment
+import com.datn.apptravel.ui.auth.OnboardingViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class OnboardingActivity : BaseActivity<ActivityOnboardingBinding, OnboardingViewModel>() {

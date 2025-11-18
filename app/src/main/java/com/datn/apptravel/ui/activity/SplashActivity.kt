@@ -2,11 +2,9 @@ package com.datn.apptravel.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ActivitySplashBinding
 import com.datn.apptravel.ui.base.BaseActivity
-import com.datn.apptravel.ui.viewmodel.SplashViewModel
+import com.datn.apptravel.ui.app.SplashViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class SplashActivity : BaseActivity<ActivitySplashBinding, SplashViewModel>() {

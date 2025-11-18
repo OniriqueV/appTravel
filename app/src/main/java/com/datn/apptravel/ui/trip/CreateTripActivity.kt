@@ -6,8 +6,8 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.datn.apptravel.databinding.ActivityCreateTripBinding
-import com.datn.apptravel.ui.tripdetail.TripDetailActivity
-import com.datn.apptravel.ui.viewmodel.CreateTripViewModel
+import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
+import com.datn.apptravel.ui.trip.viewmodel.CreateTripViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.Calendar
 
@@ -122,7 +122,7 @@ class CreateTripActivity : AppCompatActivity() {
 
     private fun navigateToTripDetail(tripId: String) {
         val intent = Intent(this, TripDetailActivity::class.java)
-        intent.putExtra(com.datn.apptravel.ui.fragment.TripsFragment.EXTRA_TRIP_ID, tripId)
+        intent.putExtra(TripsFragment.EXTRA_TRIP_ID, tripId)
         startActivity(intent)
         finish()
     }
