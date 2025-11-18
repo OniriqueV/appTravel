@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/tripsFragment">
+
+    <fragment
+        android:id="@+id/tripsFragment"
+        android:name="com.datn.apptravel.ui.trip.list.TripsFragment"
+        android:label="Trips"
+        tools:layout="@layout/fragment_trips" />
+
+    <fragment
+        android:id="@+id/discoverFragment"
+        android:name="com.datn.apptravel.ui.discover.DiscoverFragment"
+        android:label="Discover"
+        tools:layout="@layout/fragment_discover" />
+</navigation>
