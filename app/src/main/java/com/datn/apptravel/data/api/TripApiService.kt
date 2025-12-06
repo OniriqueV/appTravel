@@ -4,7 +4,9 @@ package com.datn.apptravel.data.api
 import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.model.request.*
+import com.datn.apptravel.data.model.response.FileUploadResponse
 import com.datn.apptravel.data.model.response.TripResponse
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -83,4 +85,30 @@ interface TripApiService {
     suspend fun getPlansByTripId(
         @Path("tripId") tripId: String
     ): Response<List<Plan>>
+    
+    @GET("api/trips/{tripId}/plans/{planId}")
+    suspend fun getPlanById(
+        @Path("tripId") tripId: String,
+        @Path("planId") planId: String
+    ): Response<Plan>
+    
+    @PUT("api/trips/{tripId}/plans/{planId}")
+    suspend fun updatePlan(
+        @Path("tripId") tripId: String,
+        @Path("planId") planId: String,
+        @Body request: CreatePlanRequest
+    ): Response<Plan>
+    
+    // File upload endpoint
+    @Multipart
+    @POST("api/upload/image")
+    suspend fun uploadImage(
+        @Part file: MultipartBody.Part
+    ): Response<FileUploadResponse>
+    
+    @Multipart
+    @POST("api/upload/images")
+    suspend fun uploadImages(
+        @Part files: List<MultipartBody.Part>
+    ): Response<List<FileUploadResponse>>
 }

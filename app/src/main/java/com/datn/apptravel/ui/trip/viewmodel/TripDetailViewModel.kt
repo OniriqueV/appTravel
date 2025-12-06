@@ -109,12 +109,16 @@ class TripDetailViewModel(private val tripRepository: TripRepository) : BaseView
                 }
                 
                 ScheduleActivity(
+                    id = plan.id,
+                    tripId = plan.tripId,
                     time = startTime,
                     title = plan.title,
                     description = plan.address ?: "",
                     location = plan.address ?: "",
                     type = plan.type,
-                    iconResId = getIconForPlanType(plan.type)
+                    expense = plan.expense,
+                    iconResId = getIconForPlanType(plan.type),
+                    fullStartTime = plan.startTime
                 )
             }
             

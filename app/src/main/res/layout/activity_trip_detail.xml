@@ -64,61 +64,17 @@
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Trip Info Header with Image -->
-    <androidx.constraintlayout.widget.ConstraintLayout
+    <include
         android:id="@+id/trip_header"
+        layout="@layout/item_trip"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
-        android:background="@drawable/trip_card_background"
-        android:elevation="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/top_bar">
-
-        <!-- Trip Image -->
-        <ImageView
-            android:id="@+id/ivTripImage"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="16dp"
-            android:scaleType="centerCrop"
-            android:src="@drawable/bg_a"
-            android:background="@drawable/rounded_image_background"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/tvTripName"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:textColor="#1F2937"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/ivTripImage"
-            app:layout_constraintTop_toTopOf="@+id/ivTripImage" />
-
-        <TextView
-            android:id="@+id/tvTripDate"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:drawablePadding="8dp"
-            android:gravity="center_vertical"
-            android:textColor="#6B7280"
-            android:textSize="14sp"
-            app:layout_constraintEnd_toEndOf="@+id/tvTripName"
-            app:layout_constraintStart_toStartOf="@+id/tvTripName"
-            app:layout_constraintTop_toBottomOf="@+id/tvTripName" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        app:layout_constraintTop_toBottomOf="@id/top_bar" />
 
     <!-- Add New Plan Button with Save Icon -->
     <androidx.constraintlayout.widget.ConstraintLayout

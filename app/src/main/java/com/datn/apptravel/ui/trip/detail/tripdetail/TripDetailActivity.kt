@@ -6,12 +6,15 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
 import com.datn.apptravel.R
 import com.datn.apptravel.data.model.TopicSelection
 import com.datn.apptravel.data.model.Trip
@@ -26,6 +29,7 @@ import com.datn.apptravel.ui.trip.TripsFragment
 import com.datn.apptravel.ui.trip.list.PlanSelectionActivity
 import com.datn.apptravel.ui.trip.map.TripMapActivity
 import com.datn.apptravel.ui.trip.viewmodel.TripDetailViewModel
+import com.datn.apptravel.utils.ApiConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -133,26 +137,42 @@ class TripDetailActivity : AppCompatActivity() {
     }
 
     private fun updateUI(trip: Trip?) {
+        // Get views from included layout using root view
+        val tvTripName = findViewById<TextView>(R.id.tvTripName)
+        val tvTripStartDate = findViewById<TextView>(R.id.tvTripStartDate)
+        val tvTripEndDate = findViewById<TextView>(R.id.tvTripEndDate)
+        val ivTripImage = findViewById<ImageView>(R.id.ivTripImage)
+        
         if (trip == null) {
-            binding.tvTripName.text = ""
-            binding.tvTripDate.text = ""
+            tvTripName?.text = ""
+            tvTripStartDate?.text = ""
+            tvTripEndDate?.text = ""
             return
         }
 
         // Set trip details from API
-        binding.apply {
-            tvTripName.text = trip.title ?: "Untitled Trip"
+        tvTripName?.text = trip.title ?: "Untitled Trip"
 
-            // Format dates
-            val startDate = trip.startDate?.toString() ?: "N/A"
-            val endDate = trip.endDate?.toString() ?: "N/A"
-            tvTripDate.text = "$startDate - $endDate"
+        // Format dates
+        val startDate = "Start Date: "+ trip.startDate?.toString() ?: "N/A"
+        val endDate = "End Date: "+ trip.endDate?.toString() ?: "N/A"
+        tvTripStartDate?.text = startDate
+        tvTripEndDate?.text = endDate
 
-            // Load cover photo if available
-            if (!trip.coverPhoto.isNullOrEmpty()) {
-                // TODO: Load image with Glide
-                // Glide.with(this@TripDetailActivity).load(trip.coverPhoto).into(ivTripImage)
+        // Load cover photo if available
+        val imageUrl = ApiConfig.getImageUrl(trip.coverPhoto)
+        if (imageUrl != null) {
+            ivTripImage?.let {
+                Glide.with(this@TripDetailActivity)
+                    .load(imageUrl)
+                    .placeholder(R.drawable.bg_a)
+                    .error(R.drawable.bg_a)
+                    .centerCrop()
+                    .into(it)
             }
+        } else {
+            // Set default image if no cover photo
+            ivTripImage?.setImageResource(R.drawable.bg_a)
         }
     }
 

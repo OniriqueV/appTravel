@@ -371,8 +371,12 @@ class TripMapActivity : AppCompatActivity() {
     }
 
     private fun drawRoute() {
-        if (plans.size < 2) return
+        if (plans.size < 2) {
+            Log.w("TripMapActivity", "drawRoute: Not enough plans (${plans.size})")
+            return
+        }
 
+        Log.d("TripMapActivity", "drawRoute: Starting to draw route for ${plans.size} plans")
         binding.progressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
@@ -382,55 +386,91 @@ class TripMapActivity : AppCompatActivity() {
             routeSegments.clear()
 
             try {
+                var successfulSegments = 0
+                var failedSegments = 0
+                
                 // Draw each segment between consecutive plans separately
                 for (i in 0 until plans.size - 1) {
                     val fromPlan = plans[i]
                     val toPlan = plans[i + 1]
 
+                    Log.d("TripMapActivity", "Drawing segment $i: ${fromPlan.name} -> ${toPlan.name}")
+                    Log.d("TripMapActivity", "Coordinates: (${fromPlan.latitude}, ${fromPlan.longitude}) -> (${toPlan.latitude}, ${toPlan.longitude})")
+
                     // Build coordinates string for this segment only
                     val coordinates = "${fromPlan.longitude},${fromPlan.latitude};${toPlan.longitude},${toPlan.latitude}"
+                    Log.d("TripMapActivity", "OSRM coordinates: $coordinates")
 
-                    val response = withContext(Dispatchers.IO) {
-                        OSRMRetrofitClient.apiService.getRoute(
-                            coordinates = coordinates,
-                            overview = "full",
-                            geometries = "geojson",
-                            steps = true
-                        )
-                    }
-
-                    if (response.isSuccessful && response.body()?.code == "Ok") {
-                        val route = response.body()?.routes?.firstOrNull()
-                        route?.let {
-                            // Parse and draw this segment
-                            drawSegmentFromGeoJSON(it.geometry, i)
+                    try {
+                        val response = withContext(Dispatchers.IO) {
+                            OSRMRetrofitClient.apiService.getRoute(
+                                coordinates = coordinates,
+                                overview = "full",
+                                geometries = "geojson",
+                                steps = true
+                            )
                         }
-                    } else {
-                        // Fallback: draw straight line for this segment
+
+                        Log.d("TripMapActivity", "OSRM response code: ${response.code()}, isSuccessful: ${response.isSuccessful}")
+                        
+                        if (response.isSuccessful && response.body()?.code == "Ok") {
+                            val route = response.body()?.routes?.firstOrNull()
+                            if (route != null) {
+                                Log.d("TripMapActivity", "Got route geometry, drawing segment $i")
+                                // Parse and draw this segment
+                                drawSegmentFromGeoJSON(route.geometry, i)
+                                successfulSegments++
+                            } else {
+                                Log.w("TripMapActivity", "No route in response for segment $i")
+                                drawStraightSegment(i)
+                                failedSegments++
+                            }
+                        } else {
+                            Log.w("TripMapActivity", "OSRM request failed for segment $i: ${response.body()?.code}")
+                            // Fallback: draw straight line for this segment
+                            drawStraightSegment(i)
+                            failedSegments++
+                        }
+                    } catch (segmentException: Exception) {
+                        Log.w("TripMapActivity", "Segment $i failed: ${segmentException.message}", segmentException)
+                        // Draw straight line for this failed segment
                         drawStraightSegment(i)
+                        failedSegments++
                     }
                 }
 
+                Log.d("TripMapActivity", "drawRoute: Completed with $successfulSegments successful, $failedSegments failed segments")
                 binding.progressBar.visibility = View.GONE
+                
+                // Show appropriate message
+                withContext(Dispatchers.Main) {
+                    when {
+                        successfulSegments == plans.size - 1 -> {
+                            Toast.makeText(this@TripMapActivity, "Route loaded successfully", Toast.LENGTH_SHORT).show()
+                        }
+                        successfulSegments > 0 -> {
+                            Toast.makeText(this@TripMapActivity, "Route partially loaded ($successfulSegments/${plans.size - 1} segments)", Toast.LENGTH_SHORT).show()
+                        }
+                        else -> {
+                            Toast.makeText(this@TripMapActivity, "Unable to load routes. Showing direct paths.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             } catch (e: Exception) {
+                Log.e("TripMapActivity", "Fatal error in drawRoute: ${e.message}", e)
                 e.printStackTrace()
+                binding.progressBar.visibility = View.GONE
                 withContext(Dispatchers.Main) {
                     Toast.makeText(
                         this@TripMapActivity,
-                        "Network error: ${e.message}",
+                        "Network error. Showing direct paths.",
                         Toast.LENGTH_SHORT
                     ).show()
+                    // Fallback: draw all straight lines
+                    drawStraightLines()
                 }
-                // Fallback: draw all straight lines
-                drawStraightLines()
-                binding.progressBar.visibility = View.GONE
             }
         }
-    }
-
-    private fun drawRouteOnMap(encodedPolyline: String) {
-        // This function is now deprecated, use drawSegmentFromGeoJSON instead
-        drawStraightLines()
     }
 
     private fun drawSegmentFromGeoJSON(geometryJson: JsonElement, segmentIndex: Int) {
@@ -500,11 +540,6 @@ class TripMapActivity : AppCompatActivity() {
         routePolylines.add(polyline)
         binding.mapView.overlays.add(0, polyline)
         binding.mapView.invalidate()
-    }
-
-    private fun drawRouteFromGeoJSON(geometryJson: JsonElement) {
-        // This function is deprecated - now using drawSegmentFromGeoJSON for each segment
-        drawStraightLines()
     }
 
     private fun adjustMapBounds(points: List<GeoPoint>) {

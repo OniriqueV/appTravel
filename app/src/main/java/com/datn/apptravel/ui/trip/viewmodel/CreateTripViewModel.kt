@@ -1,5 +1,7 @@
 package com.datn.apptravel.ui.trip.viewmodel
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
@@ -23,6 +25,49 @@ class CreateTripViewModel(
     
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
+    
+    // Store trip data while uploading
+    private var pendingTripTitle: String? = null
+    private var pendingStartDate: String? = null
+    private var pendingEndDate: String? = null
+    
+    fun uploadCoverPhoto(context: Context, imageUri: Uri) {
+        setLoading(true)
+        
+        viewModelScope.launch {
+            try {
+                val result = tripRepository.uploadImage(context, imageUri)
+                
+                result.onSuccess { fileName ->
+                    // Create trip with uploaded photo
+                    createTripWithCoverPhoto(fileName)
+                }.onFailure { exception ->
+                    _errorMessage.value = "Upload failed: ${exception.message}"
+                    setLoading(false)
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Upload error: ${e.message}"
+                setLoading(false)
+            }
+        }
+    }
+    
+    private fun createTripWithCoverPhoto(coverPhotoFileName: String) {
+        if (pendingTripTitle != null && pendingStartDate != null && pendingEndDate != null) {
+            createTrip(
+                title = pendingTripTitle!!,
+                startDate = pendingStartDate!!,
+                endDate = pendingEndDate!!,
+                coverPhotoUri = coverPhotoFileName
+            )
+        }
+    }
+    
+    fun setPendingTripData(title: String, startDate: String, endDate: String) {
+        pendingTripTitle = title
+        pendingStartDate = startDate
+        pendingEndDate = endDate
+    }
 
     fun createTrip(
         title: String, 

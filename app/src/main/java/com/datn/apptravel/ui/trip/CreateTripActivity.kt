@@ -2,12 +2,18 @@ package com.datn.apptravel.ui.trip
 
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.view.View
+import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import com.datn.apptravel.databinding.ActivityCreateTripBinding
 import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 import com.datn.apptravel.ui.trip.viewmodel.CreateTripViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.Calendar
 
@@ -15,6 +21,17 @@ class CreateTripActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityCreateTripBinding
     private val viewModel: CreateTripViewModel by viewModel()
+    private var selectedImageUri: Uri? = null
+    
+    // Image picker launcher
+    private val imagePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            selectedImageUri = it
+            showImagePreview(it)
+        }
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,9 +69,14 @@ class CreateTripActivity : AppCompatActivity() {
         
         // Upload image (TODO: implement image picker)
         binding.layoutUploadImage.setOnClickListener {
-            // TODO: Open image picker
-            Toast.makeText(this, "Image upload coming soon", Toast.LENGTH_SHORT).show()
+            imagePickerLauncher.launch("image/*")
         }
+    }
+    
+    private fun showImagePreview(uri: Uri) {
+        binding.ivCoverPreview.setImageURI(uri)
+        binding.ivCoverPreview.visibility = View.VISIBLE
+        binding.layoutUploadPlaceholder.visibility = View.GONE
     }
     
     private fun setupObservers() {
@@ -111,13 +133,24 @@ class CreateTripActivity : AppCompatActivity() {
             return
         }
         
-        // Call ViewModel to create trip
-        viewModel.createTrip(
-            title = tripName,
-            startDate = startDate,
-            endDate = endDate,
-            coverPhotoUri = null // TODO: Add cover photo URI when image upload is implemented
-        )
+        // Upload image first if selected
+        if (selectedImageUri != null) {
+            // Store trip data in ViewModel
+            viewModel.setPendingTripData(tripName, startDate, endDate)
+            
+            // Upload image
+            lifecycleScope.launch {
+                viewModel.uploadCoverPhoto(this@CreateTripActivity, selectedImageUri!!)
+            }
+        } else {
+            // Call ViewModel to create trip without cover photo
+            viewModel.createTrip(
+                title = tripName,
+                startDate = startDate,
+                endDate = endDate,
+                coverPhotoUri = null
+            )
+        }
     }
 
     private fun navigateToTripDetail(tripId: String) {
