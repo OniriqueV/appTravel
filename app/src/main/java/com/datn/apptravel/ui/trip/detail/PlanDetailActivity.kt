@@ -224,7 +224,7 @@ class PlanDetailActivity : AppCompatActivity() {
 
     private fun getPlanTypeIcon(planType: PlanType): Int {
         return when (planType) {
-            PlanType.LODGING -> R.drawable.ic_lodging
+            PlanType.LODGING -> R.drawable.ic_lodgingsss
             PlanType.RESTAURANT -> R.drawable.ic_restaurant
             PlanType.FLIGHT -> R.drawable.ic_flight
             PlanType.CAR_RENTAL -> R.drawable.ic_car

@@ -154,7 +154,7 @@ class TripDetailViewModel(private val tripRepository: TripRepository) : BaseView
     private fun getIconForPlanType(planType: PlanType): Int {
         return when (planType) {
             PlanType.RESTAURANT -> R.drawable.ic_restaurant
-            PlanType.LODGING -> R.drawable.ic_lodging
+            PlanType.LODGING -> R.drawable.ic_location
             PlanType.FLIGHT -> R.drawable.ic_flight
             PlanType.BOAT -> R.drawable.ic_boat
             PlanType.CAR_RENTAL -> R.drawable.ic_car

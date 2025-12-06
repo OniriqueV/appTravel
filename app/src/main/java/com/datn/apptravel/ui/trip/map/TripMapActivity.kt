@@ -102,6 +102,7 @@ class TripMapActivity : AppCompatActivity() {
         // Observe loading state
         viewModel.isLoading.observe(this) { isLoading ->
             binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            showLoadingOverlay(isLoading)
         }
 
         // Observe errors
@@ -456,5 +457,17 @@ class TripMapActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         binding.mapView.onPause()
+    }
+
+    /**
+     * Show/hide loading overlay and disable/enable user interactions
+     */
+    private fun showLoadingOverlay(show: Boolean) {
+        binding.loadingOverlay.visibility = if (show) View.VISIBLE else View.GONE
+        
+        // Disable/enable interactions when loading
+        binding.btnBack.isEnabled = !show
+        binding.mapView.isEnabled = !show
+        binding.rvPlans.isEnabled = !show
     }
 }

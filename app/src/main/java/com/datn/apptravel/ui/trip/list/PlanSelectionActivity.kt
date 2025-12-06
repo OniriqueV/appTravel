@@ -100,6 +100,9 @@ class PlanSelectionActivity : AppCompatActivity() {
         }
         // Set up semi-circle menu
         binding.semiCircleMenu.setOnPlanSelectedListener { planType ->
+            // Show loading overlay and disable interactions
+            showLoadingOverlay(true)
+            
             // When plan type changes, reload places with current search query (if any)
             viewModel.selectPlanType(planType, currentLatitude, currentLongitude)
         }
@@ -180,6 +183,7 @@ class PlanSelectionActivity : AppCompatActivity() {
 
         viewModel.isLoading.observe(this) { isLoading ->
             binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            showLoadingOverlay(isLoading)
         }
 
         viewModel.selectedPlanType.observe(this) { planType ->
@@ -339,6 +343,18 @@ class PlanSelectionActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        binding.mapView.onDetach()
+    }
+
+    /**
+     * Show/hide loading overlay and disable/enable user interactions
+     */
+    private fun showLoadingOverlay(show: Boolean) {
+        binding.loadingOverlay.visibility = if (show) View.VISIBLE else View.GONE
+        
+        // Disable/enable interactions when loading
+        binding.btnBack.isEnabled = !show
+        binding.searchView.isEnabled = !show
+        binding.semiCircleMenu.isEnabled = !show
+        binding.mapView.isEnabled = !show
     }
 }
