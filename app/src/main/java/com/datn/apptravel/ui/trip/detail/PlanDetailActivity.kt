@@ -1,5 +1,6 @@
 package com.datn.apptravel.ui.trip.detail
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -17,10 +18,16 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.datn.apptravel.R
 import com.datn.apptravel.data.model.PlanType
+import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityPlanDetailBinding
 import com.datn.apptravel.ui.trip.adapter.PhotoCollectionAdapter
 import com.datn.apptravel.ui.trip.viewmodel.PlanDetailViewModel
 import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -29,6 +36,7 @@ class PlanDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPlanDetailBinding
     private val viewModel: PlanDetailViewModel by viewModel()
+    private val tripRepository: TripRepository by inject()
     private var planId: String? = null
     private var tripId: String? = null
     private lateinit var photoAdapter: PhotoCollectionAdapter
@@ -131,10 +139,17 @@ class PlanDetailActivity : AppCompatActivity() {
         }
 
         // Setup photo collection RecyclerView
-        photoAdapter = PhotoCollectionAdapter(mutableListOf()) {
-            // Callback when Add Photo button is clicked
-            multipleImagePickerLauncher.launch("image/*")
-        }
+        photoAdapter = PhotoCollectionAdapter(
+            mutableListOf(),
+            onAddPhotoClick = {
+                // Callback when Add Photo button is clicked
+                multipleImagePickerLauncher.launch("image/*")
+            },
+            onDeletePhotoClick = { photoFileName, photoIndex ->
+                // Callback when Delete Photo button is clicked
+                showDeletePhotoConfirmation(photoFileName, photoIndex)
+            }
+        )
         binding.rvPhotos.apply {
             layoutManager =
                 LinearLayoutManager(this@PlanDetailActivity, LinearLayoutManager.HORIZONTAL, false)
@@ -268,8 +283,43 @@ class PlanDetailActivity : AppCompatActivity() {
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.action_edit_plan -> {
-                    // TODO: Navigate to edit plan
-                    Toast.makeText(this, "Edit plan coming soon", Toast.LENGTH_SHORT).show()
+                    // Navigate to edit plan based on plan type
+                    viewModel.plan.value?.let { plan ->
+                        val planType = try {
+                            val planTypeStr = intent.getStringExtra(EXTRA_PLAN_TYPE) ?: "OTHER"
+                            PlanType.valueOf(planTypeStr)
+                        } catch (e: Exception) {
+                            PlanType.NONE
+                        }
+                        
+                        val intent = when (planType) {
+                            PlanType.RESTAURANT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity::class.java)
+                            PlanType.LODGING -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.LodgingDetailActivity::class.java)
+                            PlanType.FLIGHT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity::class.java)
+                            PlanType.BOAT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity::class.java)
+                            PlanType.CAR_RENTAL -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity::class.java)
+                            PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
+                            PlanType.CAMPING, PlanType.RELIGION -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity::class.java)
+                            else -> {
+                                Toast.makeText(this, "Cannot edit this plan type", Toast.LENGTH_SHORT).show()
+                                return@setOnMenuItemClickListener false
+                            }
+                        }
+                        
+                        // Pass plan data to edit activity
+                        intent.putExtra("tripId", tripId)
+                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLAN_ID, planId)
+                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLAN_TITLE, plan.title)
+                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLACE_ADDRESS, plan.address)
+                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_START_TIME, plan.startTime)
+                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_EXPENSE, plan.expense ?: 0.0)
+                        intent.putExtra("placeLatitude", 0.0) // Will be parsed from plan.location if needed
+                        intent.putExtra("placeLongitude", 0.0)
+                        
+                        startActivity(intent)
+                    } ?: run {
+                        Toast.makeText(this, "Plan data not available", Toast.LENGTH_SHORT).show()
+                    }
                     true
                 }
                 R.id.action_delete_plan -> {
@@ -288,12 +338,67 @@ class PlanDetailActivity : AppCompatActivity() {
             .setTitle("Delete Plan")
             .setMessage("Are you sure you want to delete this plan?")
             .setPositiveButton("Delete") { _, _ ->
-                // TODO: Delete plan from backend
-                Toast.makeText(this, "Plan deleted!", Toast.LENGTH_SHORT).show()
-                finish()
+                deletePlan()
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+    
+    private fun deletePlan() {
+        val currentTripId = tripId ?: return
+        val currentPlanId = planId ?: return
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = tripRepository.deletePlan(currentTripId, currentPlanId)
+            
+            withContext(Dispatchers.Main) {
+                if (result.isSuccess) {
+                    Toast.makeText(this@PlanDetailActivity, "Plan deleted successfully!", Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK) // Notify previous screen to refresh
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@PlanDetailActivity,
+                        "Failed to delete plan: ${result.exceptionOrNull()?.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
+    }
+    
+    private fun showDeletePhotoConfirmation(photoFileName: String, photoIndex: Int) {
+        AlertDialog.Builder(this)
+            .setTitle("Delete Photo")
+            .setMessage("Are you sure you want to delete this photo?")
+            .setPositiveButton("Delete") { _, _ ->
+                deletePhotoFromPlan(photoFileName, photoIndex)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun deletePhotoFromPlan(photoFileName: String, photoIndex: Int) {
+        val currentTripId = tripId ?: return
+        val currentPlanId = planId ?: return
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = tripRepository.deletePhotoFromPlan(currentTripId, currentPlanId, photoFileName)
+            
+            withContext(Dispatchers.Main) {
+                if (result.isSuccess) {
+                    // Remove photo from adapter
+                    photoAdapter.removePhoto(photoIndex)
+                    Toast.makeText(this@PlanDetailActivity, "Photo deleted successfully!", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(
+                        this@PlanDetailActivity,
+                        "Failed to delete photo: ${result.exceptionOrNull()?.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
     }
 
     private fun showCommentDialog() {

@@ -11,11 +11,7 @@ class PlacesRepository(private val apiService: ApiService) {
         private val API_KEY = BuildConfig.GEOAPIFY_API_KEY
         private const val DEFAULT_RADIUS = 30000
     }
-    
-    /**
-     * Generate sample image URL based on category
-     * In production, you would fetch real images from the place API or database
-     */
+
     private fun getSampleImageUrl(category: String, placeName: String): String {
         // Using placeholder image service with category-specific images
         val categoryKey = when {
@@ -34,20 +30,12 @@ class PlacesRepository(private val apiService: ApiService) {
         // Using Unsplash Source for placeholder images (you can also use Lorem Picsum)
         return "https://source.unsplash.com/800x600/?$categoryKey,travel"
     }
-    
-    /**
-     * Generate sample description
-     * In production, you would fetch real descriptions from the place API or database
-     */
+
     private fun getSampleDescription(placeName: String, address: String?): String {
         return "$placeName is a wonderful place to visit. Located at ${address ?: "a great location"}, " +
                 "it offers unique experiences and memorable moments for all visitors."
     }
-    
-    /**
-     * Generate sample gallery images
-     * In production, you would fetch real gallery from the place API or database
-     */
+
     private fun getSampleGalleryImages(category: String): List<String> {
         val categoryKey = when {
             category.contains("accommodation") || category.contains("lodging") -> "hotel"
@@ -71,12 +59,16 @@ class PlacesRepository(private val apiService: ApiService) {
     ): NetworkResult<List<MapPlace>> {
         return try {
             val filter = "circle:$longitude,$latitude,$radius"
+            android.util.Log.d("PlacesRepository", "getPlacesByCategory - Category: $category, Lat: $latitude, Lon: $longitude, Filter: $filter")
+            
             val response = apiService.getPlaces(
                 categories = category,
                 filter = filter,
                 limit = limit,
                 apiKey = API_KEY
             )
+            
+            android.util.Log.d("PlacesRepository", "API Response - Success: ${response.isSuccessful}, Code: ${response.code()}")
             
             if (response.isSuccessful && response.body() != null) {
                 val places = response.body()!!.features?.mapNotNull { feature ->
@@ -114,37 +106,41 @@ class PlacesRepository(private val apiService: ApiService) {
         limit: Int = 20
     ): NetworkResult<List<MapPlace>> {
         return try {
-            val filter = "circle:$longitude,$latitude,$radius"
-            val response = apiService.searchPlaces(
+            android.util.Log.d("PlacesRepository", "searchPlaces - Query: $query")
+            
+            // Use Geocoding API to find the location's coordinates
+            val response = apiService.geocodeSearch(
                 text = query,
-                filter = filter,
-                limit = limit,
-                apiKey = API_KEY
+                apiKey = API_KEY,
+                limit = 1
             )
+            
+            android.util.Log.d("PlacesRepository", "Geocoding Response - Success: ${response.isSuccessful}, Code: ${response.code()}")
             
             if (response.isSuccessful && response.body() != null) {
                 val places = response.body()!!.features?.mapNotNull { feature ->
                     val properties = feature.properties
                     if (properties?.lat != null && properties.lon != null) {
-                        val placeName = properties.name ?: "Unknown"
-                        val categoryName = properties.categories?.firstOrNull() ?: "general"
+                        android.util.Log.d("PlacesRepository", "Geocoding found: ${properties.name ?: properties.formatted} at (${properties.lat}, ${properties.lon})")
+                        
+                        val placeName = properties.name ?: properties.formatted ?: query
                         MapPlace(
                             id = properties.placeId ?: "",
                             name = placeName,
                             latitude = properties.lat,
                             longitude = properties.lon,
                             address = properties.formatted ?: properties.addressLine1,
-                            category = categoryName,
-                            imageUrl = getSampleImageUrl(categoryName, placeName),
+                            category = "location",
+                            imageUrl = getSampleImageUrl("location", placeName),
                             description = getSampleDescription(placeName, properties.formatted ?: properties.addressLine1),
-                            galleryImages = getSampleGalleryImages(categoryName)
+                            galleryImages = getSampleGalleryImages("location")
                         )
                     } else null
                 } ?: emptyList()
                 
                 NetworkResult.Success(places)
             } else {
-                NetworkResult.Error("Search failed: ${response.message()}")
+                NetworkResult.Error("Location not found: ${response.message()}")
             }
         } catch (e: Exception) {
             NetworkResult.Error("Network error: ${e.message}")

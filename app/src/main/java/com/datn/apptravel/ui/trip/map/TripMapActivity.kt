@@ -434,13 +434,13 @@ class TripMapActivity : AppCompatActivity() {
             polyline.outlinePaint.strokeWidth = 10f
         }
 
-        // Highlight the specific segment in yellow
+        // Highlight the specific segment in blue
         if (fromPos in plans.indices && toPos in plans.indices) {
             // The segment index is fromPos (segment from plan[fromPos] to plan[toPos])
             val segmentIndex = fromPos
             if (segmentIndex in routePolylines.indices) {
                 val polyline = routePolylines[segmentIndex]
-                polyline.outlinePaint.color = Color.parseColor("#FFC107") // Yellow highlight
+                polyline.outlinePaint.color = Color.parseColor("#2196F3") // blue highlight
                 polyline.outlinePaint.strokeWidth = 14f
                 highlightedPolyline = polyline
             }
@@ -459,12 +459,9 @@ class TripMapActivity : AppCompatActivity() {
         binding.mapView.onPause()
     }
 
-    /**
-     * Show/hide loading overlay and disable/enable user interactions
-     */
     private fun showLoadingOverlay(show: Boolean) {
         binding.loadingOverlay.visibility = if (show) View.VISIBLE else View.GONE
-        
+
         // Disable/enable interactions when loading
         binding.btnBack.isEnabled = !show
         binding.mapView.isEnabled = !show

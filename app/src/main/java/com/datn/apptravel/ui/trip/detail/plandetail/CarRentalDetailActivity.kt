@@ -26,10 +26,24 @@ class CarRentalDetailActivity : AppCompatActivity() {
     private var placeLongitude: Double = 0.0
     private val tripRepository: TripRepository by inject()
     
+    private var isEditMode = false
+    private var planId: String? = null
+    
+    companion object {
+        const val EXTRA_PLAN_ID = "plan_id"
+        const val EXTRA_PLAN_TITLE = "plan_title"
+        const val EXTRA_PLACE_ADDRESS = "place_address"
+        const val EXTRA_START_TIME = "start_time"
+        const val EXTRA_EXPENSE = "expense"
+    }
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCarRentalDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        planId = intent.getStringExtra(EXTRA_PLAN_ID)
+        isEditMode = planId != null
         
         tripId = intent.getStringExtra("tripId")
         
@@ -52,6 +66,12 @@ class CarRentalDetailActivity : AppCompatActivity() {
         // Pre-fill place data
         placeName?.let { binding.etRentalAgency.setText(it) }
         placeAddress?.let { binding.etPickupLocation.setText(it) }
+        
+        if (isEditMode) {
+            loadEditData()
+            binding.etRentalAgency.isEnabled = false
+            binding.etPickupLocation.isEnabled = false
+        }
         
         setupUI()
     }
@@ -158,17 +178,22 @@ class CarRentalDetailActivity : AppCompatActivity() {
             
             lifecycleScope.launch {
                 try {
-                    val result = tripRepository.createCarRentalPlan(id, request)
+                    val result = if (isEditMode && planId != null) {
+                        tripRepository.updateCarRentalPlan(id, planId!!, request)
+                    } else {
+                        tripRepository.createCarRentalPlan(id, request)
+                    }
+                    
                     result.onSuccess { plan ->
-                        Log.d("CarRentalDetail", "Plan created successfully: ${plan.id}")
+                        Log.d("CarRentalDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@CarRentalDetailActivity, "Car rental saved", Toast.LENGTH_SHORT).show()
                         finish()
                     }.onFailure { exception ->
-                        Log.e("CarRentalDetail", "Failed to create plan", exception)
+                        Log.e("CarRentalDetail", "Failed to save plan", exception)
                         Toast.makeText(this@CarRentalDetailActivity, exception.message ?: "Failed to save", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    Log.e("CarRentalDetail", "Exception during plan creation", e)
+                    Log.e("CarRentalDetail", "Exception during plan save", e)
                     Toast.makeText(this@CarRentalDetailActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -214,6 +239,38 @@ class CarRentalDetailActivity : AppCompatActivity() {
             return planDate >= tripStartDate!! && planDate <= tripEndDate!!
         } catch (e: Exception) {
             return true
+        }
+    }
+    
+    private fun loadEditData() {
+        val title = intent.getStringExtra(EXTRA_PLAN_TITLE)
+        val address = intent.getStringExtra(EXTRA_PLACE_ADDRESS)
+        val startTime = intent.getStringExtra(EXTRA_START_TIME)
+        val expense = intent.getDoubleExtra(EXTRA_EXPENSE, 0.0)
+        
+        title?.let { binding.etRentalAgency.setText(it) }
+        address?.let { binding.etPickupLocation.setText(it) }
+        
+        startTime?.let { isoTime ->
+            try {
+                val parts = isoTime.split("T")
+                if (parts.size == 2) {
+                    val datePart = parts[0]
+                    val timePart = parts[1].substring(0, 5)
+                    val dateParts = datePart.split("-")
+                    if (dateParts.size == 3) {
+                        val formattedDate = String.format("%s/%s/%s", dateParts[2], dateParts[1], dateParts[0])
+                        binding.etPickupDate.setText(formattedDate)
+                        binding.etPickupTime.setText(timePart)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("CarRentalDetail", "Error parsing start time", e)
+            }
+        }
+        
+        if (expense > 0) {
+            binding.etExpense.setText(expense.toString())
         }
     }
 }

@@ -24,7 +24,7 @@ android {
             localPropertiesFile.inputStream().use { localProperties.load(it) }
         }
         
-        val tripServiceBaseUrl = localProperties.getProperty("TRIP_SERVICE_BASE_URL", "http://10.0.2.2:8080/")
+        val tripServiceBaseUrl = localProperties.getProperty("TRIP_SERVICE_BASE_URL", "http://192.168.1.6:8080/")
         
         buildConfigField("String", "GEOAPIFY_API_KEY", "\"${localProperties.getProperty("GEOAPIFY_API_KEY")}\"")
         buildConfigField("String", "GEOAPIFY_BASE_URL", "\"${localProperties.getProperty("GEOAPIFY_BASE_URL")}\"")

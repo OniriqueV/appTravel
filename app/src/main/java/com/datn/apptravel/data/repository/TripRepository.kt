@@ -98,6 +98,32 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
     
+    suspend fun deletePlan(tripId: String, planId: String): Result<Unit> {
+        return try {
+            val response = tripApiService.deletePlan(tripId, planId)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to delete plan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun deletePhotoFromPlan(tripId: String, planId: String, photoFileName: String): Result<Unit> {
+        return try {
+            val response = tripApiService.deletePhotoFromPlan(tripId, planId, photoFileName)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to delete photo"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     // Plan methods
 //    suspend fun createPlan(tripId: String, request: CreatePlanRequest): Result<Plan> {
 //        return try {
@@ -135,6 +161,35 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
     
+    suspend fun updateFlightPlan(tripId: String, planId: String, request: CreateFlightPlanRequest): Result<Plan> {
+        return try {
+            val updateRequest = CreatePlanRequest(
+                tripId = request.tripId,
+                title = request.title,
+                address = request.address,
+                location = request.location,
+                startTime = request.startTime,
+                endTime = request.endTime,
+                expense = request.expense,
+                photoUrl = request.photoUrl,
+                type = request.type
+            )
+            val response = tripApiService.updatePlan(tripId, planId, updateRequest)
+            if (response.isSuccessful) {
+                val plan = response.body()
+                if (plan != null) {
+                    Result.success(plan)
+                } else {
+                    Result.failure(Exception("Plan data is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to update flight plan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun createRestaurantPlan(tripId: String, request: CreateRestaurantPlanRequest): Result<Plan> {
         return try {
             val response = tripApiService.createRestaurantPlan(tripId, request)
@@ -143,10 +198,40 @@ class TripRepository(private val tripApiService: TripApiService) {
                 if (plan != null) {
                     Result.success(plan)
                 } else {
-                    Result.failure(Exception("Restaurant plan data is null"))
+                    Result.failure(Exception("Plan data is null"))
                 }
             } else {
                 Result.failure(Exception("Failed to create restaurant plan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateRestaurantPlan(tripId: String, planId: String, request: CreateRestaurantPlanRequest): Result<Plan> {
+        return try {
+            // Convert specialized request to generic CreatePlanRequest for update
+            val updateRequest = CreatePlanRequest(
+                tripId = request.tripId,
+                title = request.title,
+                address = request.address,
+                location = request.location,
+                startTime = request.startTime,
+                endTime = request.endTime,
+                expense = request.expense,
+                photoUrl = request.photoUrl,
+                type = request.type
+            )
+            val response = tripApiService.updatePlan(tripId, planId, updateRequest)
+            if (response.isSuccessful) {
+                val plan = response.body()
+                if (plan != null) {
+                    Result.success(plan)
+                } else {
+                    Result.failure(Exception("Plan data is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to update restaurant plan"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -171,6 +256,35 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
     
+    suspend fun updateLodgingPlan(tripId: String, planId: String, request: CreateLodgingPlanRequest): Result<Plan> {
+        return try {
+            val updateRequest = CreatePlanRequest(
+                tripId = request.tripId,
+                title = request.title,
+                address = request.address,
+                location = request.location,
+                startTime = request.startTime,
+                endTime = request.endTime,
+                expense = request.expense,
+                photoUrl = request.photoUrl,
+                type = request.type
+            )
+            val response = tripApiService.updatePlan(tripId, planId, updateRequest)
+            if (response.isSuccessful) {
+                val plan = response.body()
+                if (plan != null) {
+                    Result.success(plan)
+                } else {
+                    Result.failure(Exception("Plan data is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to update lodging plan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun createActivityPlan(tripId: String, request: CreateActivityPlanRequest): Result<Plan> {
         return try {
             val response = tripApiService.createActivityPlan(tripId, request)
@@ -183,6 +297,35 @@ class TripRepository(private val tripApiService: TripApiService) {
                 }
             } else {
                 Result.failure(Exception("Failed to create activity plan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateActivityPlan(tripId: String, planId: String, request: CreateActivityPlanRequest): Result<Plan> {
+        return try {
+            val updateRequest = CreatePlanRequest(
+                tripId = request.tripId,
+                title = request.title,
+                address = request.address,
+                location = request.location,
+                startTime = request.startTime,
+                endTime = request.endTime,
+                expense = request.expense,
+                photoUrl = request.photoUrl,
+                type = request.type
+            )
+            val response = tripApiService.updatePlan(tripId, planId, updateRequest)
+            if (response.isSuccessful) {
+                val plan = response.body()
+                if (plan != null) {
+                    Result.success(plan)
+                } else {
+                    Result.failure(Exception("Plan data is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to update activity plan"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -207,6 +350,35 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
     
+    suspend fun updateBoatPlan(tripId: String, planId: String, request: CreateBoatPlanRequest): Result<Plan> {
+        return try {
+            val updateRequest = CreatePlanRequest(
+                tripId = request.tripId,
+                title = request.title,
+                address = request.address,
+                location = request.location,
+                startTime = request.startTime,
+                endTime = request.endTime,
+                expense = request.expense,
+                photoUrl = request.photoUrl,
+                type = request.type
+            )
+            val response = tripApiService.updatePlan(tripId, planId, updateRequest)
+            if (response.isSuccessful) {
+                val plan = response.body()
+                if (plan != null) {
+                    Result.success(plan)
+                } else {
+                    Result.failure(Exception("Plan data is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to update boat plan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun createCarRentalPlan(tripId: String, request: CreateCarRentalPlanRequest): Result<Plan> {
         return try {
             val response = tripApiService.createCarRentalPlan(tripId, request)
@@ -219,6 +391,35 @@ class TripRepository(private val tripApiService: TripApiService) {
                 }
             } else {
                 Result.failure(Exception("Failed to create car rental plan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateCarRentalPlan(tripId: String, planId: String, request: CreateCarRentalPlanRequest): Result<Plan> {
+        return try {
+            val updateRequest = CreatePlanRequest(
+                tripId = request.tripId,
+                title = request.title,
+                address = request.address,
+                location = request.location,
+                startTime = request.startTime,
+                endTime = request.endTime,
+                expense = request.expense,
+                photoUrl = request.photoUrl,
+                type = request.type
+            )
+            val response = tripApiService.updatePlan(tripId, planId, updateRequest)
+            if (response.isSuccessful) {
+                val plan = response.body()
+                if (plan != null) {
+                    Result.success(plan)
+                } else {
+                    Result.failure(Exception("Plan data is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to update car rental plan"))
             }
         } catch (e: Exception) {
             Result.failure(e)

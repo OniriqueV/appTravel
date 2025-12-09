@@ -103,21 +103,17 @@ class PlanViewModel(
 
         // Check if current plan type is NONE
         val currentPlanType = _selectedPlanType.value ?: PlanType.NONE
-        if (currentPlanType == PlanType.NONE) {
-            _places.value = emptyList()
-            setLoading(false)
-            return
-        }
+        val hasPlanType = currentPlanType != PlanType.NONE
 
         setLoading(true)
 
         viewModelScope.launch {
-            // First, search for the location to get its coordinates
+            // First, search for the location to get its coordinates using Geocoding API
             when (val searchResult = placesRepository.searchPlaces(
                 query = query,
                 latitude = currentLatitude,
                 longitude = currentLongitude,
-                radius = 50000, // Larger radius for location search
+                radius = 50000, // Not used in geocoding, kept for compatibility
                 limit = 1
             )) {
                 is NetworkResult.Success -> {
@@ -127,27 +123,37 @@ class PlanViewModel(
                         searchLatitude = searchedPlace.latitude
                         searchLongitude = searchedPlace.longitude
 
-                        // Now fetch places of selected type at the searched location
-                        when (val placesResult = placesRepository.getPlacesByCategory(
-                            category = currentPlanType.geoapifyCategory,
-                            latitude = searchedPlace.latitude,
-                            longitude = searchedPlace.longitude,
-                            radius = 10000,
-                            limit = 50
-                        )) {
-                            is NetworkResult.Success -> {
-                                allPlaces = placesResult.data
-                                _places.value = allPlaces
-                                setLoading(false)
+                        android.util.Log.d("PlanViewModel", "Found location: ${searchedPlace.name} at (${searchedPlace.latitude}, ${searchedPlace.longitude})")
+
+                        // If plan type is selected, fetch places at that location
+                        if (hasPlanType) {
+                            // Now fetch places of selected type at the searched location
+                            when (val placesResult = placesRepository.getPlacesByCategory(
+                                category = currentPlanType.geoapifyCategory,
+                                latitude = searchedPlace.latitude,
+                                longitude = searchedPlace.longitude,
+                                radius = 10000,
+                                limit = 50
+                            )) {
+                                is NetworkResult.Success -> {
+                                    allPlaces = placesResult.data
+                                    _places.value = allPlaces
+                                    setLoading(false)
+                                }
+                                is NetworkResult.Error -> {
+                                    _errorMessage.value = placesResult.message
+                                    _places.value = emptyList()
+                                    setLoading(false)
+                                }
+                                is NetworkResult.Loading -> {
+                                    setLoading(true)
+                                }
                             }
-                            is NetworkResult.Error -> {
-                                _errorMessage.value = placesResult.message
-                                _places.value = emptyList()
-                                setLoading(false)
-                            }
-                            is NetworkResult.Loading -> {
-                                setLoading(true)
-                            }
+                        } else {
+                            // No plan type selected - just save location and show message
+                            _errorMessage.value = "Location found: ${searchedPlace.name}. Now select a plan type to search."
+                            _places.value = emptyList()
+                            setLoading(false)
                         }
                     } else {
                         _errorMessage.value = "Location not found: $query"
@@ -185,5 +191,84 @@ class PlanViewModel(
 
         // Fetch places at current device location
         fetchPlaces(currentPlanType, currentLatitude, currentLongitude)
+    }
+
+    /**
+     * Search for a location and then immediately search for plan type at that location
+     * This is used when user selects plan type with text already in search box
+     */
+    fun searchPlacesWithPlanType(
+        query: String,
+        planType: PlanType,
+        currentLatitude: Double,
+        currentLongitude: Double
+    ) {
+        currentSearchQuery = query
+        _selectedPlanType.value = planType
+
+        if (query.isBlank() || planType == PlanType.NONE) {
+            _places.value = emptyList()
+            setLoading(false)
+            return
+        }
+
+        setLoading(true)
+
+        viewModelScope.launch {
+            // First, search for the location to get its coordinates using Geocoding API
+            when (val searchResult = placesRepository.searchPlaces(
+                query = query,
+                latitude = currentLatitude,
+                longitude = currentLongitude,
+                radius = 50000,
+                limit = 1
+            )) {
+                is NetworkResult.Success -> {
+                    val searchedPlace = searchResult.data.firstOrNull()
+                    if (searchedPlace != null) {
+                        // Save searched location coordinates
+                        searchLatitude = searchedPlace.latitude
+                        searchLongitude = searchedPlace.longitude
+
+                        android.util.Log.d("PlanViewModel", "Found location: ${searchedPlace.name} at (${searchedPlace.latitude}, ${searchedPlace.longitude})")
+
+                        // Now fetch places of selected type at the searched location
+                        when (val placesResult = placesRepository.getPlacesByCategory(
+                            category = planType.geoapifyCategory,
+                            latitude = searchedPlace.latitude,
+                            longitude = searchedPlace.longitude,
+                            radius = 10000,
+                            limit = 50
+                        )) {
+                            is NetworkResult.Success -> {
+                                allPlaces = placesResult.data
+                                _places.value = allPlaces
+                                setLoading(false)
+                            }
+                            is NetworkResult.Error -> {
+                                _errorMessage.value = placesResult.message
+                                _places.value = emptyList()
+                                setLoading(false)
+                            }
+                            is NetworkResult.Loading -> {
+                                setLoading(true)
+                            }
+                        }
+                    } else {
+                        _errorMessage.value = "Location not found: $query"
+                        _places.value = emptyList()
+                        setLoading(false)
+                    }
+                }
+                is NetworkResult.Error -> {
+                    _errorMessage.value = searchResult.message
+                    _places.value = emptyList()
+                    setLoading(false)
+                }
+                is NetworkResult.Loading -> {
+                    setLoading(true)
+                }
+            }
+        }
     }
 }

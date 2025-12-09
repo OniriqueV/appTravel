@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/white"
+    android:background="#F2C594"
     android:fillViewport="true">
 
     <LinearLayout
@@ -129,7 +129,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="Enter trip name"
-                    android:textColorHint="#9CA3AF"
+                    android:textColorHint="#E5EBF4"
                     android:textSize="16sp" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -163,7 +163,7 @@
                     android:layout_height="wrap_content"
                     android:focusable="false"
                     android:hint="dd/mm/yyyy"
-                    android:textColorHint="#9CA3AF"
+                    android:textColorHint="#DEE3ED"
                     android:textSize="16sp" />
 
             </com.google.android.material.textfield.TextInputLayout>
@@ -197,7 +197,7 @@
                     android:layout_height="wrap_content"
                     android:focusable="false"
                     android:hint="dd/mm/yyyy"
-                    android:textColorHint="#9CA3AF"
+                    android:textColorHint="#E6ECF6"
                     android:textSize="16sp" />
 
             </com.google.android.material.textfield.TextInputLayout>

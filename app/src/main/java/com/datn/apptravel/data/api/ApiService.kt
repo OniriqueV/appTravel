@@ -23,4 +23,11 @@ interface ApiService {
         @Query("limit") limit: Int = 20,
         @Query("apiKey") apiKey: String
     ): Response<GeoapifyResponse>
+
+    @GET("v1/geocode/search")
+    suspend fun geocodeSearch(
+        @Query("text") text: String,
+        @Query("apiKey") apiKey: String,
+        @Query("limit") limit: Int = 1
+    ): Response<GeoapifyResponse>
 }

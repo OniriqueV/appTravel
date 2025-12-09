@@ -189,7 +189,17 @@ class TripDetailActivity : AppCompatActivity() {
                 }
                 R.id.action_edit_trip -> {
                     // Open trip edit
-                    Toast.makeText(this, "Edit trip coming soon", Toast.LENGTH_SHORT).show()
+                    currentTrip?.let { trip ->
+                        val intent = Intent(this, com.datn.apptravel.ui.trip.CreateTripActivity::class.java)
+                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_TRIP_ID, trip.id.toString())
+                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_TRIP_TITLE, trip.title)
+                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_START_DATE, trip.startDate)
+                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_END_DATE, trip.endDate)
+                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_COVER_PHOTO, trip.coverPhoto)
+                        startActivity(intent)
+                    } ?: run {
+                        Toast.makeText(this, "Trip data not available", Toast.LENGTH_SHORT).show()
+                    }
                     true
                 }
                 R.id.action_delete_trip -> {
@@ -209,12 +219,32 @@ class TripDetailActivity : AppCompatActivity() {
             .setTitle("Delete Trip")
             .setMessage("Are you sure you want to delete this trip?")
             .setPositiveButton("Delete") { _, _ ->
-                // Delete the trip
-                Toast.makeText(this, "Trip deleted!", Toast.LENGTH_SHORT).show()
-                finish()
+                deleteTrip()
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+    
+    private fun deleteTrip() {
+        val tripIdToDelete = tripId ?: return
+        
+        CoroutineScope(Dispatchers.IO).launch {
+            val result = tripRepository.deleteTrip(tripIdToDelete)
+            
+            withContext(Dispatchers.Main) {
+                if (result.isSuccess) {
+                    Toast.makeText(this@TripDetailActivity, "Trip deleted successfully!", Toast.LENGTH_SHORT).show()
+                    setResult(RESULT_OK) // Notify previous screen to refresh
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@TripDetailActivity,
+                        "Failed to delete trip: ${result.exceptionOrNull()?.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+        }
     }
 
     private fun showShareDialog() {

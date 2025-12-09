@@ -99,6 +99,19 @@ interface TripApiService {
         @Body request: CreatePlanRequest
     ): Response<Plan>
     
+    @DELETE("api/trips/{tripId}/plans/{planId}")
+    suspend fun deletePlan(
+        @Path("tripId") tripId: String,
+        @Path("planId") planId: String
+    ): Response<Void>
+    
+    @DELETE("api/trips/{tripId}/plans/{planId}/photos/{photoFileName}")
+    suspend fun deletePhotoFromPlan(
+        @Path("tripId") tripId: String,
+        @Path("planId") planId: String,
+        @Path("photoFileName") photoFileName: String
+    ): Response<Void>
+    
     // File upload endpoint
     @Multipart
     @POST("api/upload/image")

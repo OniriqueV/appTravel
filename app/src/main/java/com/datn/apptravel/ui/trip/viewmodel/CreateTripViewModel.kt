@@ -27,6 +27,7 @@ class CreateTripViewModel(
     val errorMessage: LiveData<String> = _errorMessage
     
     // Store trip data while uploading
+    private var pendingTripId: String? = null
     private var pendingTripTitle: String? = null
     private var pendingStartDate: String? = null
     private var pendingEndDate: String? = null
@@ -54,16 +55,29 @@ class CreateTripViewModel(
     
     private fun createTripWithCoverPhoto(coverPhotoFileName: String) {
         if (pendingTripTitle != null && pendingStartDate != null && pendingEndDate != null) {
-            createTrip(
-                title = pendingTripTitle!!,
-                startDate = pendingStartDate!!,
-                endDate = pendingEndDate!!,
-                coverPhotoUri = coverPhotoFileName
-            )
+            if (pendingTripId != null) {
+                // Update existing trip with new photo
+                updateTrip(
+                    tripId = pendingTripId!!,
+                    title = pendingTripTitle!!,
+                    startDate = pendingStartDate!!,
+                    endDate = pendingEndDate!!,
+                    coverPhotoUri = coverPhotoFileName
+                )
+            } else {
+                // Create new trip
+                createTrip(
+                    title = pendingTripTitle!!,
+                    startDate = pendingStartDate!!,
+                    endDate = pendingEndDate!!,
+                    coverPhotoUri = coverPhotoFileName
+                )
+            }
         }
     }
     
-    fun setPendingTripData(title: String, startDate: String, endDate: String) {
+    fun setPendingTripData(title: String, startDate: String, endDate: String, tripId: String? = null) {
+        pendingTripId = tripId
         pendingTripTitle = title
         pendingStartDate = startDate
         pendingEndDate = endDate
@@ -103,6 +117,55 @@ class CreateTripViewModel(
                     _createTripResult.value = trip
                 }.onFailure { exception ->
                     _errorMessage.value = exception.message ?: "Failed to create trip"
+                    _createTripResult.value = null
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "An error occurred"
+                _createTripResult.value = null
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+    
+    fun updateTrip(
+        tripId: String,
+        title: String,
+        startDate: String,
+        endDate: String,
+        coverPhotoUri: String? = null,
+        isPublic: Boolean = false,
+        content: String? = null,
+        tags: String? = null
+    ) {
+        setLoading(true)
+        
+        viewModelScope.launch {
+            try {
+                // Get current user ID from session
+                val userId = sessionManager.getUserId() ?: "anonymous"
+                
+                // Convert date format from dd/MM/yyyy to yyyy-MM-dd
+                val formattedStartDate = convertDateFormat(startDate)
+                val formattedEndDate = convertDateFormat(endDate)
+                
+                val request = CreateTripRequest(
+                    userId = userId,
+                    title = title,
+                    startDate = formattedStartDate,
+                    endDate = formattedEndDate,
+                    isPublic = isPublic,
+                    coverPhoto = coverPhotoUri,
+                    content = content,
+                    tags = tags
+                )
+                
+                val result = tripRepository.updateTrip(tripId, request)
+                
+                result.onSuccess { trip ->
+                    _createTripResult.value = trip
+                }.onFailure { exception ->
+                    _errorMessage.value = exception.message ?: "Failed to update trip"
                     _createTripResult.value = null
                 }
             } catch (e: Exception) {

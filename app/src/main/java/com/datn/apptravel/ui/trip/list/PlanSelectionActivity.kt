@@ -103,30 +103,50 @@ class PlanSelectionActivity : AppCompatActivity() {
             // Show loading overlay and disable interactions
             showLoadingOverlay(true)
             
-            // When plan type changes, reload places with current search query (if any)
-            viewModel.selectPlanType(planType, currentLatitude, currentLongitude)
+            // Check if there's text in search view (even if user didn't press Enter)
+            val searchQuery = binding.searchView.query?.toString()
+            android.util.Log.d("PlanSelection", "Plan type selected: ${planType.displayName}, Current search query: '$searchQuery'")
+            
+            if (!searchQuery.isNullOrBlank()) {
+                // User has typed something - search for that location first, then show plan type
+                android.util.Log.d("PlanSelection", "Searching for location: $searchQuery before showing plan type")
+                viewModel.searchPlacesWithPlanType(searchQuery, planType, currentLatitude, currentLongitude)
+            } else {
+                // No search query - just show plan type at current location
+                android.util.Log.d("PlanSelection", "No search query, showing plan type at current location")
+                viewModel.selectPlanType(planType, currentLatitude, currentLongitude)
+            }
         }
 
         // Set up search view
         binding.searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
+                android.util.Log.d("PlanSelection", "onQueryTextSubmit called with: $query")
+                
                 query?.let {
                     if (it.isNotBlank()) {
-                        // Search location and filter by selected plan type
+                        // Search for the location and save its coordinates
+                        val timestamp = System.currentTimeMillis()
+                        android.util.Log.d("PlanSelection", "[$timestamp] Searching for location: $it")
+                        
+                        // If plan type is selected, search places at that location
+                        // If not, just find and save the location coordinates
                         viewModel.searchPlaces(it, currentLatitude, currentLongitude)
 
                         // Hide keyboard
                         binding.searchView.clearFocus()
+                    } else {
+                        android.util.Log.d("PlanSelection", "Empty query submitted, clearing search")
+                        // If empty query submitted, clear search
+                        viewModel.clearSearch(currentLatitude, currentLongitude)
                     }
                 }
                 return true
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                // Clear search when text is empty
-                if (newText.isNullOrBlank()) {
-                    viewModel.clearSearch(currentLatitude, currentLongitude)
-                }
+                android.util.Log.d("PlanSelection", "onQueryTextChange: $newText")
+                // Do nothing - only search on Enter/Submit
                 return true
             }
         })
