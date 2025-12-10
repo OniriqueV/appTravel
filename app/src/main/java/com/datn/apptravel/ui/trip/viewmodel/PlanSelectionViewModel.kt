@@ -10,7 +10,7 @@ import com.datn.apptravel.data.repository.PlacesRepository
 import com.datn.apptravel.ui.base.BaseViewModel
 import kotlinx.coroutines.launch
 
-class PlanViewModel(
+class PlanSelectionViewModel(
     private val placesRepository: PlacesRepository
 ) : BaseViewModel() {
 

@@ -8,9 +8,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ActivityTripMapBinding
-import com.datn.apptravel.ui.trip.adapter.ScheduleAdapter
+import com.datn.apptravel.ui.trip.adapter.ScheduleTripMapAdapter
 import com.datn.apptravel.ui.trip.model.PlanLocation
 import com.datn.apptravel.ui.trip.model.ScheduleItem
 import com.datn.apptravel.ui.trip.viewmodel.TripMapViewModel
@@ -29,7 +28,7 @@ class TripMapActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTripMapBinding
     private val viewModel: TripMapViewModel by viewModel()
-    private lateinit var scheduleAdapter: ScheduleAdapter
+    private lateinit var scheduleAdapter: ScheduleTripMapAdapter
     private val plans = mutableListOf<PlanLocation>()
     private val scheduleItems = mutableListOf<ScheduleItem>()
     private val routePolylines = mutableListOf<Polyline>()
@@ -120,7 +119,7 @@ class TripMapActivity : AppCompatActivity() {
         }
 
         // Setup RecyclerView with HORIZONTAL layout and scroll listener
-        scheduleAdapter = ScheduleAdapter(
+        scheduleAdapter = ScheduleTripMapAdapter(
             items = scheduleItems,
             onPlanClick = { position, plan ->
                 onPlanClicked(position, plan)

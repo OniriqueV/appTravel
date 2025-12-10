@@ -5,8 +5,9 @@ data class CreateTripRequest(
     val title: String,
     val startDate: String,
     val endDate: String,
-    val isPublic: Boolean = false,
+    val isPublic: String = "none",
     val coverPhoto: String? = null,
     val content: String? = null,
-    val tags: String? = null
+    val tags: String? = null,
+    val sharedAt: String? = null
 )

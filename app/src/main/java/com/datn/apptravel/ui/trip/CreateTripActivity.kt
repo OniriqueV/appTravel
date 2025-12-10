@@ -99,10 +99,14 @@ class CreateTripActivity : AppCompatActivity() {
     private fun setupObservers() {
         // Observe create trip result
         viewModel.createTripResult.observe(this) { trip ->
-            if (trip != null) {
+            if (trip != null && isEditMode !=true) {
                 Toast.makeText(this, "Trip created successfully!", Toast.LENGTH_SHORT).show()
-                navigateToTripDetail(trip.id.toString())
+
+            }else{
+                Toast.makeText(this, "Change information successfully!", Toast.LENGTH_SHORT).show()
+
             }
+            navigateToTripDetail(trip?.id.toString())
         }
         
         // Observe error messages

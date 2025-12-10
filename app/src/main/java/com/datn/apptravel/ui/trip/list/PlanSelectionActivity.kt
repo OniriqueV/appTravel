@@ -26,7 +26,7 @@ import com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity
 import com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity
 import com.datn.apptravel.ui.trip.detail.plandetail.LodgingDetailActivity
 import com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity
-import com.datn.apptravel.ui.trip.viewmodel.PlanViewModel
+import com.datn.apptravel.ui.trip.viewmodel.PlanSelectionViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -40,7 +40,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 class PlanSelectionActivity : AppCompatActivity() {
 
-    private val viewModel: PlanViewModel by viewModel()
+    private val viewModel: PlanSelectionViewModel by viewModel()
     private var tripId: String? = null
     private lateinit var binding: ActivityPlanSelectionBinding
 

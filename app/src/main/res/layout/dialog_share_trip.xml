@@ -42,11 +42,44 @@
             app:layout_constraintTop_toTopOf="parent" />
 
         <!-- Feelings Input -->
+        <LinearLayout
+            android:id="@+id/layoutPrivacySelector"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/bg_date_tab_unselected"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:gravity="center_vertical"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvShareTitle">
+
+            <TextView
+                android:id="@+id/tvPrivacyValue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Public"
+                android:textColor="#1F2937"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <ImageView
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_marginStart="6dp"
+                android:src="@android:drawable/arrow_down_float"
+                app:tint="#6B7280" />
+
+        </LinearLayout>
+
         <EditText
             android:id="@+id/etFeelings"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:background="@drawable/bg_date_tab_unselected"
             android:hint="Cảm nhận của bạn..."
             android:inputType="textMultiLine"
@@ -59,7 +92,7 @@
             android:gravity="top|start"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvShareTitle" />
+            app:layout_constraintTop_toBottomOf="@id/layoutPrivacySelector" />
 
         <!-- Topics Label -->
         <TextView

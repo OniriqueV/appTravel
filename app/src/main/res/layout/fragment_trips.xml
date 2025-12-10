@@ -43,12 +43,12 @@
             <!-- Profile Picture -->
             <de.hdodenhof.circleimageview.CircleImageView
                 android:id="@+id/ivProfile"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_marginEnd="12dp"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="16dp"
                 android:src="@drawable/ic_profile_placeholder"
                 app:civ_border_color="#D5A828"
-                app:civ_border_width="1dp" />
+                app:civ_border_width="2dp" />
 
             <!-- Welcome Text -->
             <LinearLayout
@@ -62,7 +62,7 @@
                     android:layout_height="wrap_content"
                     android:text="Welcome to Trip Planner"
                     android:textColor="#6B7280"
-                    android:textSize="14sp" />
+                    android:textSize="16sp" />
 
                 <TextView
                     android:id="@+id/tvUserName"
@@ -70,7 +70,7 @@
                     android:layout_height="wrap_content"
                     android:text="User"
                     android:textColor="#111827"
-                    android:textSize="18sp"
+                    android:textSize="22sp"
                     android:textStyle="bold" />
 
             </LinearLayout>
@@ -78,30 +78,53 @@
 
         </LinearLayout>
 
-        <!-- Adventure Section -->
+        <!-- Upcomings Section -->
         <TextView
+            android:id="@+id/tvUpcomingsTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            android:text="Adventure"
+            android:text="Upcomings"
             android:textColor="#111827"
-            android:textSize="24sp"
+            android:textSize="28sp"
             android:textStyle="bold" />
 
-        <!-- Adventure Horizontal RecyclerView -->
+        <!-- Upcomings Horizontal RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/rvAdventure"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:minHeight="100dp"
+            android:layout_marginBottom="12dp"
             android:orientation="horizontal"
             android:visibility="gone" />
 
-        <!-- Where to Next Section -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Current Trip Title (Live Trip or Next Trip) -->
+        <TextView
+            android:id="@+id/tvCurrentTripTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:text="Live Trip"
+            android:textColor="#111827"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
+        <!-- Current Trip Card (shown when there's an ongoing or upcoming trip) -->
+        <include
+            android:id="@+id/currentTripCard"
+            layout="@layout/item_current_trip"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:visibility="gone" />
+
+        <!-- Where to Next Section (shown when no ongoing/upcoming trips) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardWhereToNext"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="32dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
         app:cardUseCompatPadding="false"
@@ -173,7 +196,8 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="20dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
@@ -183,7 +207,7 @@
                 android:layout_weight="1"
                 android:text="Your Travel Memory"
                 android:textColor="#111827"
-                android:textSize="20sp"
+                android:textSize="24sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -192,7 +216,7 @@
                 android:layout_height="wrap_content"
                 android:text="View all"
                 android:textColor="#C9A877"
-                android:textSize="14sp"
+                android:textSize="16sp"
                 android:clickable="true"
                 android:focusable="true"
                 android:padding="8dp"
@@ -205,7 +229,8 @@
             android:id="@+id/rvPastTrips"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
+            android:minHeight="110dp"
+            android:layout_marginBottom="40dp"
             android:clipToPadding="false"
             android:paddingStart="0dp"
             android:paddingEnd="16dp"

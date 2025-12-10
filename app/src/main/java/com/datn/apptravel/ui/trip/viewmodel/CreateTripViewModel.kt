@@ -105,10 +105,11 @@ class CreateTripViewModel(
                     title = title,
                     startDate = formattedStartDate,
                     endDate = formattedEndDate,
-                    isPublic = false,
+                    isPublic = "none",
                     coverPhoto = coverPhotoUri,
                     content = null,
-                    tags = null
+                    tags = null,
+                    sharedAt = null
                 )
                 
                 val result = tripRepository.createTrip(request)
@@ -134,9 +135,10 @@ class CreateTripViewModel(
         startDate: String,
         endDate: String,
         coverPhotoUri: String? = null,
-        isPublic: Boolean = false,
+        isPublic: String = "none",
         content: String? = null,
-        tags: String? = null
+        tags: String? = null,
+        sharedAt: String? = null
     ) {
         setLoading(true)
         
@@ -157,7 +159,8 @@ class CreateTripViewModel(
                     isPublic = isPublic,
                     coverPhoto = coverPhotoUri,
                     content = content,
-                    tags = tags
+                    tags = tags,
+                    sharedAt = sharedAt
                 )
                 
                 val result = tripRepository.updateTrip(tripId, request)

@@ -9,11 +9,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ItemPlanConnectorBinding
 import com.datn.apptravel.databinding.ItemPlanMapHorizontalBinding
-import com.datn.apptravel.databinding.ItemTripDateBinding
+import com.datn.apptravel.databinding.ItemTripMapDateBinding
 import com.datn.apptravel.ui.trip.model.PlanLocation
 import com.datn.apptravel.ui.trip.model.ScheduleItem
 
-class ScheduleAdapter(
+class ScheduleTripMapAdapter(
     private val items: List<ScheduleItem>,
     private val onPlanClick: (Int, PlanLocation) -> Unit,
     private val onConnectorClick: (Int, Int) -> Unit = { _, _ -> }
@@ -39,7 +39,7 @@ class ScheduleAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
             VIEW_TYPE_DATE -> {
-                val binding = ItemTripDateBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+                val binding = ItemTripMapDateBinding.inflate(LayoutInflater.from(parent.context), parent, false)
                 DateViewHolder(binding)
             }
             VIEW_TYPE_PLAN -> {
@@ -98,7 +98,7 @@ class ScheduleAdapter(
         }
     }
 
-    inner class DateViewHolder(private val binding: ItemTripDateBinding) :
+    inner class DateViewHolder(private val binding: ItemTripMapDateBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
         fun bind(item: ScheduleItem.DateItem) {

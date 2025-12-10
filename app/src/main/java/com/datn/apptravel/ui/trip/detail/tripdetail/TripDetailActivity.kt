@@ -36,6 +36,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class TripDetailActivity : AppCompatActivity() {
 
@@ -153,9 +155,26 @@ class TripDetailActivity : AppCompatActivity() {
         // Set trip details from API
         tvTripName?.text = trip.title ?: "Untitled Trip"
 
-        // Format dates
-        val startDate = "Start Date: "+ trip.startDate?.toString() ?: "N/A"
-        val endDate = "End Date: "+ trip.endDate?.toString() ?: "N/A"
+        // Format dates from yyyy-MM-dd to dd-MM-yyyy
+        val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        val outputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+        
+        val formattedStartDate = try {
+            val date = LocalDate.parse(trip.startDate, inputFormatter)
+            date.format(outputFormatter)
+        } catch (e: Exception) {
+            trip.startDate
+        }
+        
+        val formattedEndDate = try {
+            val date = LocalDate.parse(trip.endDate, inputFormatter)
+            date.format(outputFormatter)
+        } catch (e: Exception) {
+            trip.endDate
+        }
+        
+        val startDate = "Start Date: $formattedStartDate"
+        val endDate = "End Date: $formattedEndDate"
         tvTripStartDate?.text = startDate
         tvTripEndDate?.text = endDate
 
@@ -258,13 +277,65 @@ class TripDetailActivity : AppCompatActivity() {
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
 
-        // Create topic list with all available topics
+        val trip = currentTrip
+        val hasBeenShared = trip?.sharedAt != null
+        var currentPrivacy = trip?.isPublic ?: "none"
+        val existingTags = trip?.tags?.split(",")?.map { it.trim() } ?: emptyList()
+        val existingContent = trip?.content ?: ""
+
+        // Pre-fill feelings if trip already has content
+        if (existingContent.isNotEmpty()) {
+            dialogBinding.etFeelings.setText(existingContent)
+        }
+
+        // Setup privacy selector text
+        fun updatePrivacyText(privacy: String) {
+            val displayText = when (privacy) {
+                "public" -> "Public"
+                "follower" -> "Follower"
+                else -> "Private"
+            }
+            dialogBinding.tvPrivacyValue.text = displayText
+        }
+        
+        // Initialize privacy display
+        updatePrivacyText(currentPrivacy)
+        
+        // Setup privacy selector click listener
+        dialogBinding.layoutPrivacySelector.setOnClickListener {
+            val popupMenu = PopupMenu(this, dialogBinding.layoutPrivacySelector)
+            popupMenu.menu.add(0, 0, 0, "Private")
+            popupMenu.menu.add(0, 1, 1, "Public")
+            popupMenu.menu.add(0, 2, 2, "Follower")
+            
+            popupMenu.setOnMenuItemClickListener { menuItem ->
+                currentPrivacy = when (menuItem.itemId) {
+                    1 -> "public"
+                    2 -> "follower"
+                    else -> "none"
+                }
+                updatePrivacyText(currentPrivacy)
+                true
+            }
+            popupMenu.show()
+        }
+
+        // Create topic list with all available topics and pre-select existing ones
         val topicSelections = listOf(
-            TopicSelection(TripTopic.CUISINE, false),
-            TopicSelection(TripTopic.DESTINATION, false),
-            TopicSelection(TripTopic.ADVENTURE, false),
-            TopicSelection(TripTopic.RESORT, false)
+            TopicSelection(TripTopic.CUISINE, existingTags.contains(TripTopic.CUISINE.topicName)),
+            TopicSelection(TripTopic.DESTINATION, existingTags.contains(TripTopic.DESTINATION.topicName)),
+            TopicSelection(TripTopic.ADVENTURE, existingTags.contains(TripTopic.ADVENTURE.topicName)),
+            TopicSelection(TripTopic.RESORT, existingTags.contains(TripTopic.RESORT.topicName))
         )
+
+        // Update UI based on whether trip has been shared
+        if (hasBeenShared) {
+            dialogBinding.btnDone.text = "Lưu"
+            dialogBinding.tvShareTitle.text = "Chỉnh sửa bài viết"
+        } else {
+            dialogBinding.btnDone.text = "Chia sẻ"
+            dialogBinding.tvShareTitle.text = "Chia sẻ chuyến đi"
+        }
 
         // Setup topics RecyclerView
         val topicAdapter = TopicAdapter(topicSelections) { topic, isChecked ->
@@ -288,41 +359,69 @@ class TripDetailActivity : AppCompatActivity() {
             val feelings = dialogBinding.etFeelings.text.toString().trim()
             val selectedTopics = topicSelections.filter { it.isSelected }
 
+            // Validate feelings input
+            if (feelings.isEmpty()) {
+                Toast.makeText(
+                    this,
+                    "Vui lòng nhập cảm nhận của bạn",
+                    Toast.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+
+            // Validate topic selection
             if (selectedTopics.isEmpty()) {
                 Toast.makeText(
                     this,
                     "Vui lòng chọn ít nhất một chủ đề",
                     Toast.LENGTH_SHORT
                 ).show()
-            } else if (currentTrip == null) {
+                return@setOnClickListener
+            }
+
+            if (currentTrip == null) {
                 Toast.makeText(
                     this,
                     "Không tìm thấy thông tin chuyến đi",
                     Toast.LENGTH_SHORT
                 ).show()
-            } else {
-                // Prepare data for sharing
-                val tags = selectedTopics.joinToString(",") { it.topic.topicName }
-
-                // Call API to update trip
-                shareTrip(feelings, tags, dialog)
+                return@setOnClickListener
             }
+
+            // Prepare data for sharing
+            val tags = selectedTopics.joinToString(",") { it.topic.topicName }
+
+            // Use currentPrivacy variable from the privacy selector
+            val selectedPrivacy = currentPrivacy
+
+            // Determine sharedAt: set current time if first share, keep existing otherwise
+            val sharedAtValue = if (trip?.sharedAt != null) {
+                trip.sharedAt // Keep existing timestamp
+            } else if (selectedPrivacy != "none") {
+                java.time.LocalDateTime.now().toString() // First time sharing
+            } else {
+                null // Not sharing
+            }
+
+            // Call API to update trip
+            shareTrip(feelings, tags, selectedPrivacy, sharedAtValue, dialog)
         }
 
         dialog.show()
     }
 
-    private fun shareTrip(content: String, tags: String, dialog: Dialog) {
+    private fun shareTrip(content: String, tags: String, isPublic: String, sharedAt: String?, dialog: Dialog) {
         currentTrip?.let { trip ->
             val updateRequest = CreateTripRequest(
                 userId = trip.userId,
                 title = trip.title,
                 startDate = trip.startDate,
                 endDate = trip.endDate,
-                isPublic = true,  // Set to public when sharing
+                isPublic = isPublic,
                 coverPhoto = trip.coverPhoto,
-                content = content.ifEmpty { trip.content },  // Use new feelings or keep old
-                tags = tags  // New selected topics
+                content = content,
+                tags = tags,
+                sharedAt = sharedAt
             )
 
             CoroutineScope(Dispatchers.IO).launch {
@@ -331,9 +430,24 @@ class TripDetailActivity : AppCompatActivity() {
 
                     withContext(Dispatchers.Main) {
                         if (result.isSuccess) {
+                            var message=""
+                            if(dialog.findViewById<TextView>(R.id.tvShareTitle)?.text?.toString().equals("Chỉnh sửa bài viết")){
+                                message = when (isPublic) {
+                                    "public" -> "Cập nhật bài viết thành công"
+                                    "follower" -> "Cập nhật bài viết thành công"
+                                    else -> "Cập nhật bài viết thành công"
+                                }
+                            }else{
+                                message = when (isPublic) {
+                                    "public" -> "Đã chia sẻ thành công"
+                                    "follower" -> "Đã chia sẻ thành công"
+                                    else -> "Đã lưu bài viết (không công khai)"
+                                }
+                            }
+
                             Toast.makeText(
                                 this@TripDetailActivity,
-                                "Đã chia sẻ chuyến đi với chủ đề: $tags",
+                                message,
                                 Toast.LENGTH_LONG
                             ).show()
                             dialog.dismiss()
