@@ -12,7 +12,9 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateBoatPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityBoatDetailBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.util.Calendar
 
@@ -23,6 +25,7 @@ class BoatDetailActivity : AppCompatActivity() {
     private var tripEndDate: String? = null
     private var placeLatitude: Double = 0.0
     private var placeLongitude: Double = 0.0
+    private var photoUrl: String? = null
     private lateinit var binding: ActivityBoatDetailBinding
     private val tripRepository: TripRepository by inject()
     
@@ -68,7 +71,9 @@ class BoatDetailActivity : AppCompatActivity() {
     val placeName = intent.getStringExtra("placeName")
     val placeAddress = intent.getStringExtra("placeAddress")
     placeLatitude = intent.getDoubleExtra("placeLatitude", 0.0)
-    placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)        // Pre-fill place data
+    placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)
+    photoUrl = intent.getStringExtra("photoUrl")
+        // Pre-fill place data
         placeName?.let { binding.etBoatName.setText(it) }
         placeAddress?.let { binding.etDepartureLocation.setText(it) }
         
@@ -182,28 +187,46 @@ class BoatDetailActivity : AppCompatActivity() {
             val startTimeISO = convertDateTimeToISO(departureDate, departureTime)
             val endTimeISO = convertDateTimeToISO(arrivalDate, arrivalTime)
             
-            val request = CreateBoatPlanRequest(
-                tripId = id,
-                title = binding.etBoatName.text.toString(),
-                address = binding.etDepartureLocation.text.toString(),
-                location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
-                    "$placeLatitude,$placeLongitude"
-                } else null,
-                startTime = startTimeISO,
-                endTime = endTimeISO,
-                expense = binding.etExpense.text.toString().toDoubleOrNull(),
-                photoUrl = null,
-                type = PlanType.BOAT.name,
-                arrivalTime = endTimeISO,
-                arrivalLocation = binding.etArrivalLocation.text.toString().takeIf { it.isNotEmpty() },
-                arrivalAddress = null  // Not available in layout
-            )
-            
-            Log.d("BoatDetail", "Creating boat plan for tripId: $id")
-            Log.d("BoatDetail", "Request: $request")
-            
             lifecycleScope.launch {
                 try {
+                    // Download and upload image if photoUrl is a URL (starts with http)
+                    var uploadedFilename: String? = null
+                    if (!photoUrl.isNullOrEmpty() && photoUrl!!.startsWith("http")) {
+                        Log.d("BoatDetail", "Downloading and uploading image from URL: $photoUrl")
+                        val uploadResult = withContext(Dispatchers.IO) {
+                            tripRepository.downloadAndUploadImage(this@BoatDetailActivity, photoUrl!!)
+                        }
+                        uploadResult.onSuccess { filename ->
+                            uploadedFilename = filename
+                            Log.d("BoatDetail", "Image uploaded successfully: $filename")
+                        }.onFailure { exception ->
+                            Log.e("BoatDetail", "Failed to upload image: ${exception.message}", exception)
+                        }
+                    } else {
+                        // If photoUrl is already a filename, use it
+                        uploadedFilename = photoUrl
+                    }
+            
+                    val request = CreateBoatPlanRequest(
+                        tripId = id,
+                        title = binding.etBoatName.text.toString(),
+                        address = binding.etDepartureLocation.text.toString(),
+                        location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
+                            "$placeLatitude,$placeLongitude"
+                        } else null,
+                        startTime = startTimeISO,
+                        endTime = endTimeISO,
+                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        photoUrl = uploadedFilename,
+                        type = PlanType.BOAT.name,
+                        arrivalTime = endTimeISO,
+                        arrivalLocation = binding.etArrivalLocation.text.toString().takeIf { it.isNotEmpty() },
+                        arrivalAddress = null  // Not available in layout
+                    )
+                    
+                    Log.d("BoatDetail", "Creating boat plan for tripId: $id")
+                    Log.d("BoatDetail", "Request: $request")
+            
                     val result = if (isEditMode && planId != null) {
                         tripRepository.updateBoatPlan(id, planId!!, request)
                     } else {

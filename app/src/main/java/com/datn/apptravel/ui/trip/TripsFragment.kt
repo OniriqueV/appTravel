@@ -76,6 +76,18 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
                         "User"
                     }
                     binding.tvUserName.text = displayName
+                    
+                    // Load profile picture
+                    if (!it.profilePicture.isNullOrEmpty()) {
+                        Glide.with(this@TripsFragment)
+                            .load(it.profilePicture)
+                            .placeholder(R.drawable.ic_user)
+                            .error(R.drawable.ic_user)
+                            .into(binding.ivProfile)
+                    } else {
+                        // Set default icon if no profile picture
+                        binding.ivProfile.setImageResource(R.drawable.ic_user)
+                    }
                 }
             }
         }

@@ -12,7 +12,9 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateLodgingPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityLodgingDetailBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.util.Calendar
 
@@ -22,6 +24,7 @@ class LodgingDetailActivity : AppCompatActivity() {
     private var tripEndDate: String? = null
     private var placeLatitude: Double = 0.0
     private var placeLongitude: Double = 0.0
+    private var photoUrl: String? = null
     private lateinit var binding: ActivityLodgingDetailBinding
     private val tripRepository: TripRepository by inject()
     
@@ -61,7 +64,9 @@ class LodgingDetailActivity : AppCompatActivity() {
     val placeName = intent.getStringExtra("placeName")
     val placeAddress = intent.getStringExtra("placeAddress")
     placeLatitude = intent.getDoubleExtra("placeLatitude", 0.0)
-    placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)        // Pre-fill place data
+    placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)
+    photoUrl = intent.getStringExtra("photoUrl")
+        // Pre-fill place data
         placeName?.let { binding.etLodgingName.setText(it) }
         placeAddress?.let { binding.etAddress.setText(it) }
         
@@ -174,28 +179,46 @@ class LodgingDetailActivity : AppCompatActivity() {
             val startTimeISO = convertDateTimeToISO(checkInDate, checkInTime)
             val endTimeISO = convertDateTimeToISO(checkoutDate, checkoutTime)
             
-            val request = CreateLodgingPlanRequest(
-                tripId = id,
-                title = binding.etLodgingName.text.toString(),
-                address = binding.etAddress.text.toString(),
-                location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
-                    "$placeLatitude,$placeLongitude"
-                } else null,
-                startTime = startTimeISO,
-                endTime = endTimeISO,
-                expense = binding.etExpense.text.toString().toDoubleOrNull(),
-                photoUrl = null,
-                type = PlanType.LODGING.name,
-                checkInDate = startTimeISO,
-                checkOutDate = endTimeISO,
-                phone = binding.etPhone.text.toString().takeIf { it.isNotEmpty() }
-            )
-            
-            Log.d("LodgingDetail", "Creating lodging plan for tripId: $id")
-            Log.d("LodgingDetail", "Request: $request")
-            
             lifecycleScope.launch {
                 try {
+                    // Download and upload image if photoUrl is a URL (starts with http)
+                    var uploadedFilename: String? = null
+                    if (!photoUrl.isNullOrEmpty() && photoUrl!!.startsWith("http")) {
+                        Log.d("LodgingDetail", "Downloading and uploading image from URL: $photoUrl")
+                        val uploadResult = withContext(Dispatchers.IO) {
+                            tripRepository.downloadAndUploadImage(this@LodgingDetailActivity, photoUrl!!)
+                        }
+                        uploadResult.onSuccess { filename ->
+                            uploadedFilename = filename
+                            Log.d("LodgingDetail", "Image uploaded successfully: $filename")
+                        }.onFailure { exception ->
+                            Log.e("LodgingDetail", "Failed to upload image: ${exception.message}", exception)
+                        }
+                    } else {
+                        // If photoUrl is already a filename, use it
+                        uploadedFilename = photoUrl
+                    }
+            
+                    val request = CreateLodgingPlanRequest(
+                        tripId = id,
+                        title = binding.etLodgingName.text.toString(),
+                        address = binding.etAddress.text.toString(),
+                        location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
+                            "$placeLatitude,$placeLongitude"
+                        } else null,
+                        startTime = startTimeISO,
+                        endTime = endTimeISO,
+                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        photoUrl = uploadedFilename,
+                        type = PlanType.LODGING.name,
+                        checkInDate = startTimeISO,
+                        checkOutDate = endTimeISO,
+                        phone = binding.etPhone.text.toString().takeIf { it.isNotEmpty() }
+                    )
+                    
+                    Log.d("LodgingDetail", "Creating lodging plan for tripId: $id")
+                    Log.d("LodgingDetail", "Request: $request")
+            
                     val result = if (isEditMode && planId != null) {
                         tripRepository.updateLodgingPlan(id, planId!!, request)
                     } else {

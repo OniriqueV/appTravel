@@ -24,6 +24,7 @@ val appModule = module {
     // API Service
     single { RetrofitClient.createService<ApiService>() }
     single { RetrofitClient.tripApiService }
+    single { RetrofitClient.googleImageSearchService }
     
     // Local storage
     single { SessionManager(androidContext()) }
@@ -32,6 +33,7 @@ val appModule = module {
     single { AuthRepository() }
     single { com.datn.apptravel.data.repository.PlacesRepository(get()) }
     single { com.datn.apptravel.data.repository.TripRepository(get()) }
+    single { com.datn.apptravel.data.repository.ImageSearchRepository(get()) }
 
     
     // ViewModels

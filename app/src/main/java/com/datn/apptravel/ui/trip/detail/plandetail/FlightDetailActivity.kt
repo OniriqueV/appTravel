@@ -12,7 +12,9 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateFlightPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityFlightDetailBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.util.Calendar
 
@@ -23,6 +25,7 @@ class FlightDetailActivity : AppCompatActivity() {
     private var tripEndDate: String? = null
     private var placeLatitude: Double = 0.0
     private var placeLongitude: Double = 0.0
+    private var photoUrl: String? = null
     private lateinit var binding: ActivityFlightDetailBinding
     private val tripRepository: TripRepository by inject()
     
@@ -67,6 +70,7 @@ class FlightDetailActivity : AppCompatActivity() {
         val placeAddress = intent.getStringExtra("placeAddress")
         placeLatitude = intent.getDoubleExtra("placeLatitude", 0.0)
         placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)
+        photoUrl = intent.getStringExtra("photoUrl")
         
         // Pre-fill place data
         placeName?.let { binding.etAirline.setText(it) }
@@ -182,28 +186,46 @@ class FlightDetailActivity : AppCompatActivity() {
             val startTimeISO = convertDateTimeToISO(departureDate, departureTime)
             val endTimeISO = convertDateTimeToISO(arrivalDate, arrivalTime)
             
-            val request = CreateFlightPlanRequest(
-                tripId = id,
-                title = binding.etAirline.text.toString(),
-                address = binding.etAddress.text.toString(),
-                location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
-                    "$placeLatitude,$placeLongitude"
-                } else null,
-                startTime = startTimeISO,
-                endTime = endTimeISO,
-                expense = binding.etExpense.text.toString().toDoubleOrNull(),
-                photoUrl = null,
-                type = PlanType.FLIGHT.name,
-                arrivalLocation = null,  // Not available in layout
-                arrivalAddress = binding.etArrivalAddress.text.toString().takeIf { it.isNotEmpty() },
-                arrivalDate = endTimeISO  // Same as arrival time
-            )
-            
-            Log.d("FlightDetail", "Creating flight plan for tripId: $id")
-            Log.d("FlightDetail", "Request: $request")
-            
             lifecycleScope.launch {
                 try {
+                    // Download and upload image if photoUrl is a URL (starts with http)
+                    var uploadedFilename: String? = null
+                    if (!photoUrl.isNullOrEmpty() && photoUrl!!.startsWith("http")) {
+                        Log.d("FlightDetail", "Downloading and uploading image from URL: $photoUrl")
+                        val uploadResult = withContext(Dispatchers.IO) {
+                            tripRepository.downloadAndUploadImage(this@FlightDetailActivity, photoUrl!!)
+                        }
+                        uploadResult.onSuccess { filename ->
+                            uploadedFilename = filename
+                            Log.d("FlightDetail", "Image uploaded successfully: $filename")
+                        }.onFailure { exception ->
+                            Log.e("FlightDetail", "Failed to upload image: ${exception.message}", exception)
+                        }
+                    } else {
+                        // If photoUrl is already a filename, use it
+                        uploadedFilename = photoUrl
+                    }
+            
+                    val request = CreateFlightPlanRequest(
+                        tripId = id,
+                        title = binding.etAirline.text.toString(),
+                        address = binding.etAddress.text.toString(),
+                        location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
+                            "$placeLatitude,$placeLongitude"
+                        } else null,
+                        startTime = startTimeISO,
+                        endTime = endTimeISO,
+                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        photoUrl = uploadedFilename,
+                        type = PlanType.FLIGHT.name,
+                        arrivalLocation = null,  // Not available in layout
+                        arrivalAddress = binding.etArrivalAddress.text.toString().takeIf { it.isNotEmpty() },
+                        arrivalDate = endTimeISO  // Same as arrival time
+                    )
+                    
+                    Log.d("FlightDetail", "Creating flight plan for tripId: $id")
+                    Log.d("FlightDetail", "Request: $request")
+            
                     val result = if (isEditMode && planId != null) {
                         tripRepository.updateFlightPlan(id, planId!!, request)
                     } else {

@@ -11,7 +11,9 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateRestaurantPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityRestaurantDetailBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.util.Calendar
 
@@ -23,6 +25,7 @@ class RestaurantDetailActivity : AppCompatActivity() {
     private var tripEndDate: String? = null
     private var placeLatitude: Double = 0.0
     private var placeLongitude: Double = 0.0
+    private var photoUrl: String? = null
     private val tripRepository: TripRepository by inject()
     
     private var isEditMode = false
@@ -62,6 +65,7 @@ class RestaurantDetailActivity : AppCompatActivity() {
         val placeAddress = intent.getStringExtra("placeAddress")
         placeLatitude = intent.getDoubleExtra("placeLatitude", 0.0)
         placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)
+        photoUrl = intent.getStringExtra("photoUrl")
         
         // Pre-fill place data
         placeName?.let { binding.etRestaurantName.setText(it) }
@@ -146,27 +150,45 @@ class RestaurantDetailActivity : AppCompatActivity() {
             val startTimeISO = convertToISO(date, time)
             val endTimeISO = convertToISO(date, addOneHour(time))
             
-            val request = CreateRestaurantPlanRequest(
-                tripId = id,
-                title = binding.etRestaurantName.text.toString(),
-                address = binding.etAddress.text.toString(),
-                location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
-                    "$placeLatitude,$placeLongitude"
-                } else null,
-                startTime = startTimeISO,
-                endTime = endTimeISO,
-                expense = binding.etExpense.text.toString().toDoubleOrNull(),
-                photoUrl = null,
-                type = PlanType.RESTAURANT.name,
-                reservationDate = startTimeISO,
-                reservationTime = startTimeISO
-            )
-            
-            Log.d("RestaurantDetail", "Creating restaurant plan for tripId: $id")
-            Log.d("RestaurantDetail", "Request: $request")
-            
             lifecycleScope.launch {
                 try {
+                    // Download and upload image if photoUrl is a URL (starts with http)
+                    var uploadedFilename: String? = null
+                    if (!photoUrl.isNullOrEmpty() && photoUrl!!.startsWith("http")) {
+                        Log.d("RestaurantDetail", "Downloading and uploading image from URL: $photoUrl")
+                        val uploadResult = withContext(Dispatchers.IO) {
+                            tripRepository.downloadAndUploadImage(this@RestaurantDetailActivity, photoUrl!!)
+                        }
+                        uploadResult.onSuccess { filename ->
+                            uploadedFilename = filename
+                            Log.d("RestaurantDetail", "Image uploaded successfully: $filename")
+                        }.onFailure { exception ->
+                            Log.e("RestaurantDetail", "Failed to upload image: ${exception.message}", exception)
+                        }
+                    } else {
+                        // If photoUrl is already a filename, use it
+                        uploadedFilename = photoUrl
+                    }
+                    
+                    val request = CreateRestaurantPlanRequest(
+                        tripId = id,
+                        title = binding.etRestaurantName.text.toString(),
+                        address = binding.etAddress.text.toString(),
+                        location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
+                            "$placeLatitude,$placeLongitude"
+                        } else null,
+                        startTime = startTimeISO,
+                        endTime = endTimeISO,
+                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        photoUrl = uploadedFilename,
+                        type = PlanType.RESTAURANT.name,
+                        reservationDate = startTimeISO,
+                        reservationTime = startTimeISO
+                    )
+                    
+                    Log.d("RestaurantDetail", "Creating restaurant plan for tripId: $id")
+                    Log.d("RestaurantDetail", "Request: $request")
+            
                     val result = if (isEditMode && planId != null) {
                         // Update existing plan
                         tripRepository.updateRestaurantPlan(id, planId!!, request)

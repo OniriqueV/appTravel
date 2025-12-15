@@ -12,7 +12,9 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateActivityPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityActivityDetailBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.util.Calendar
 
@@ -24,6 +26,7 @@ class ActivityDetailActivity : AppCompatActivity() {
     private var tripEndDate: String? = null
     private var placeLatitude: Double = 0.0
     private var placeLongitude: Double = 0.0
+    private var photoUrl: String? = null
     private val tripRepository: TripRepository by inject()
     
     private var isEditMode = false
@@ -70,6 +73,18 @@ class ActivityDetailActivity : AppCompatActivity() {
         val placeAddress = intent.getStringExtra("placeAddress")
         placeLatitude = intent.getDoubleExtra("placeLatitude", 0.0)
         placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)
+        photoUrl = intent.getStringExtra("photoUrl")
+        
+        // Get plan type and update title
+        val planTypeName = intent.getStringExtra("planType")
+        planTypeName?.let {
+            try {
+                val planType = PlanType.valueOf(it)
+                binding.tvActivityTitle.text = planType.displayName
+            } catch (e: Exception) {
+                // Keep default title if plan type is invalid
+            }
+        }
         
         // Pre-fill place data
         placeName?.let { binding.etEventName.setText(it) }
@@ -191,25 +206,43 @@ class ActivityDetailActivity : AppCompatActivity() {
             val startTimeISO = convertDateTimeToISO(startDate, startTime)
             val endTimeISO = convertDateTimeToISO(endDate, endTime)
             
-            val request = CreateActivityPlanRequest(
-                tripId = id,
-                title = binding.etEventName.text.toString(),
-                address = binding.etAddress.text.toString(),
-                location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
-                    "$placeLatitude,$placeLongitude"
-                } else null,
-                startTime = startTimeISO,
-                endTime = endTimeISO,
-                expense = binding.etExpense.text.toString().toDoubleOrNull(),
-                photoUrl = null,
-                type = PlanType.ACTIVITY.name
-            )
-            
-            Log.d("ActivityDetail", "Creating activity plan for tripId: $id")
-            Log.d("ActivityDetail", "Request: $request")
-            
             lifecycleScope.launch {
                 try {
+                    // Download and upload image if photoUrl is a URL (starts with http)
+                    var uploadedFilename: String? = null
+                    if (!photoUrl.isNullOrEmpty() && photoUrl!!.startsWith("http")) {
+                        Log.d("ActivityDetail", "Downloading and uploading image from URL: $photoUrl")
+                        val uploadResult = withContext(Dispatchers.IO) {
+                            tripRepository.downloadAndUploadImage(this@ActivityDetailActivity, photoUrl!!)
+                        }
+                        uploadResult.onSuccess { filename ->
+                            uploadedFilename = filename
+                            Log.d("ActivityDetail", "Image uploaded successfully: $filename")
+                        }.onFailure { exception ->
+                            Log.e("ActivityDetail", "Failed to upload image: ${exception.message}", exception)
+                        }
+                    } else {
+                        // If photoUrl is already a filename, use it
+                        uploadedFilename = photoUrl
+                    }
+            
+                    val request = CreateActivityPlanRequest(
+                        tripId = id,
+                        title = binding.etEventName.text.toString(),
+                        address = binding.etAddress.text.toString(),
+                        location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
+                            "$placeLatitude,$placeLongitude"
+                        } else null,
+                        startTime = startTimeISO,
+                        endTime = endTimeISO,
+                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        photoUrl = uploadedFilename,
+                        type = PlanType.ACTIVITY.name
+                    )
+                    
+                    Log.d("ActivityDetail", "Creating activity plan for tripId: $id")
+                    Log.d("ActivityDetail", "Request: $request")
+            
                     val result = if (isEditMode && planId != null) {
                         tripRepository.updateActivityPlan(id, planId!!, request)
                     } else {

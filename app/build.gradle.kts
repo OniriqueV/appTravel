@@ -33,6 +33,9 @@ android {
         buildConfigField("String", "AUTH_BASE_URL", "\"${localProperties.getProperty("AUTH_BASE_URL")}\"")
         buildConfigField("String", "TRIP_SERVICE_BASE_URL", "\"$tripServiceBaseUrl\"")
         buildConfigField("String", "UPLOAD_BASE_URL", "\"${tripServiceBaseUrl}uploads/\"")
+        buildConfigField("String", "GOOGLE_API_BASE_URL", "\"${localProperties.getProperty("GOOGLE_API_BASE_URL")}\"")
+        buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_API_KEY", "\"${localProperties.getProperty("api_key")}\"")
+        buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_CX", "\"${localProperties.getProperty("cx")}\"")
     }
 
     buildFeatures {

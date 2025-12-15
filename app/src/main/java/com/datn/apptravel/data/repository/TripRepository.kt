@@ -11,6 +11,7 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URL
 
 class TripRepository(private val tripApiService: TripApiService) {
     
@@ -552,6 +553,52 @@ class TripRepository(private val tripApiService: TripApiService) {
                 Result.failure(Exception("Failed to upload images"))
             }
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Download image from URL and upload to server
+     * @param context Application context
+     * @param imageUrl URL of the image to download
+     * @return Result with filename on success
+     */
+    suspend fun downloadAndUploadImage(context: Context, imageUrl: String): Result<String> {
+        return try {
+            // Download image from URL
+            val url = URL(imageUrl)
+            val connection = url.openConnection()
+            connection.connect()
+            
+            val inputStream = connection.getInputStream()
+            val file = File(context.cacheDir, "downloaded_${System.currentTimeMillis()}.jpg")
+            val outputStream = FileOutputStream(file)
+            inputStream.copyTo(outputStream)
+            inputStream.close()
+            outputStream.close()
+            
+            // Upload to server
+            val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
+            val multipartBody = MultipartBody.Part.createFormData("file", file.name, requestBody)
+            
+            val response = tripApiService.uploadImage(multipartBody)
+            
+            // Clean up temp file
+            file.delete()
+            
+            if (response.isSuccessful && response.body()?.success == true) {
+                val fileName = response.body()?.fileName
+                if (fileName != null) {
+                    Result.success(fileName)
+                } else {
+                    Result.failure(Exception("File name is null"))
+                }
+            } else {
+                val errorMessage = response.body()?.message ?: "Failed to upload image"
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("TripRepository", "Error downloading and uploading image: ${e.message}", e)
             Result.failure(e)
         }
     }
