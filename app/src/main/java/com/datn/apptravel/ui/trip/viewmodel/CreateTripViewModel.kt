@@ -12,6 +12,8 @@ import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.ui.base.BaseViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class CreateTripViewModel(
@@ -25,6 +27,9 @@ class CreateTripViewModel(
     
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
+    
+    private val _dateConflictTrips = MutableLiveData<List<Trip>>()
+    val dateConflictTrips: LiveData<List<Trip>> = _dateConflictTrips
     
     // Store trip data while uploading
     private var pendingTripId: String? = null
@@ -100,6 +105,13 @@ class CreateTripViewModel(
                 val formattedStartDate = convertDateFormat(startDate)
                 val formattedEndDate = convertDateFormat(endDate)
                 
+                // Check for date conflicts with existing trips
+                val hasConflict = checkDateConflict(formattedStartDate, formattedEndDate, null)
+                if (hasConflict) {
+                    setLoading(false)
+                    return@launch // Stop if there's a conflict
+                }
+                
                 val request = CreateTripRequest(
                     userId = userId,
                     title = title,
@@ -151,6 +163,20 @@ class CreateTripViewModel(
                 val formattedStartDate = convertDateFormat(startDate)
                 val formattedEndDate = convertDateFormat(endDate)
                 
+                // Check if plans are within the new date range
+                val plansOutOfRange = checkPlansWithinDateRange(tripId, formattedStartDate, formattedEndDate)
+                if (plansOutOfRange) {
+                    setLoading(false)
+                    return@launch // Stop if there are plans outside the new date range
+                }
+                
+                // Check for date conflicts with existing trips (excluding current trip)
+                val hasConflict = checkDateConflict(formattedStartDate, formattedEndDate, tripId)
+                if (hasConflict) {
+                    setLoading(false)
+                    return@launch // Stop if there's a conflict
+                }
+                
                 val request = CreateTripRequest(
                     userId = userId,
                     title = title,
@@ -188,6 +214,108 @@ class CreateTripViewModel(
             outputFormat.format(date!!)
         } catch (e: Exception) {
             dateString // Return original if conversion fails
+        }
+    }
+
+    private suspend fun checkDateConflict(
+        startDate: String,
+        endDate: String,
+        excludeTripId: String?
+    ): Boolean {
+        try {
+            val userId = sessionManager.getUserId() ?: return false
+            val result = tripRepository.getTripsByUserId(userId)
+            
+            result.onSuccess { trips ->
+                val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                val newStartDate = LocalDate.parse(startDate, dateFormatter)
+                val newEndDate = LocalDate.parse(endDate, dateFormatter)
+                
+                val conflictingTrips = trips.filter { trip ->
+                    // Exclude the current trip when updating
+                    if (excludeTripId != null && trip.id == excludeTripId) {
+                        return@filter false
+                    }
+                    
+                    try {
+                        val existingStartDate = LocalDate.parse(trip.startDate, dateFormatter)
+                        val existingEndDate = LocalDate.parse(trip.endDate, dateFormatter)
+                        
+                        // Check if date ranges overlap
+                        // Two date ranges overlap if:
+                        // new start <= existing end AND new end >= existing start
+                        !(newEndDate.isBefore(existingStartDate) || newStartDate.isAfter(existingEndDate))
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+                
+                if (conflictingTrips.isNotEmpty()) {
+                    _dateConflictTrips.value = conflictingTrips
+                    val tripTitles = conflictingTrips.joinToString(", ") { "\"${it.title}\"" }
+                    _errorMessage.value = "Thời gian bị trùng với chuyến đi: $tripTitles"
+                    return true
+                }
+            }.onFailure { exception ->
+                _errorMessage.value = "Không thể kiểm tra trùng lặp: ${exception.message}"
+                return true
+            }
+            
+            return false
+        } catch (e: Exception) {
+            _errorMessage.value = "Lỗi khi kiểm tra trùng lặp: ${e.message}"
+            return true
+        }
+    }
+
+    private suspend fun checkPlansWithinDateRange(
+        tripId: String,
+        startDate: String,
+        endDate: String
+    ): Boolean {
+        try {
+            val result = tripRepository.getTripById(tripId)
+            
+            result.onSuccess { trip ->
+                val plans = trip.plans ?: emptyList()
+                
+                if (plans.isEmpty()) {
+                    return false // No plans to check
+                }
+                
+                val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                val newStartDate = LocalDate.parse(startDate, dateFormatter)
+                val newEndDate = LocalDate.parse(endDate, dateFormatter)
+                
+                // Check each plan's date
+                val plansOutOfRange = plans.filter { plan ->
+                    try {
+                        // Extract date from startTime format: yyyy-MM-dd'T'HH:mm:ss
+                        val planDateStr = plan.startTime.substring(0, 10) // Get yyyy-MM-dd part
+                        val planDate = LocalDate.parse(planDateStr, dateFormatter)
+                        
+                        // Check if plan date is outside the new date range
+                        planDate.isBefore(newStartDate) || planDate.isAfter(newEndDate)
+                    } catch (e: Exception) {
+                        false // If can't parse date, assume it's valid
+                    }
+                }
+                
+                if (plansOutOfRange.isNotEmpty()) {
+                    val planTitles = plansOutOfRange.joinToString(", ") { "\"${it.title}\"" }
+                    val count = plansOutOfRange.size
+                    _errorMessage.value = "Không thể thay đổi thời gian! Có $count kế hoạch nằm ngoài khoảng thời gian mới: $planTitles. Vui lòng xóa hoặc điều chỉnh các kế hoạch này trước."
+                    return true
+                }
+            }.onFailure { exception ->
+                _errorMessage.value = "Không thể kiểm tra kế hoạch: ${exception.message}"
+                return true
+            }
+            
+            return false
+        } catch (e: Exception) {
+            _errorMessage.value = "Lỗi khi kiểm tra kế hoạch: ${e.message}"
+            return true
         }
     }
 

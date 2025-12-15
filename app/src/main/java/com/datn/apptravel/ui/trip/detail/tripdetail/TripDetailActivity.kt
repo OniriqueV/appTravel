@@ -91,9 +91,9 @@ class TripDetailActivity : AppCompatActivity() {
             showTripMenu()
         }
 
-        // Setup add new plan button
+        // Setup add new plan button - will be updated based on trip status
         binding.btnAddNewPlan.setOnClickListener {
-            navigateToPlanSelection()
+            handlePlanButtonClick()
         }
 
         // Setup share button
@@ -151,6 +151,9 @@ class TripDetailActivity : AppCompatActivity() {
             tvTripEndDate?.text = ""
             return
         }
+        
+        // Update button text based on trip status
+        updatePlanButtonBasedOnTripStatus(trip)
 
         // Set trip details from API
         tvTripName?.text = trip.title ?: "Untitled Trip"
@@ -198,6 +201,10 @@ class TripDetailActivity : AppCompatActivity() {
     private fun showTripMenu() {
         val popupMenu = PopupMenu(this, binding.btnMenu)
         popupMenu.menuInflater.inflate(R.menu.trip_detail_menu, popupMenu.menu)
+        
+        // Hide "View Map" menu item if trip has ended
+        val isTripEnded = isTripEnded()
+        popupMenu.menu.findItem(R.id.action_view_map)?.isVisible = !isTripEnded
 
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -486,5 +493,42 @@ class TripDetailActivity : AppCompatActivity() {
         intent.putExtra("tripId", tripId)
         intent.putExtra("tripTitle", viewModel.tripDetails.value?.title ?: "Trip")
         startActivity(intent)
+    }
+    
+    /**
+     * Check if the trip has ended
+     */
+    private fun isTripEnded(): Boolean {
+        val trip = currentTrip ?: return false
+        return try {
+            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val endDate = LocalDate.parse(trip.endDate, dateFormatter)
+            val today = LocalDate.now()
+            endDate.isBefore(today)
+        } catch (e: Exception) {
+            false
+        }
+    }
+    
+    /**
+     * Update plan button text and icon based on trip status
+     */
+    private fun updatePlanButtonBasedOnTripStatus(trip: Trip) {
+        if (isTripEnded()) {
+            binding.btnAddNewPlan.text = "View Map"
+        } else {
+            binding.btnAddNewPlan.text = "Add new plan"
+        }
+    }
+    
+    /**
+     * Handle plan button click - navigate to different screen based on trip status
+     */
+    private fun handlePlanButtonClick() {
+        if (isTripEnded()) {
+            navigateToMapView()
+        } else {
+            navigateToPlanSelection()
+        }
     }
 }
