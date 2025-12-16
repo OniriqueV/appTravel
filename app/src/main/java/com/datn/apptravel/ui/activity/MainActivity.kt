@@ -11,7 +11,7 @@ import com.datn.apptravel.ui.notification.NotificationFragment
 import com.datn.apptravel.ui.profile.ProfileFragment
 import com.datn.apptravel.ui.trip.TripsFragment
 import com.datn.apptravel.ui.app.MainViewModel
-import com.datn.apptravel.ui.discover.search.SearchExploreFragment
+//import com.datn.apptravel.ui.discover.search.SearchExploreFragment
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.NavController
@@ -87,7 +87,11 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
 
 
                 R.id.nav_discover -> {
-                    replaceFragment(DiscoverFragment())
+                    val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""  // hoặc FirebaseAuth.getInstance().currentUser?.uid
+                    replaceFragment(
+                        fragment = DiscoverFragment()
+                    )
+
                     true
                 }
                 R.id.nav_profile -> {
@@ -100,9 +104,9 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     }
 
 
-    fun openSearchExplore() {
-        replaceFragment(SearchExploreFragment())
-    }
+//    fun openSearchExplore() {
+//        replaceFragment(SearchExploreFragment())
+//    }
 
 
 
@@ -113,5 +117,6 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     }
 
     override fun handleLoading(isLoading: Boolean) {}
+
 
 }

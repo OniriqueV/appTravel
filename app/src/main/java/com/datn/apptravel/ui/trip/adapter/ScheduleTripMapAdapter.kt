@@ -9,11 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ItemPlanConnectorBinding
 import com.datn.apptravel.databinding.ItemPlanMapHorizontalBinding
-<<<<<<<< HEAD:app/src/main/java/com/datn/apptravel/ui/trip/adapter/ScheduleAdapter.kt
-import com.datn.apptravel.databinding.ItemTripDateBinding
-========
+
 import com.datn.apptravel.databinding.ItemTripMapDateBinding
->>>>>>>> upstream/master:app/src/main/java/com/datn/apptravel/ui/trip/adapter/ScheduleTripMapAdapter.kt
+
 import com.datn.apptravel.ui.trip.model.PlanLocation
 import com.datn.apptravel.ui.trip.model.ScheduleItem
 

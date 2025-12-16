@@ -103,15 +103,15 @@ class PlanSelectionViewModel(
 
         // Check if current plan type is NONE
         val currentPlanType = _selectedPlanType.value ?: PlanType.NONE
-<<<<<<<< HEAD:app/src/main/java/com/datn/apptravel/ui/trip/viewmodel/PlanViewModel.kt
+
         if (currentPlanType == PlanType.NONE) {
             _places.value = emptyList()
             setLoading(false)
             return
         }
-========
+
         val hasPlanType = currentPlanType != PlanType.NONE
->>>>>>>> upstream/master:app/src/main/java/com/datn/apptravel/ui/trip/viewmodel/PlanSelectionViewModel.kt
+
 
         setLoading(true)
 
@@ -131,8 +131,7 @@ class PlanSelectionViewModel(
                         searchLatitude = searchedPlace.latitude
                         searchLongitude = searchedPlace.longitude
 
-<<<<<<<< HEAD:app/src/main/java/com/datn/apptravel/ui/trip/viewmodel/PlanViewModel.kt
-========
+
                         android.util.Log.d("PlanViewModel", "Found location: ${searchedPlace.name} at (${searchedPlace.latitude}, ${searchedPlace.longitude})")
 
                         // If plan type is selected, fetch places at that location
@@ -242,7 +241,6 @@ class PlanSelectionViewModel(
 
                         android.util.Log.d("PlanViewModel", "Found location: ${searchedPlace.name} at (${searchedPlace.latitude}, ${searchedPlace.longitude})")
 
->>>>>>>> upstream/master:app/src/main/java/com/datn/apptravel/ui/trip/viewmodel/PlanSelectionViewModel.kt
                         // Now fetch places of selected type at the searched location
                         when (val placesResult = placesRepository.getPlacesByCategory(
                             category = planType.geoapifyCategory,
@@ -282,27 +280,4 @@ class PlanSelectionViewModel(
             }
         }
     }
-<<<<<<<< HEAD:app/src/main/java/com/datn/apptravel/ui/trip/viewmodel/PlanViewModel.kt
-
-    fun clearSearch(currentLatitude: Double, currentLongitude: Double) {
-        currentSearchQuery = null
-
-        // Clear search location - back to using device location
-        searchLatitude = null
-        searchLongitude = null
-
-        val currentPlanType = _selectedPlanType.value ?: PlanType.NONE
-
-        // If current plan type is NONE, just clear places
-        if (currentPlanType == PlanType.NONE) {
-            _places.value = emptyList()
-            setLoading(false)
-            return
-        }
-
-        // Fetch places at current device location
-        fetchPlaces(currentPlanType, currentLatitude, currentLongitude)
-    }
-========
->>>>>>>> upstream/master:app/src/main/java/com/datn/apptravel/ui/trip/viewmodel/PlanSelectionViewModel.kt
 }

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,7 @@ plugins {
 }
 
 android {
+
     namespace = "com.datn.apptravel"
     compileSdk = 36
 
@@ -18,19 +21,25 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
         // Read API keys from local.properties
-        val localProperties = org.jetbrains.kotlin.konan.properties.Properties()
+        // Load local.properties
+        val localProperties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
-            localPropertiesFile.inputStream().use { localProperties.load(it) }
+            localProperties.load(localPropertiesFile.inputStream())
         }
-        
+
         val tripServiceBaseUrl = localProperties.getProperty("TRIP_SERVICE_BASE_URL", "http://192.168.1.6:8080/")
-        
+
+
+
+
         buildConfigField("String", "GEOAPIFY_API_KEY", "\"${localProperties.getProperty("GEOAPIFY_API_KEY")}\"")
         buildConfigField("String", "GEOAPIFY_BASE_URL", "\"${localProperties.getProperty("GEOAPIFY_BASE_URL")}\"")
         buildConfigField("String", "OSRM_BASE_URL", "\"${localProperties.getProperty("OSRM_BASE_URL")}\"")
         buildConfigField("String", "NOMINATIM_BASE_URL", "\"${localProperties.getProperty("NOMINATIM_BASE_URL")}\"")
         buildConfigField("String", "AUTH_BASE_URL", "\"${localProperties.getProperty("AUTH_BASE_URL")}\"")
+        buildConfigField("String", "TRIP_SERVICE_BASE_URL", "\"${localProperties.getProperty("TRIP_SERVICE_BASE_URL", "http://10.0.2.2:8083/")}\"")
+        buildConfigField("String", "DISCOVER_SERVICE_BASE_URL", "\"${localProperties.getProperty("DISCOVER_SERVICE_BASE_URL", "http://10.0.2.2:8082/")}\"")
         buildConfigField("String", "TRIP_SERVICE_BASE_URL", "\"$tripServiceBaseUrl\"")
         buildConfigField("String", "UPLOAD_BASE_URL", "\"${tripServiceBaseUrl}uploads/\"")
         buildConfigField("String", "GOOGLE_API_BASE_URL", "\"${localProperties.getProperty("GOOGLE_API_BASE_URL")}\"")
@@ -121,6 +130,9 @@ dependencies {
     implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.recyclerview)
+
+    implementation("io.coil-kt:coil:2.5.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

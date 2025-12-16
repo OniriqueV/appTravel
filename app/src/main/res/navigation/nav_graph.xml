@@ -26,5 +26,11 @@
         android:id="@+id/searchExploreFragment"
         android:name="com.datn.apptravel.ui.discover.search.SearchExploreFragment"
         android:label="Search Explore"
-        tools:layout="@layout/fragment_search_explore" />
+        tools:layout="@layout/fragment_search_explore">
+
+        <argument
+            android:name="userId"
+            app:argType="string"
+            android:defaultValue="" />
+    </fragment>
 </navigation>

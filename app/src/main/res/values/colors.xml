@@ -15,4 +15,10 @@
     <color name="beige_light">#F9F5F0</color>
     <color name="dark_brown">#3E2723</color>
     <color name="highlight_background">#EFF6FF</color>
+    <color name="grey_400">#BDBDBD</color>
+    <color name="grey_500">#9E9E9E</color>
+    <color name="grey_700">#616161</color>
+
+    <color name="red">#FF3B30</color>
+
 </resources>
