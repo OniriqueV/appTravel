@@ -7,7 +7,7 @@
         <!-- Localhost -->
         <domain includeSubdomains="true">192.168.1.6</domain>
         <!-- Local IP ranges for real devices -->
-        <domain includeSubdomains="true">192.168.0.0/16</domain>
-        <domain includeSubdomains="true">172.16.0.0/12</domain>
+<!--        <domain includeSubdomains="true">192.168.0.0/16</domain>-->
+<!--        <domain includeSubdomains="true">172.16.0.0/12</domain>-->
     </domain-config>
 </network-security-config>

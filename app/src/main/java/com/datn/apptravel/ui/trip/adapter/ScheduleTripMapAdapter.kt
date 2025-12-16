@@ -9,7 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ItemPlanConnectorBinding
 import com.datn.apptravel.databinding.ItemPlanMapHorizontalBinding
+
 import com.datn.apptravel.databinding.ItemTripMapDateBinding
+
 import com.datn.apptravel.ui.trip.model.PlanLocation
 import com.datn.apptravel.ui.trip.model.ScheduleItem
 
