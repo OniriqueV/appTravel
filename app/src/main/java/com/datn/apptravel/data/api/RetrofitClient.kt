@@ -11,6 +11,7 @@ object RetrofitClient {
     private val GEOAPIFY_BASE_URL = BuildConfig.GEOAPIFY_BASE_URL
     private val AUTH_BASE_URL = BuildConfig.AUTH_BASE_URL
     private val TRIP_SERVICE_BASE_URL = BuildConfig.TRIP_SERVICE_BASE_URL
+    private val GOOGLE_API_BASE_URL = BuildConfig.GOOGLE_API_BASE_URL
     
     private const val TIMEOUT = 30L // seconds
 
@@ -52,6 +53,18 @@ object RetrofitClient {
     
     val tripApiService: TripApiService by lazy {
         tripServiceRetrofit.create(TripApiService::class.java)
+    }
+    
+    private val googleApiRetrofit: Retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(GOOGLE_API_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    
+    val googleImageSearchService: GoogleImageSearchService by lazy {
+        googleApiRetrofit.create(GoogleImageSearchService::class.java)
     }
 
     inline fun <reified T> createService(): T = retrofit.create(T::class.java)

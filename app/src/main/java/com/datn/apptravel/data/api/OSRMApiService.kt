@@ -19,6 +19,6 @@ interface OSRMApiService {
         @Path("coordinates", encoded = true) coordinates: String,
         @Query("overview") overview: String = "full",
         @Query("geometries") geometries: String = "geojson",
-        @Query("steps") steps: Boolean = true
+        @Query("steps") steps: Boolean = false
     ): Response<OSRMResponse>
 }

@@ -109,12 +109,16 @@ class TripDetailViewModel(private val tripRepository: TripRepository) : BaseView
                 }
                 
                 ScheduleActivity(
+                    id = plan.id,
+                    tripId = plan.tripId,
                     time = startTime,
                     title = plan.title,
                     description = plan.address ?: "",
                     location = plan.address ?: "",
                     type = plan.type,
-                    iconResId = getIconForPlanType(plan.type)
+                    expense = plan.expense,
+                    iconResId = getIconForPlanType(plan.type),
+                    fullStartTime = plan.startTime
                 )
             }
             
@@ -150,7 +154,7 @@ class TripDetailViewModel(private val tripRepository: TripRepository) : BaseView
     private fun getIconForPlanType(planType: PlanType): Int {
         return when (planType) {
             PlanType.RESTAURANT -> R.drawable.ic_restaurant
-            PlanType.LODGING -> R.drawable.ic_lodging
+            PlanType.LODGING -> R.drawable.ic_location
             PlanType.FLIGHT -> R.drawable.ic_flight
             PlanType.BOAT -> R.drawable.ic_boat
             PlanType.CAR_RENTAL -> R.drawable.ic_car

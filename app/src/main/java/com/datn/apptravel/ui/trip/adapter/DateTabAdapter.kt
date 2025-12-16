@@ -60,11 +60,5 @@ class DateTabAdapter(
             }
         }
     }
-    
-    fun setSelectedPosition(position: Int) {
-        val oldPosition = selectedPosition
-        selectedPosition = position
-        notifyItemChanged(oldPosition)
-        notifyItemChanged(selectedPosition)
-    }
+
 }

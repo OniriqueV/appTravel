@@ -12,7 +12,9 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateCarRentalPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityCarRentalDetailBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.util.Calendar
 
@@ -24,12 +26,27 @@ class CarRentalDetailActivity : AppCompatActivity() {
     private var tripEndDate: String? = null
     private var placeLatitude: Double = 0.0
     private var placeLongitude: Double = 0.0
+    private var photoUrl: String? = null
     private val tripRepository: TripRepository by inject()
+    
+    private var isEditMode = false
+    private var planId: String? = null
+    
+    companion object {
+        const val EXTRA_PLAN_ID = "plan_id"
+        const val EXTRA_PLAN_TITLE = "plan_title"
+        const val EXTRA_PLACE_ADDRESS = "place_address"
+        const val EXTRA_START_TIME = "start_time"
+        const val EXTRA_EXPENSE = "expense"
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCarRentalDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        planId = intent.getStringExtra(EXTRA_PLAN_ID)
+        isEditMode = planId != null
         
         tripId = intent.getStringExtra("tripId")
         
@@ -48,10 +65,28 @@ class CarRentalDetailActivity : AppCompatActivity() {
         val placeAddress = intent.getStringExtra("placeAddress")
         placeLatitude = intent.getDoubleExtra("placeLatitude", 0.0)
         placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)
+        photoUrl = intent.getStringExtra("photoUrl")
+        
+        // Get plan type and update title
+        val planTypeName = intent.getStringExtra("planType")
+        planTypeName?.let {
+            try {
+                val planType = PlanType.valueOf(it)
+                binding.tvCarRentalTitle.text = planType.displayName
+            } catch (e: Exception) {
+                // Keep default title if plan type is invalid
+            }
+        }
         
         // Pre-fill place data
         placeName?.let { binding.etRentalAgency.setText(it) }
         placeAddress?.let { binding.etPickupLocation.setText(it) }
+        
+        if (isEditMode) {
+            loadEditData()
+            binding.etRentalAgency.isEnabled = false
+            binding.etPickupLocation.isEnabled = false
+        }
         
         setupUI()
     }
@@ -136,39 +171,62 @@ class CarRentalDetailActivity : AppCompatActivity() {
             val startTimeISO = convertDateTimeToISO(pickupDate, pickupTime)
             val endTimeISO = convertDateTimeToISO(returnDate, returnTime)
             
-            val request = CreateCarRentalPlanRequest(
-                tripId = id,
-                title = binding.etRentalAgency.text.toString(),
-                address = binding.etPickupLocation.text.toString(),
-                location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
-                    "$placeLatitude,$placeLongitude"
-                } else null,
-                startTime = startTimeISO,
-                endTime = endTimeISO,
-                expense = binding.etExpense.text.toString().toDoubleOrNull(),
-                photoUrl = null,
-                type = PlanType.CAR_RENTAL.name,
-                pickupDate = startTimeISO,
-                pickupTime = startTimeISO,
-                phone = binding.etPhone.text.toString().takeIf { it.isNotEmpty() }
-            )
-            
-            Log.d("CarRentalDetail", "Creating car rental plan for tripId: $id")
-            Log.d("CarRentalDetail", "Request: $request")
-            
             lifecycleScope.launch {
                 try {
-                    val result = tripRepository.createCarRentalPlan(id, request)
+                    // Download and upload image if photoUrl is a URL (starts with http)
+                    var uploadedFilename: String? = null
+                    if (!photoUrl.isNullOrEmpty() && photoUrl!!.startsWith("http")) {
+                        Log.d("CarRentalDetail", "Downloading and uploading image from URL: $photoUrl")
+                        val uploadResult = withContext(Dispatchers.IO) {
+                            tripRepository.downloadAndUploadImage(this@CarRentalDetailActivity, photoUrl!!)
+                        }
+                        uploadResult.onSuccess { filename ->
+                            uploadedFilename = filename
+                            Log.d("CarRentalDetail", "Image uploaded successfully: $filename")
+                        }.onFailure { exception ->
+                            Log.e("CarRentalDetail", "Failed to upload image: ${exception.message}", exception)
+                        }
+                    } else {
+                        // If photoUrl is already a filename, use it
+                        uploadedFilename = photoUrl
+                    }
+            
+                    val request = CreateCarRentalPlanRequest(
+                        tripId = id,
+                        title = binding.etRentalAgency.text.toString(),
+                        address = binding.etPickupLocation.text.toString(),
+                        location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
+                            "$placeLatitude,$placeLongitude"
+                        } else null,
+                        startTime = startTimeISO,
+                        endTime = endTimeISO,
+                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        photoUrl = uploadedFilename,
+                        type = PlanType.CAR_RENTAL.name,
+                        pickupDate = startTimeISO,
+                        pickupTime = startTimeISO,
+                        phone = binding.etPhone.text.toString().takeIf { it.isNotEmpty() }
+                    )
+                    
+                    Log.d("CarRentalDetail", "Creating car rental plan for tripId: $id")
+                    Log.d("CarRentalDetail", "Request: $request")
+            
+                    val result = if (isEditMode && planId != null) {
+                        tripRepository.updateCarRentalPlan(id, planId!!, request)
+                    } else {
+                        tripRepository.createCarRentalPlan(id, request)
+                    }
+                    
                     result.onSuccess { plan ->
-                        Log.d("CarRentalDetail", "Plan created successfully: ${plan.id}")
+                        Log.d("CarRentalDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@CarRentalDetailActivity, "Car rental saved", Toast.LENGTH_SHORT).show()
                         finish()
                     }.onFailure { exception ->
-                        Log.e("CarRentalDetail", "Failed to create plan", exception)
+                        Log.e("CarRentalDetail", "Failed to save plan", exception)
                         Toast.makeText(this@CarRentalDetailActivity, exception.message ?: "Failed to save", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    Log.e("CarRentalDetail", "Exception during plan creation", e)
+                    Log.e("CarRentalDetail", "Exception during plan save", e)
                     Toast.makeText(this@CarRentalDetailActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -214,6 +272,38 @@ class CarRentalDetailActivity : AppCompatActivity() {
             return planDate >= tripStartDate!! && planDate <= tripEndDate!!
         } catch (e: Exception) {
             return true
+        }
+    }
+    
+    private fun loadEditData() {
+        val title = intent.getStringExtra(EXTRA_PLAN_TITLE)
+        val address = intent.getStringExtra(EXTRA_PLACE_ADDRESS)
+        val startTime = intent.getStringExtra(EXTRA_START_TIME)
+        val expense = intent.getDoubleExtra(EXTRA_EXPENSE, 0.0)
+        
+        title?.let { binding.etRentalAgency.setText(it) }
+        address?.let { binding.etPickupLocation.setText(it) }
+        
+        startTime?.let { isoTime ->
+            try {
+                val parts = isoTime.split("T")
+                if (parts.size == 2) {
+                    val datePart = parts[0]
+                    val timePart = parts[1].substring(0, 5)
+                    val dateParts = datePart.split("-")
+                    if (dateParts.size == 3) {
+                        val formattedDate = String.format("%s/%s/%s", dateParts[2], dateParts[1], dateParts[0])
+                        binding.etPickupDate.setText(formattedDate)
+                        binding.etPickupTime.setText(timePart)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("CarRentalDetail", "Error parsing start time", e)
+            }
+        }
+        
+        if (expense > 0) {
+            binding.etExpense.setText(expense.toString())
         }
     }
 }

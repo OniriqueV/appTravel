@@ -12,7 +12,9 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateFlightPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityFlightDetailBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.util.Calendar
 
@@ -23,13 +25,33 @@ class FlightDetailActivity : AppCompatActivity() {
     private var tripEndDate: String? = null
     private var placeLatitude: Double = 0.0
     private var placeLongitude: Double = 0.0
+    private var photoUrl: String? = null
     private lateinit var binding: ActivityFlightDetailBinding
     private val tripRepository: TripRepository by inject()
+    
+    private var isEditMode = false
+    private var planId: String? = null
+    
+    // Separate date and time variables for departure
+    private var departureDate: String = ""
+    private var departureTime: String = ""
+    
+    companion object {
+        const val EXTRA_PLAN_ID = "plan_id"
+        const val EXTRA_PLAN_TITLE = "plan_title"
+        const val EXTRA_PLACE_ADDRESS = "place_address"
+        const val EXTRA_START_TIME = "start_time"
+        const val EXTRA_END_TIME = "end_time"
+        const val EXTRA_EXPENSE = "expense"
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityFlightDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        planId = intent.getStringExtra(EXTRA_PLAN_ID)
+        isEditMode = planId != null
         
         tripId = intent.getStringExtra("tripId")
         
@@ -48,10 +70,17 @@ class FlightDetailActivity : AppCompatActivity() {
         val placeAddress = intent.getStringExtra("placeAddress")
         placeLatitude = intent.getDoubleExtra("placeLatitude", 0.0)
         placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)
+        photoUrl = intent.getStringExtra("photoUrl")
         
         // Pre-fill place data
         placeName?.let { binding.etAirline.setText(it) }
         placeAddress?.let { binding.etAddress.setText(it) }
+        
+        if (isEditMode) {
+            loadEditData()
+            binding.etAirline.isEnabled = false
+            binding.etAddress.isEnabled = false
+        }
         
         setupUI()
     }
@@ -75,6 +104,11 @@ class FlightDetailActivity : AppCompatActivity() {
         // Departure date picker
         binding.etDepartureDate.setOnClickListener {
             showDatePicker(binding.etDepartureDate)
+        }
+        
+        // Departure time picker
+        binding.etDepartureTime.setOnClickListener {
+            showTimePicker(binding.etDepartureTime)
         }
         
         // Arrival date picker
@@ -115,18 +149,30 @@ class FlightDetailActivity : AppCompatActivity() {
         Log.d("FlightDetail", "========== SAVE BUTTON CLICKED ==========")
         
         // Validate inputs
-        if (binding.etAirline.text.isNullOrEmpty() ||
-            binding.etDepartureDate.text.isNullOrEmpty() ||
-            binding.etArrivalDate.text.isNullOrEmpty() ||
-            binding.etArrivalTime.text.isNullOrEmpty()) {
-            Log.e("FlightDetail", "Validation failed - missing required fields")
-            Toast.makeText(this, "Please fill out required fields", Toast.LENGTH_SHORT).show()
+        if (binding.etAirline.text.isNullOrEmpty()) {
+            Toast.makeText(this, "Please enter airport", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (binding.etDepartureDate.text.isNullOrEmpty()) {
+            Toast.makeText(this, "Please select departure date", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (binding.etDepartureTime.text.isNullOrEmpty()) {
+            Toast.makeText(this, "Please select departure time", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (binding.etArrivalDate.text.isNullOrEmpty()) {
+            Toast.makeText(this, "Please select arrival date", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (binding.etArrivalTime.text.isNullOrEmpty()) {
+            Toast.makeText(this, "Please select arrival time", Toast.LENGTH_SHORT).show()
             return
         }
         
         tripId?.let { id ->
             val departureDate = binding.etDepartureDate.text.toString()
-            val departureTime = "09:00" // Default departure time
+            val departureTime = binding.etDepartureTime.text.toString()
             val arrivalDate = binding.etArrivalDate.text.toString()
             val arrivalTime = binding.etArrivalTime.text.toString()
             
@@ -140,39 +186,62 @@ class FlightDetailActivity : AppCompatActivity() {
             val startTimeISO = convertDateTimeToISO(departureDate, departureTime)
             val endTimeISO = convertDateTimeToISO(arrivalDate, arrivalTime)
             
-            val request = CreateFlightPlanRequest(
-                tripId = id,
-                title = binding.etAirline.text.toString(),
-                address = binding.etAddress.text.toString(),
-                location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
-                    "$placeLatitude,$placeLongitude"
-                } else null,
-                startTime = startTimeISO,
-                endTime = endTimeISO,
-                expense = binding.etExpense.text.toString().toDoubleOrNull(),
-                photoUrl = null,
-                type = PlanType.FLIGHT.name,
-                arrivalLocation = null,  // Not available in layout
-                arrivalAddress = binding.etArrivalAddress.text.toString().takeIf { it.isNotEmpty() },
-                arrivalDate = endTimeISO  // Same as arrival time
-            )
-            
-            Log.d("FlightDetail", "Creating flight plan for tripId: $id")
-            Log.d("FlightDetail", "Request: $request")
-            
             lifecycleScope.launch {
                 try {
-                    val result = tripRepository.createFlightPlan(id, request)
+                    // Download and upload image if photoUrl is a URL (starts with http)
+                    var uploadedFilename: String? = null
+                    if (!photoUrl.isNullOrEmpty() && photoUrl!!.startsWith("http")) {
+                        Log.d("FlightDetail", "Downloading and uploading image from URL: $photoUrl")
+                        val uploadResult = withContext(Dispatchers.IO) {
+                            tripRepository.downloadAndUploadImage(this@FlightDetailActivity, photoUrl!!)
+                        }
+                        uploadResult.onSuccess { filename ->
+                            uploadedFilename = filename
+                            Log.d("FlightDetail", "Image uploaded successfully: $filename")
+                        }.onFailure { exception ->
+                            Log.e("FlightDetail", "Failed to upload image: ${exception.message}", exception)
+                        }
+                    } else {
+                        // If photoUrl is already a filename, use it
+                        uploadedFilename = photoUrl
+                    }
+            
+                    val request = CreateFlightPlanRequest(
+                        tripId = id,
+                        title = binding.etAirline.text.toString(),
+                        address = binding.etAddress.text.toString(),
+                        location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
+                            "$placeLatitude,$placeLongitude"
+                        } else null,
+                        startTime = startTimeISO,
+                        endTime = endTimeISO,
+                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        photoUrl = uploadedFilename,
+                        type = PlanType.FLIGHT.name,
+                        arrivalLocation = null,  // Not available in layout
+                        arrivalAddress = binding.etArrivalAddress.text.toString().takeIf { it.isNotEmpty() },
+                        arrivalDate = endTimeISO  // Same as arrival time
+                    )
+                    
+                    Log.d("FlightDetail", "Creating flight plan for tripId: $id")
+                    Log.d("FlightDetail", "Request: $request")
+            
+                    val result = if (isEditMode && planId != null) {
+                        tripRepository.updateFlightPlan(id, planId!!, request)
+                    } else {
+                        tripRepository.createFlightPlan(id, request)
+                    }
+                    
                     result.onSuccess { plan ->
-                        Log.d("FlightDetail", "Plan created successfully: ${plan.id}")
+                        Log.d("FlightDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@FlightDetailActivity, "Flight saved", Toast.LENGTH_SHORT).show()
                         finish()
                     }.onFailure { exception ->
-                        Log.e("FlightDetail", "Failed to create plan", exception)
+                        Log.e("FlightDetail", "Failed to save plan", exception)
                         Toast.makeText(this@FlightDetailActivity, exception.message ?: "Failed to save", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    Log.e("FlightDetail", "Exception during plan creation", e)
+                    Log.e("FlightDetail", "Exception during plan save", e)
                     Toast.makeText(this@FlightDetailActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -206,6 +275,57 @@ class FlightDetailActivity : AppCompatActivity() {
             return planDate >= tripStartDate!! && planDate <= tripEndDate!!
         } catch (e: Exception) {
             return true
+        }
+    }
+    
+    private fun loadEditData() {
+        val title = intent.getStringExtra(EXTRA_PLAN_TITLE)
+        val address = intent.getStringExtra(EXTRA_PLACE_ADDRESS)
+        val startTime = intent.getStringExtra(EXTRA_START_TIME)
+        val endTime = intent.getStringExtra(EXTRA_END_TIME)
+        val expense = intent.getDoubleExtra(EXTRA_EXPENSE, 0.0)
+        
+        title?.let { binding.etAirline.setText(it) }
+        address?.let { binding.etAddress.setText(it) }
+        
+        startTime?.let { isoTime ->
+            try {
+                val parts = isoTime.split("T")
+                if (parts.size == 2) {
+                    val datePart = parts[0]
+                    val timePart = parts[1].substring(0, 5)
+                    val dateParts = datePart.split("-")
+                    if (dateParts.size == 3) {
+                        val formattedDate = String.format("%s/%s/%s", dateParts[2], dateParts[1], dateParts[0])
+                        binding.etDepartureDate.setText(formattedDate)
+                        binding.etDepartureTime.setText(timePart)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("FlightDetail", "Error parsing start time", e)
+            }
+        }
+        
+        endTime?.let { isoTime ->
+            try {
+                val parts = isoTime.split("T")
+                if (parts.size == 2) {
+                    val datePart = parts[0]
+                    val timePart = parts[1].substring(0, 5)
+                    val dateParts = datePart.split("-")
+                    if (dateParts.size == 3) {
+                        val formattedDate = String.format("%s/%s/%s", dateParts[2], dateParts[1], dateParts[0])
+                        binding.etArrivalDate.setText(formattedDate)
+                        binding.etArrivalTime.setText(timePart)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("FlightDetail", "Error parsing end time", e)
+            }
+        }
+        
+        if (expense > 0) {
+            binding.etExpense.setText(expense.toString())
         }
     }
 }

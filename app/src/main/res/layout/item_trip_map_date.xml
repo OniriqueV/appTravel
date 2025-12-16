@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="@dimen/schedule_card_width"
+    android:layout_height="@dimen/schedule_card_height"
+    android:layout_marginStart="@dimen/schedule_card_margin_horizontal"
+    android:layout_marginEnd="@dimen/schedule_card_margin_horizontal"
+    app:cardCornerRadius="@dimen/schedule_card_corner_radius"
+    app:cardElevation="@dimen/schedule_card_elevation"
+    app:cardBackgroundColor="#AABADB">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#6B7280"
+        android:gravity="center" />
+
+    <TextView
+        android:id="@+id/tvDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="01/11/2025"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="#1F2937"
+        android:layout_marginTop="8dp"
+        android:gravity="center" />
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

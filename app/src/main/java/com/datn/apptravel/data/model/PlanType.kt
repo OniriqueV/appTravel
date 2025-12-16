@@ -9,13 +9,13 @@ enum class PlanType(
     val geoapifyCategory: String
 ) {
     NONE("None", R.drawable.ic_globe, ""),
-    LODGING("Lodging", R.drawable.ic_lodging, "accommodation"),
+    LODGING("Lodging", R.drawable.ic_lodgingsss, "accommodation"),
     FLIGHT("Flight", R.drawable.ic_flight, "airport"),
     RESTAURANT("Restaurant", R.drawable.ic_restaurant, "catering.restaurant"),
-    TOUR("Tour", R.drawable.ic_tour, "tourism.attraction"),
+    TOUR("Tour", R.drawable.ic_toursss, "tourism.attraction"),
     BOAT("Boat", R.drawable.ic_boat, "rental.boat"),
     TRAIN("Train", R.drawable.ic_train, "railway.subway"),
-    RELIGION("Religion", R.drawable.ic_guides, "religion"),
+    RELIGION("Religion", R.drawable.ic_religion, "religion"),
     CAR_RENTAL("Car Rental", R.drawable.ic_car, "rental.car"),
     CAMPING("Camping", R.drawable.ic_location, "camping.camp_site"),
     THEATER("Theater", R.drawable.ic_theater, "entertainment.culture.theatre"),

@@ -1,89 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="match_parent"
+    android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="16dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp"
-    app:cardUseCompatPadding="true">
+    android:layout_marginEnd="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="#FFFFFF"
+    app:cardUseCompatPadding="false">
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:gravity="center_vertical">
 
-        <!-- Trip Image -->
-        <ImageView
-            android:id="@+id/ivTripImage"
+        <!-- Trip Image - Rounded -->
+        <androidx.cardview.widget.CardView
             android:layout_width="80dp"
             android:layout_height="80dp"
             android:layout_marginEnd="16dp"
-            android:background="@drawable/trip_image_background"
-            android:scaleType="centerCrop"
-            android:src="@drawable/trip_placeholder" />
+            app:cardCornerRadius="14dp"
+            app:cardElevation="0dp">
+            
+            <ImageView
+                android:id="@+id/ivTripImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@drawable/trip_placeholder" />
+                
+        </androidx.cardview.widget.CardView>
 
         <!-- Trip Details -->
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
             android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvTripName"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textColor="#111827"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tvTripStartDate"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_marginTop="6dp"
+                android:textColor="#6B7280"
+                android:textSize="14sp"
+                android:maxLines="1" />
 
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_calendar"
-                    android:tint="#6B7280" />
-
-                <TextView
-                    android:id="@+id/tvTripStartDate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#6B7280"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tvTripEndDate"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginEnd="4dp"
-                    android:src="@drawable/ic_calendar"
-                    android:tint="#6B7280" />
-
-                <TextView
-                    android:id="@+id/tvTripEndDate"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#6B7280"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
+                android:textColor="#6B7280"
+                android:textSize="13sp"
+                android:maxLines="1" />
 
         </LinearLayout>
 

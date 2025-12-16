@@ -105,4 +105,16 @@
         app:layout_constraintStart_toStartOf="@id/mapView"
         app:layout_constraintEnd_toEndOf="@id/mapView" />
 
+    <!-- Loading Overlay -->
+    <FrameLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:background="#80000000">
+
+        <include layout="@layout/dialog_loading" />
+    </FrameLayout>
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -138,7 +138,18 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/etExpense" />
 
-            <!-- Departure Time -->
+            <!-- Departure Date and Time -->
+            <TextView
+                android:id="@+id/tvDepartureDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Departure Date"
+                android:textColor="#5D4E37"
+                android:textSize="13sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvDepartureHeader" />
+
             <TextView
                 android:id="@+id/tvDepartureTime"
                 android:layout_width="wrap_content"
@@ -147,13 +158,35 @@
                 android:text="Time"
                 android:textColor="#5D4E37"
                 android:textSize="13sp"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.571"
+                app:layout_constraintStart_toStartOf="@+id/etDepartureTime"
                 app:layout_constraintTop_toBottomOf="@+id/tvDepartureHeader" />
 
             <EditText
-                android:id="@+id/etDepartureTime"
-                android:layout_width="match_parent"
+                android:id="@+id/etDepartureDate"
+                android:layout_width="0dp"
                 android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/edit_text_background_beige"
+                android:drawableEnd="@drawable/ic_calendar"
+                android:focusable="false"
+                android:hint="dd/mm/yyyy"
+                android:inputType="none"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textColorHint="#999999"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toStartOf="@+id/etDepartureTime"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvDepartureDate" />
+
+            <EditText
+                android:id="@+id/etDepartureTime"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/edit_text_background_beige"
                 android:drawableEnd="@drawable/ic_time"
@@ -164,6 +197,8 @@
                 android:paddingEnd="12dp"
                 android:textColorHint="#999999"
                 android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/etDepartureDate"
                 app:layout_constraintTop_toBottomOf="@+id/tvDepartureTime" />
 
             <!-- Departure Location -->
@@ -176,7 +211,7 @@
                 android:textColor="#5D4E37"
                 android:textSize="13sp"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/etDepartureTime" />
+                app:layout_constraintTop_toBottomOf="@+id/etDepartureDate" />
 
             <EditText
                 android:id="@+id/etDepartureLocation"
@@ -205,7 +240,18 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/etDepartureLocation" />
 
-            <!-- Arrival Time -->
+            <!-- Arrival Date and Time -->
+            <TextView
+                android:id="@+id/tvArrivalDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Arrival Date"
+                android:textColor="#5D4E37"
+                android:textSize="13sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvArrivalHeader" />
+
             <TextView
                 android:id="@+id/tvArrivalTime"
                 android:layout_width="wrap_content"
@@ -214,13 +260,34 @@
                 android:text="Time"
                 android:textColor="#5D4E37"
                 android:textSize="13sp"
-                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="@+id/etArrivalTime"
                 app:layout_constraintTop_toBottomOf="@+id/tvArrivalHeader" />
 
             <EditText
-                android:id="@+id/etArrivalTime"
-                android:layout_width="match_parent"
+                android:id="@+id/etArrivalDate"
+                android:layout_width="0dp"
                 android:layout_height="48dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/edit_text_background_beige"
+                android:drawableEnd="@drawable/ic_calendar"
+                android:focusable="false"
+                android:hint="dd/mm/yyyy"
+                android:inputType="none"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textColorHint="#999999"
+                android:textSize="14sp"
+                app:layout_constraintEnd_toStartOf="@+id/etArrivalTime"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvArrivalDate" />
+
+            <EditText
+                android:id="@+id/etArrivalTime"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/edit_text_background_beige"
                 android:drawableEnd="@drawable/ic_time"
@@ -231,6 +298,8 @@
                 android:paddingEnd="12dp"
                 android:textColorHint="#999999"
                 android:textSize="14sp"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@+id/etArrivalDate"
                 app:layout_constraintTop_toBottomOf="@+id/tvArrivalTime" />
 
             <!-- Arrival Location -->
@@ -243,7 +312,7 @@
                 android:textColor="#5D4E37"
                 android:textSize="13sp"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/etArrivalTime" />
+                app:layout_constraintTop_toBottomOf="@+id/etArrivalDate" />
 
             <EditText
                 android:id="@+id/etArrivalLocation"

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="5dp">
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Ảnh lớn -->
+        <ImageView
+            android:id="@+id/imgCommunity"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:scaleType="centerCrop"
+            android:src="@drawable/ic_avatar_placeholder"/>
+
+        <!-- Tiêu đề -->
+        <TextView
+            android:id="@+id/tvCommunityTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Place name"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:padding="8dp"
+            android:gravity="center"/>
+
+        <!-- Avatar + tên người đăng -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="8dp"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:id="@+id/imgUserAvatar"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginEnd="8dp"
+                android:src="@drawable/ic_avatar_placeholder"
+                android:scaleType="centerCrop"/>
+
+            <TextView
+                android:id="@+id/tvUserName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="User Name"
+                android:textColor="@color/black"
+                android:textSize="14sp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

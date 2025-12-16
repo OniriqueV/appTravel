@@ -3,8 +3,13 @@ package com.datn.apptravel.ui.trip.adapter
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ItemTripBinding
 import com.datn.apptravel.data.model.Trip
+import com.datn.apptravel.utils.ApiConfig
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 class TripAdapter(
     private var trips: List<Trip>,
@@ -41,13 +46,40 @@ class TripAdapter(
         fun bind(trip: Trip) {
             binding.apply {
                 tvTripName.text = trip.title
-                tvTripStartDate.text = "Start: ${trip.startDate}"
-                tvTripEndDate.text = "End: ${trip.endDate}"
                 
-                // TODO: Load cover photo if available
-                // Glide.with(binding.root.context)
-                //     .load(trip.coverPhoto)
-                //     .into(ivTripImage)
+                // Format dates from yyyy-MM-dd to dd-MM-yyyy
+                val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+                val outputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+                
+                val formattedStartDate = try {
+                    val date = LocalDate.parse(trip.startDate, inputFormatter)
+                    date.format(outputFormatter)
+                } catch (e: Exception) {
+                    trip.startDate
+                }
+                
+                val formattedEndDate = try {
+                    val date = LocalDate.parse(trip.endDate, inputFormatter)
+                    date.format(outputFormatter)
+                } catch (e: Exception) {
+                    trip.endDate
+                }
+                
+                tvTripStartDate.text = "Start: $formattedStartDate"
+                tvTripEndDate.text = "End: $formattedEndDate"
+                
+                // Load cover photo if available
+                val imageUrl = ApiConfig.getImageUrl(trip.coverPhoto)
+                if (imageUrl != null) {
+                    Glide.with(binding.root.context)
+                        .load(imageUrl)
+                        .placeholder(R.drawable.bg_a)
+                        .error(R.drawable.bg_a)
+                        .centerCrop()
+                        .into(ivTripImage)
+                } else {
+                    ivTripImage.setImageResource(R.drawable.bg_a)
+                }
             }
         }
     }

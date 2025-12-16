@@ -24,11 +24,18 @@ android {
             localPropertiesFile.inputStream().use { localProperties.load(it) }
         }
         
+        val tripServiceBaseUrl = localProperties.getProperty("TRIP_SERVICE_BASE_URL", "http://192.168.1.6:8080/")
+        
         buildConfigField("String", "GEOAPIFY_API_KEY", "\"${localProperties.getProperty("GEOAPIFY_API_KEY")}\"")
         buildConfigField("String", "GEOAPIFY_BASE_URL", "\"${localProperties.getProperty("GEOAPIFY_BASE_URL")}\"")
         buildConfigField("String", "OSRM_BASE_URL", "\"${localProperties.getProperty("OSRM_BASE_URL")}\"")
+        buildConfigField("String", "NOMINATIM_BASE_URL", "\"${localProperties.getProperty("NOMINATIM_BASE_URL")}\"")
         buildConfigField("String", "AUTH_BASE_URL", "\"${localProperties.getProperty("AUTH_BASE_URL")}\"")
-        buildConfigField("String", "TRIP_SERVICE_BASE_URL", "\"${localProperties.getProperty("TRIP_SERVICE_BASE_URL", "http://10.0.2.2:8080/")}\"")
+        buildConfigField("String", "TRIP_SERVICE_BASE_URL", "\"$tripServiceBaseUrl\"")
+        buildConfigField("String", "UPLOAD_BASE_URL", "\"${tripServiceBaseUrl}uploads/\"")
+        buildConfigField("String", "GOOGLE_API_BASE_URL", "\"${localProperties.getProperty("GOOGLE_API_BASE_URL")}\"")
+        buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_API_KEY", "\"${localProperties.getProperty("api_key")}\"")
+        buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_CX", "\"${localProperties.getProperty("cx")}\"")
     }
 
     buildFeatures {

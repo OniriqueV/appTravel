@@ -1,10 +1,11 @@
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F0D7BB"
-    tools:context=".ui.main.MainActivity">
+    tools:context=".ui.activity.MainActivity">
 
     <!-- Main content -->
     <androidx.fragment.app.FragmentContainerView
@@ -16,47 +17,50 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Bottom Navigation: thêm clipToPadding để không clip FAB -->
+    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:background="@drawable/bg_bottom_nav_curve"
-
-        android:elevation="0dp"
-        android:paddingTop="16dp"
-        android:paddingBottom="12dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="2dp"
         android:clipToPadding="false"
         android:clipChildren="false"
-        app:itemIconSize="26dp"
+        app:itemIconSize="22dp"
         app:itemIconTint="@color/bottom_nav_item_color"
         app:itemTextColor="@color/bottom_nav_item_color"
         app:labelVisibilityMode="labeled"
-        app:itemPaddingTop="8dp"
-        app:itemPaddingBottom="4dp"
+        app:itemPaddingTop="2dp"
+        app:itemPaddingBottom="2dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:menu="@menu/bottom_navigation_menu" />
 
-    <!-- Floating Add Button: nằm cao hơn để lộ phần cong -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_add"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_add"
-        android:scaleType="center"
+    <!-- Add Button - Rectangle Shape -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/fabAdd"
+        android:layout_width="52dp"
+        android:layout_height="36dp"
+        android:text=""
+        android:insetTop="0dp"
+        android:insetBottom="0dp"
+        android:elevation="16dp"
+        android:stateListAnimator="@null"
+        app:icon="@drawable/ic_add"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        app:iconSize="28dp"
+        app:iconTint="@android:color/white"
         app:backgroundTint="#C89F6D"
-        app:tint="@android:color/white"
-        app:fabSize="auto"
-        app:fabCustomSize="68dp"
-        app:maxImageSize="34dp"
-        app:elevation="12dp"
-        app:borderWidth="0dp"
-        app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
+        app:cornerRadius="18dp"
+        app:layout_constraintBottom_toBottomOf="@id/bottom_navigation"
+        app:layout_constraintTop_toTopOf="@id/bottom_navigation"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="-34dp"
-        android:translationZ="16dp" />
+        android:layout_marginBottom="45dp"
+        app:layout_constraintEnd_toEndOf="parent" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+

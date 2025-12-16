@@ -3,7 +3,8 @@ package com.datn.apptravel.ui.trip.model
 import com.datn.apptravel.data.model.PlanType
 
 data class ScheduleActivity(
-    val id: Long = 0L,
+    val id: String? = null,
+    val tripId: String? = null,
     val time: String,
     val title: String,
     val description: String,
@@ -11,5 +12,6 @@ data class ScheduleActivity(
     val type: PlanType? = null,
     val expense: Double? = null,
     val photoUrl: String? = null,
-    val iconResId: Int? = null
+    val iconResId: Int? = null,
+    val fullStartTime: String? = null  // Full ISO datetime from Plan.startTime
 )

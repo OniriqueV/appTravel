@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android">
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    app:itemIconTint="@color/bottom_nav_item_color"
+    app:itemTextColor="@color/bottom_nav_item_color"
+    app:itemBackground="@null">
     
     <item
         android:id="@+id/nav_trips"
@@ -11,9 +15,11 @@
         android:id="@+id/nav_discover"
         android:icon="@drawable/ic_guides"
         android:title="Discover" />
-    
+
     <item
-        android:id="@+id/nav_add"
+        android:id="@+id/nav_placeholder"
+        android:enabled="false"
+        android:icon="@android:color/transparent"
         android:title="" />
 
     <item

@@ -5,43 +5,51 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:background="@android:color/white"
-    android:padding="16dp">
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp">
 
     <!-- Header: Place Name and ADD Button -->
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp">
+        android:layout_marginBottom="6dp">
 
-        <!-- Place Name -->
-        <TextView
-            android:id="@+id/tvPlaceName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Công viên Thống Nhất"
-            android:textColor="#000000"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:layout_centerHorizontal="true"
-            android:maxLines="2"
-            android:ellipsize="end" />
-
-        <!-- Add Button -->
+        <!-- Add Button (placed first to be referenced) -->
         <Button
             android:id="@+id/btnAddPlace"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
+            android:layout_width="57dp"
+            android:layout_height="32dp"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
             android:text="ADD"
             android:textColor="@android:color/white"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:backgroundTint="#E4A663"
             android:elevation="0dp"
-            android:paddingStart="24dp"
-            android:paddingEnd="24dp"
-            android:translationY="-5dp"/>
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:translationY="-3dp" />
+
+        <!-- Place Name -->
+        <TextView
+            android:id="@+id/tvPlaceName"
+            android:layout_width="290dp"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_toStartOf="@+id/btnAddPlace"
+            android:layout_marginEnd="2dp"
+            android:layout_alignParentStart="true"
+            android:layout_marginStart="44dp"
+            android:text="Công viên Thống Nhất"
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:maxLines="2"
+            android:ellipsize="end" />
 
     </RelativeLayout>
 
@@ -50,26 +58,31 @@
         android:id="@+id/galleryContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp">
 
         <ImageView
             android:id="@+id/imgGallery1"
             android:layout_width="0dp"
-            android:layout_height="100dp"
+            android:layout_height="80dp"
             android:layout_weight="1"
-            android:layout_marginEnd="8dp"
+            android:layout_marginEnd="4dp"
             android:scaleType="centerCrop"
             android:background="#F5F5F5"
-            android:contentDescription="Gallery image 1" />
+            android:contentDescription="Gallery image 1"
+            android:src="@drawable/bg_a"/>
 
         <ImageView
             android:id="@+id/imgGallery2"
             android:layout_width="0dp"
-            android:layout_height="100dp"
+            android:layout_height="80dp"
             android:layout_weight="1"
+            android:layout_marginStart="4dp"
             android:scaleType="centerCrop"
             android:background="#F5F5F5"
-            android:contentDescription="Gallery image 2" />
+            android:contentDescription="Gallery image 2"
+            android:src="@drawable/bg_a"/>
 
     </LinearLayout>
 
@@ -78,9 +91,11 @@
         android:id="@+id/tvPlaceDescription"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="6dp"
         android:textColor="#666666"
-        android:textSize="13sp"
-        android:lineSpacingMultiplier="1.2" />
+        android:textSize="12sp"
+        android:lineSpacingMultiplier="1.2"
+        android:maxLines="3"
+        android:ellipsize="end" />
 
 </LinearLayout>

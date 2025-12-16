@@ -11,7 +11,9 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateRestaurantPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityRestaurantDetailBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.util.Calendar
 
@@ -23,12 +25,28 @@ class RestaurantDetailActivity : AppCompatActivity() {
     private var tripEndDate: String? = null
     private var placeLatitude: Double = 0.0
     private var placeLongitude: Double = 0.0
+    private var photoUrl: String? = null
     private val tripRepository: TripRepository by inject()
+    
+    private var isEditMode = false
+    private var planId: String? = null
+    
+    companion object {
+        const val EXTRA_PLAN_ID = "plan_id"
+        const val EXTRA_PLAN_TITLE = "plan_title"
+        const val EXTRA_PLACE_ADDRESS = "place_address"
+        const val EXTRA_START_TIME = "start_time"
+        const val EXTRA_EXPENSE = "expense"
+    }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRestaurantDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        // Check if in edit mode
+        planId = intent.getStringExtra(EXTRA_PLAN_ID)
+        isEditMode = planId != null
         
         tripId = intent.getStringExtra("tripId")
         
@@ -47,10 +65,19 @@ class RestaurantDetailActivity : AppCompatActivity() {
         val placeAddress = intent.getStringExtra("placeAddress")
         placeLatitude = intent.getDoubleExtra("placeLatitude", 0.0)
         placeLongitude = intent.getDoubleExtra("placeLongitude", 0.0)
+        photoUrl = intent.getStringExtra("photoUrl")
         
         // Pre-fill place data
         placeName?.let { binding.etRestaurantName.setText(it) }
         placeAddress?.let { binding.etAddress.setText(it) }
+        
+        // Load edit data if in edit mode
+        if (isEditMode) {
+            loadEditData()
+            // Disable place name and address in edit mode
+            binding.etRestaurantName.isEnabled = false
+            binding.etAddress.isEnabled = false
+        }
         
         setupUI()
     }
@@ -123,38 +150,63 @@ class RestaurantDetailActivity : AppCompatActivity() {
             val startTimeISO = convertToISO(date, time)
             val endTimeISO = convertToISO(date, addOneHour(time))
             
-            val request = CreateRestaurantPlanRequest(
-                tripId = id,
-                title = binding.etRestaurantName.text.toString(),
-                address = binding.etAddress.text.toString(),
-                location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
-                    "$placeLatitude,$placeLongitude"
-                } else null,
-                startTime = startTimeISO,
-                endTime = endTimeISO,
-                expense = binding.etExpense.text.toString().toDoubleOrNull(),
-                photoUrl = null,
-                type = PlanType.RESTAURANT.name,
-                reservationDate = startTimeISO,
-                reservationTime = startTimeISO
-            )
-            
-            Log.d("RestaurantDetail", "Creating restaurant plan for tripId: $id")
-            Log.d("RestaurantDetail", "Request: $request")
-            
             lifecycleScope.launch {
                 try {
-                    val result = tripRepository.createRestaurantPlan(id, request)
+                    // Download and upload image if photoUrl is a URL (starts with http)
+                    var uploadedFilename: String? = null
+                    if (!photoUrl.isNullOrEmpty() && photoUrl!!.startsWith("http")) {
+                        Log.d("RestaurantDetail", "Downloading and uploading image from URL: $photoUrl")
+                        val uploadResult = withContext(Dispatchers.IO) {
+                            tripRepository.downloadAndUploadImage(this@RestaurantDetailActivity, photoUrl!!)
+                        }
+                        uploadResult.onSuccess { filename ->
+                            uploadedFilename = filename
+                            Log.d("RestaurantDetail", "Image uploaded successfully: $filename")
+                        }.onFailure { exception ->
+                            Log.e("RestaurantDetail", "Failed to upload image: ${exception.message}", exception)
+                        }
+                    } else {
+                        // If photoUrl is already a filename, use it
+                        uploadedFilename = photoUrl
+                    }
+                    
+                    val request = CreateRestaurantPlanRequest(
+                        tripId = id,
+                        title = binding.etRestaurantName.text.toString(),
+                        address = binding.etAddress.text.toString(),
+                        location = if (placeLatitude != 0.0 && placeLongitude != 0.0) {
+                            "$placeLatitude,$placeLongitude"
+                        } else null,
+                        startTime = startTimeISO,
+                        endTime = endTimeISO,
+                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        photoUrl = uploadedFilename,
+                        type = PlanType.RESTAURANT.name,
+                        reservationDate = startTimeISO,
+                        reservationTime = startTimeISO
+                    )
+                    
+                    Log.d("RestaurantDetail", "Creating restaurant plan for tripId: $id")
+                    Log.d("RestaurantDetail", "Request: $request")
+            
+                    val result = if (isEditMode && planId != null) {
+                        // Update existing plan
+                        tripRepository.updateRestaurantPlan(id, planId!!, request)
+                    } else {
+                        // Create new plan
+                        tripRepository.createRestaurantPlan(id, request)
+                    }
+                    
                     result.onSuccess { plan ->
-                        Log.d("RestaurantDetail", "Plan created successfully: ${plan.id}")
+                        Log.d("RestaurantDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@RestaurantDetailActivity, "Restaurant saved", Toast.LENGTH_SHORT).show()
                         finish()
                     }.onFailure { exception ->
-                        Log.e("RestaurantDetail", "Failed to create plan", exception)
+                        Log.e("RestaurantDetail", "Failed to save plan", exception)
                         Toast.makeText(this@RestaurantDetailActivity, exception.message ?: "Failed to save", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    Log.e("RestaurantDetail", "Exception during plan creation", e)
+                    Log.e("RestaurantDetail", "Exception during plan save", e)
                     Toast.makeText(this@RestaurantDetailActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             }
@@ -199,6 +251,42 @@ class RestaurantDetailActivity : AppCompatActivity() {
             return planDate >= tripStartDate!! && planDate <= tripEndDate!!
         } catch (e: Exception) {
             return true
+        }
+    }
+    
+    private fun loadEditData() {
+        val title = intent.getStringExtra(EXTRA_PLAN_TITLE)
+        val address = intent.getStringExtra(EXTRA_PLACE_ADDRESS)
+        val startTime = intent.getStringExtra(EXTRA_START_TIME)
+        val expense = intent.getDoubleExtra(EXTRA_EXPENSE, 0.0)
+        
+        // Pre-fill form
+        title?.let { binding.etRestaurantName.setText(it) }
+        address?.let { binding.etAddress.setText(it) }
+        
+        // Parse and set date and time from ISO format
+        startTime?.let { isoTime ->
+            try {
+                // Parse yyyy-MM-dd'T'HH:mm:ss to dd/MM/yyyy and HH:mm
+                val parts = isoTime.split("T")
+                if (parts.size == 2) {
+                    val datePart = parts[0] // yyyy-MM-dd
+                    val timePart = parts[1].substring(0, 5) // HH:mm
+                    
+                    val dateParts = datePart.split("-")
+                    if (dateParts.size == 3) {
+                        val formattedDate = String.format("%s/%s/%s", dateParts[2], dateParts[1], dateParts[0])
+                        binding.etDate.setText(formattedDate)
+                    }
+                    binding.etTime.setText(timePart)
+                }
+            } catch (e: Exception) {
+                Log.e("RestaurantDetail", "Error parsing start time", e)
+            }
+        }
+        
+        if (expense > 0) {
+            binding.etExpense.setText(expense.toString())
         }
     }
 }

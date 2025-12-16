@@ -36,7 +36,7 @@
         android:layout_height="16dp"
         android:layout_marginTop="4dp"
         android:layout_marginStart="4dp"
-        android:src="@drawable/ic_lodging"
+        android:src="@drawable/ic_lodgingsss"
         app:layout_constraintStart_toStartOf="@id/timelineCircle"
         app:layout_constraintTop_toTopOf="@id/timelineCircle"
         app:tint="@android:color/white" />

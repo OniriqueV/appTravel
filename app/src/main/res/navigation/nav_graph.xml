@@ -15,5 +15,16 @@
         android:id="@+id/discoverFragment"
         android:name="com.datn.apptravel.ui.discover.DiscoverFragment"
         android:label="Discover"
-        tools:layout="@layout/fragment_discover" />
+        tools:layout="@layout/fragment_discover">
+
+        <action
+            android:id="@+id/action_discoverFragment_to_searchExploreFragment"
+            app:destination="@id/searchExploreFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/searchExploreFragment"
+        android:name="com.datn.apptravel.ui.discover.search.SearchExploreFragment"
+        android:label="Search Explore"
+        tools:layout="@layout/fragment_search_explore" />
 </navigation>
