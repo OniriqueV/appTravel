@@ -50,6 +50,14 @@ class ScheduleActivityAdapter(
                         // Use likesCount and commentsCount from model (default to 0 if not available)
                         putExtra(PlanDetailActivity.EXTRA_LIKES_COUNT, 0)
                         putExtra(PlanDetailActivity.EXTRA_COMMENTS_COUNT, 0)
+                        // Add plan-specific fields
+                        activity.endTime?.let { putExtra(PlanDetailActivity.EXTRA_END_TIME, it) }
+                        activity.checkInDate?.let { putExtra("checkInDate", it) }
+                        activity.checkOutDate?.let { putExtra("checkOutDate", it) }
+                        activity.arrivalDate?.let { putExtra("arrivalDate", it) }
+                        activity.arrivalTime?.let { putExtra("arrivalTime", it) }
+                        activity.reservationDate?.let { putExtra("reservationDate", it) }
+                        activity.reservationTime?.let { putExtra("reservationTime", it) }
                     }
                     context.startActivity(intent)
                 }

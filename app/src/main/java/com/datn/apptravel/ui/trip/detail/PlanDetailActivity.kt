@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -41,6 +42,20 @@ class PlanDetailActivity : AppCompatActivity() {
     private var tripId: String? = null
     private lateinit var photoAdapter: PhotoCollectionAdapter
 
+    // Activity result launcher for edit plan
+    private val editPlanLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // Reload plan data when returning from edit
+            if (planId != null && tripId != null) {
+                viewModel.loadPlanPhotos(tripId!!, planId!!)
+                // Also reload plan data to update UI
+                loadPlanDataFromViewModel()
+            }
+        }
+    }
+
     // Multiple image picker launcher
     private val multipleImagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetMultipleContents()
@@ -74,6 +89,13 @@ class PlanDetailActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
+        // Observe plan data
+        viewModel.plan.observe(this) { plan ->
+            plan?.let {
+                updateUIWithPlanData(it)
+            }
+        }
+        
         // Observe photos
         viewModel.photos.observe(this) { photos ->
             photoAdapter.updatePhotos(photos)
@@ -233,6 +255,11 @@ class PlanDetailActivity : AppCompatActivity() {
             PlanType.TRAIN -> "Train"
             PlanType.BOAT -> "Boat"
             PlanType.TOUR -> "Tour"
+            PlanType.ACTIVITY -> "ACTIVITY"
+            PlanType.THEATER -> "THEATER"
+            PlanType.SHOPPING -> "THEATER"
+            PlanType.CAMPING -> "CAMPING"
+            PlanType.RELIGION -> "RELIGION"
             else -> "Activity"
         }
     }
@@ -245,7 +272,12 @@ class PlanDetailActivity : AppCompatActivity() {
             PlanType.CAR_RENTAL -> R.drawable.ic_car
             PlanType.TRAIN -> R.drawable.ic_train
             PlanType.BOAT -> R.drawable.ic_boat
-            PlanType.TOUR -> R.drawable.ic_location
+            PlanType.TOUR -> R.drawable.ic_toursss
+            PlanType.ACTIVITY -> R.drawable.ic_attraction
+            PlanType.THEATER, -> R.drawable.ic_theater
+            PlanType.SHOPPING -> R.drawable.ic_shopping
+            PlanType.CAMPING -> R.drawable.ic_location
+            PlanType.RELIGION -> R.drawable.ic_religion
             else -> R.drawable.ic_location
         }
     }
@@ -275,6 +307,31 @@ class PlanDetailActivity : AppCompatActivity() {
     private fun formatExpense(expense: Double): String {
         return String.Companion.format(Locale.US, "%.0fđ", expense)
     }
+    
+    private fun loadPlanDataFromViewModel() {
+        // This is called after edit to reload data from ViewModel
+        viewModel.plan.value?.let { plan ->
+            updateUIWithPlanData(plan)
+        }
+    }
+    
+    private fun updateUIWithPlanData(plan: com.datn.apptravel.data.model.Plan) {
+        // Update UI with plan data
+        binding.tvPlanTitle.text = getPlanTypeDisplayName(plan.type)
+        binding.tvPlanName.text = plan.title
+        binding.ivPlanIcon.setImageResource(getPlanTypeIcon(plan.type))
+        
+        // Update time
+        displayTime(plan.startTime, plan.endTime, plan.type)
+        
+        // Update expense
+        if ((plan.expense ?: 0.0) > 0) {
+            binding.tvExpense.text = formatExpense(plan.expense!!)
+        } else {
+            binding.tvExpense.text = "0đ"
+        }
+        binding.tvExpense.visibility = View.VISIBLE
+    }
 
     private fun showPlanMenu() {
         val popupMenu = PopupMenu(this, binding.btnMenu)
@@ -284,7 +341,9 @@ class PlanDetailActivity : AppCompatActivity() {
             when (menuItem.itemId) {
                 R.id.action_edit_plan -> {
                     // Navigate to edit plan based on plan type
-                    viewModel.plan.value?.let { plan ->
+                    // Use data from Intent extras (passed from schedule list) instead of viewModel
+                    val plan = viewModel.plan.value
+                    if (plan != null) {
                         val planType = try {
                             val planTypeStr = intent.getStringExtra(EXTRA_PLAN_TYPE) ?: "OTHER"
                             PlanType.valueOf(planTypeStr)
@@ -298,9 +357,10 @@ class PlanDetailActivity : AppCompatActivity() {
                             PlanType.FLIGHT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity::class.java)
                             PlanType.BOAT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity::class.java)
                             PlanType.CAR_RENTAL -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity::class.java)
+                            PlanType.TRAIN -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity::class.java)
                             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
                             PlanType.CAMPING, PlanType.RELIGION -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity::class.java)
-                            else -> {
+                            PlanType.NONE -> {
                                 Toast.makeText(this, "Cannot edit this plan type", Toast.LENGTH_SHORT).show()
                                 return@setOnMenuItemClickListener false
                             }
@@ -312,12 +372,73 @@ class PlanDetailActivity : AppCompatActivity() {
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLAN_TITLE, plan.title)
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLACE_ADDRESS, plan.address)
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_START_TIME, plan.startTime)
+                        
+                        // Pass plan type-specific fields
+                        when (planType) {
+                            PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
+                            PlanType.CAMPING, PlanType.RELIGION -> {
+                                // ActivityPlan: has endTime
+                                // Try to get from viewModel.plan first, fallback to Intent extra
+                                val endTime = plan.endTime ?: this@PlanDetailActivity.intent.getStringExtra(EXTRA_END_TIME)
+                                Log.d("PlanDetailActivity", "Edit Activity - plan.endTime: ${plan.endTime}, intent endTime: ${this@PlanDetailActivity.intent.getStringExtra(EXTRA_END_TIME)}, final: $endTime")
+                                endTime?.let { intent.putExtra("end_time", it) }
+                            }
+                            PlanType.LODGING -> {
+                                // LodgingPlan: has checkInDate, checkOutDate
+                                val checkInDate = plan.checkInDate ?: this@PlanDetailActivity.intent.getStringExtra("checkInDate")
+                                val checkOutDate = plan.checkOutDate ?: this@PlanDetailActivity.intent.getStringExtra("checkOutDate")
+                                checkInDate?.let { intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_START_TIME, it) }
+                                checkOutDate?.let { intent.putExtra("end_time", it) }
+                                plan.phone?.let { intent.putExtra("phone", it) }
+                            }
+                            PlanType.RESTAURANT -> {
+                                // RestaurantPlan: has reservationDate, reservationTime
+                                val reservationDate = plan.reservationDate ?: this@PlanDetailActivity.intent.getStringExtra("reservationDate")
+                                val reservationTime = plan.reservationTime ?: this@PlanDetailActivity.intent.getStringExtra("reservationTime")
+                                reservationDate?.let { intent.putExtra("reservationDate", it) }
+                                reservationTime?.let { intent.putExtra("reservationTime", it) }
+                            }
+                            PlanType.FLIGHT -> {
+                                // FlightPlan: has arrivalLocation, arrivalAddress, arrivalDate
+                                // arrivalDate is the second time (arrival time)
+                                val arrivalDate = plan.arrivalDate ?: this@PlanDetailActivity.intent.getStringExtra("arrivalDate")
+                                arrivalDate?.let { 
+                                    intent.putExtra("arrivalDate", it)
+                                    intent.putExtra("end_time", it) // Also set as end_time for general use
+                                }
+                                plan.arrivalLocation?.let { intent.putExtra("arrivalLocation", it) }
+                                plan.arrivalAddress?.let { intent.putExtra("arrivalAddress", it) }
+                            }
+                            PlanType.BOAT -> {
+                                // BoatPlan: has arrivalTime, arrivalLocation, arrivalAddress
+                                // arrivalTime is the second time
+                                val arrivalTime = plan.arrivalTime ?: this@PlanDetailActivity.intent.getStringExtra("arrivalTime")
+                                arrivalTime?.let { 
+                                    intent.putExtra("arrivalTime", it)
+                                    intent.putExtra("end_time", it) // Also set as end_time for general use
+                                }
+                                plan.arrivalLocation?.let { intent.putExtra("arrivalLocation", it) }
+                                plan.arrivalAddress?.let { intent.putExtra("arrivalAddress", it) }
+                            }
+                            PlanType.CAR_RENTAL, PlanType.TRAIN -> {
+                                // CarRentalPlan: has pickupDate, pickupTime
+                                plan.pickupDate?.let { intent.putExtra("pickupDate", it) }
+                                plan.pickupTime?.let { intent.putExtra("pickupTime", it) }
+                                plan.phone?.let { intent.putExtra("phone", it) }
+                            }
+                            else -> {
+                                // Default: just pass endTime if available
+                                plan.endTime?.let { intent.putExtra("end_time", it) }
+                            }
+                        }
+                        
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_EXPENSE, plan.expense ?: 0.0)
                         intent.putExtra("placeLatitude", 0.0) // Will be parsed from plan.location if needed
                         intent.putExtra("placeLongitude", 0.0)
+                        intent.putExtra("planType", planType.name) // Pass plan type for editing
                         
-                        startActivity(intent)
-                    } ?: run {
+                        editPlanLauncher.launch(intent)
+                    } else {
                         Toast.makeText(this, "Plan data not available", Toast.LENGTH_SHORT).show()
                     }
                     true

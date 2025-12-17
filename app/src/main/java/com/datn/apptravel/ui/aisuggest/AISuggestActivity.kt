@@ -24,7 +24,7 @@ class AISuggestActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAisuggestBinding
 
     private val viewModel: TravelViewModel by viewModels {
-        val apiService = ApiClient.create(BuildConfig.API_KEY)
+        val apiService = ApiClient.create(BuildConfig.GEOAPIFY_API_KEY)
         val repository = TravelRepository(apiService)
         TravelViewModelFactory(repository)
     }
@@ -38,7 +38,7 @@ class AISuggestActivity : AppCompatActivity() {
         setupToolbar()
 
         // Kiểm tra API key
-        if (BuildConfig.API_KEY.isBlank()) {
+        if (BuildConfig.GEOAPIFY_API_KEY.isBlank()) {
             showError("Lỗi: API_KEY chưa được cấu hình trong local.properties")
             binding.btnGenerate.isEnabled = false
             return

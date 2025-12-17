@@ -241,6 +241,7 @@ class FlightDetailActivity : AppCompatActivity() {
                     result.onSuccess { plan ->
                         Log.d("FlightDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@FlightDetailActivity, "Flight saved", Toast.LENGTH_SHORT).show()
+                        setResult(RESULT_OK)
                         finish()
                     }.onFailure { exception ->
                         Log.e("FlightDetail", "Failed to save plan", exception)

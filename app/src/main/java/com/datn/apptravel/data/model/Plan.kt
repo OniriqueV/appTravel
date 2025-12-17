@@ -13,5 +13,31 @@ open class Plan(
     open val type: PlanType,
     open val likesCount: Int = 0,        // Simplified - count instead of full list
     open val commentsCount: Int = 0,     // Simplified - count instead of full list
-    open val createdAt: String? = null
+    open val createdAt: String? = null,
+    
+    // ActivityPlan specific field
+    open val endTime: String? = null,    // For ActivityPlan: end time of activity
+    
+    // LodgingPlan specific fields
+    open val checkInDate: String? = null,
+    open val checkOutDate: String? = null,
+    
+    // RestaurantPlan specific fields
+    open val reservationDate: String? = null,
+    open val reservationTime: String? = null,
+    
+    // FlightPlan specific fields
+    open val arrivalLocation: String? = null,
+    open val arrivalAddress: String? = null,
+    open val arrivalDate: String? = null,
+    
+    // BoatPlan specific fields
+    open val arrivalTime: String? = null,
+    
+    // CarRentalPlan specific fields
+    open val pickupDate: String? = null,
+    open val pickupTime: String? = null,
+    
+    // Common phone field (used by Lodging, CarRental, Restaurant)
+    open val phone: String? = null
 )

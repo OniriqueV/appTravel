@@ -79,7 +79,7 @@ class ExtendedAISuggestActivity : AppCompatActivity() {
     }
 
     private val viewModel: ExtendedTravelViewModel by viewModels {
-        val apiService = ApiClient.create(BuildConfig.API_KEY)
+        val apiService = ApiClient.create(BuildConfig.GEOAPIFY_API_KEY)
         val repository = ExtendedTravelRepository(apiService, applicationContext)
         ExtendedTravelViewModelFactory(repository)
     }
@@ -92,7 +92,7 @@ class ExtendedAISuggestActivity : AppCompatActivity() {
 
         setupToolbar()
 
-        if (BuildConfig.API_KEY.isBlank() || BuildConfig.GEOAPIFY_API_KEY.isBlank()) {
+        if (BuildConfig.GEOAPIFY_API_KEY.isBlank() || BuildConfig.GEOAPIFY_API_KEY.isBlank()) {
             showError("Lỗi: API_KEY hoặc GEOAPIFY_API_KEY chưa được cấu hình")
             binding.btnGenerate.isEnabled = false
             return
