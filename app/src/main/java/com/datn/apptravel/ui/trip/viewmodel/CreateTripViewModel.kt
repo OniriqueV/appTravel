@@ -105,6 +105,13 @@ class CreateTripViewModel(
                 val formattedStartDate = convertDateFormat(startDate)
                 val formattedEndDate = convertDateFormat(endDate)
                 
+                // Validate that end date is after start date
+                if (formattedEndDate <= formattedStartDate) {
+                    _errorMessage.value = "Ngày kết thúc phải sau ngày bắt đầu"
+                    setLoading(false)
+                    return@launch
+                }
+                
                 // Check for date conflicts with existing trips
                 val hasConflict = checkDateConflict(formattedStartDate, formattedEndDate, null)
                 if (hasConflict) {
@@ -162,6 +169,13 @@ class CreateTripViewModel(
                 // Convert date format from dd/MM/yyyy to yyyy-MM-dd
                 val formattedStartDate = convertDateFormat(startDate)
                 val formattedEndDate = convertDateFormat(endDate)
+                
+                // Validate that end date is after start date
+                if (formattedEndDate <= formattedStartDate) {
+                    _errorMessage.value = "Ngày kết thúc phải sau ngày bắt đầu"
+                    setLoading(false)
+                    return@launch
+                }
                 
                 // Check if plans are within the new date range
                 val plansOutOfRange = checkPlansWithinDateRange(tripId, formattedStartDate, formattedEndDate)

@@ -154,6 +154,12 @@ class CreateTripActivity : AppCompatActivity() {
             return
         }
         
+        // Validate that end date is after start date
+        if (!isEndDateAfterStartDate(startDate, endDate)) {
+            Toast.makeText(this, "Ngày kết thúc phải sau ngày bắt đầu", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         // Upload image first if selected
         if (selectedImageUri != null) {
             // Store trip data in ViewModel (including tripId if editing)
@@ -227,6 +233,23 @@ class CreateTripActivity : AppCompatActivity() {
             intent.putExtra(TripsFragment.EXTRA_TRIP_ID, tripId)
             startActivity(intent)
             finish()
+        }
+    }
+    
+    private fun isEndDateAfterStartDate(startDate: String, endDate: String): Boolean {
+        return try {
+            val parts1 = startDate.split("/")
+            val parts2 = endDate.split("/")
+            
+            if (parts1.size != 3 || parts2.size != 3) return true
+            
+            // Convert dd/MM/yyyy to yyyy-MM-dd for comparison
+            val start = "${parts1[2]}-${parts1[1]}-${parts1[0]}"
+            val end = "${parts2[2]}-${parts2[1]}-${parts2[0]}"
+            
+            end > start
+        } catch (e: Exception) {
+            true // If parsing fails, allow the operation
         }
     }
 }

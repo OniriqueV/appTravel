@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
@@ -149,10 +150,30 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
     }
 
     private fun navigateToTripDetail(trip: Trip) {
-        val intent = Intent(requireContext(), TripDetailActivity::class.java).apply {
-            putExtra(EXTRA_TRIP_ID, trip.id.toString())
+        lifecycleScope.launch {
+            authRepository.currentUser.collect { user ->
+                if (user != null) {
+                    // Kiểm tra xem userId hiện tại có trùng với userId của trip không
+                    if (user.id == trip.userId) {
+                        // Người dùng là chủ trip -> điều hướng đến TripDetailActivity
+                        val intent = Intent(requireContext(), TripDetailActivity::class.java).apply {
+                            putExtra(EXTRA_TRIP_ID, trip.id.toString())
+                        }
+                        startActivity(intent)
+                    } else {
+                        // Người dùng không phải chủ trip -> điều hướng đến TripMapActivity
+                        val intent = Intent(requireContext(), com.datn.apptravel.ui.trip.map.TripMapActivity::class.java).apply {
+                            putExtra("tripId", trip.id.toString())
+                            putExtra("tripTitle", trip.title)
+                            putExtra("tripUserId", trip.userId)
+                        }
+                        startActivity(intent)
+                    }
+                }
+                // Chỉ cần collect một lần
+                return@collect
+            }
         }
-        startActivity(intent)
     }
 
     private fun observeTrips() {
@@ -279,8 +300,34 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
             dayProgress.text = ""
         }
         
-        // Set plans count
-        val plansNumber = trip.plans?.size ?: 0
+        // Set plans count based on trip status
+        val plansNumber = if (isOngoing) {
+            // Trip is ongoing - show today's plans only
+            try {
+                val today = LocalDate.now()
+                trip.plans?.count { plan ->
+                    try {
+                        // Parse plan startTime to get the date
+                        val planDateTime = LocalDateTime.parse(
+                            plan.startTime,
+                            DateTimeFormatter.ISO_DATE_TIME
+                        )
+                        val planDate = planDateTime.toLocalDate()
+                        // Check if plan is today
+                        planDate.isEqual(today)
+                    } catch (e: Exception) {
+                        android.util.Log.e("TripsFragment", "Error parsing plan date: ${plan.title}", e)
+                        false
+                    }
+                } ?: 0
+            } catch (e: Exception) {
+                android.util.Log.e("TripsFragment", "Error counting today's plans", e)
+                trip.plans?.size ?: 0
+            }
+        } else {
+            // Trip hasn't started - show total plans
+            trip.plans?.size ?: 0
+        }
         plansCount.text = "$plansNumber plans"
         
         // Debug log

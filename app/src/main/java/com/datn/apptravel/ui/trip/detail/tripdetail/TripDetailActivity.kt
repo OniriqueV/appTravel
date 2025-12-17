@@ -144,14 +144,14 @@ class TripDetailActivity : AppCompatActivity() {
         val tvTripStartDate = findViewById<TextView>(R.id.tvTripStartDate)
         val tvTripEndDate = findViewById<TextView>(R.id.tvTripEndDate)
         val ivTripImage = findViewById<ImageView>(R.id.ivTripImage)
-        
+
         if (trip == null) {
             tvTripName?.text = ""
             tvTripStartDate?.text = ""
             tvTripEndDate?.text = ""
             return
         }
-        
+
         // Update button text based on trip status
         updatePlanButtonBasedOnTripStatus(trip)
 
@@ -161,21 +161,21 @@ class TripDetailActivity : AppCompatActivity() {
         // Format dates from yyyy-MM-dd to dd-MM-yyyy
         val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         val outputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
-        
+
         val formattedStartDate = try {
             val date = LocalDate.parse(trip.startDate, inputFormatter)
             date.format(outputFormatter)
         } catch (e: Exception) {
             trip.startDate
         }
-        
+
         val formattedEndDate = try {
             val date = LocalDate.parse(trip.endDate, inputFormatter)
             date.format(outputFormatter)
         } catch (e: Exception) {
             trip.endDate
         }
-        
+
         val startDate = "Start Date: $formattedStartDate"
         val endDate = "End Date: $formattedEndDate"
         tvTripStartDate?.text = startDate
@@ -201,7 +201,7 @@ class TripDetailActivity : AppCompatActivity() {
     private fun showTripMenu() {
         val popupMenu = PopupMenu(this, binding.btnMenu)
         popupMenu.menuInflater.inflate(R.menu.trip_detail_menu, popupMenu.menu)
-        
+
         // Hide "View Map" menu item if trip has ended
         val isTripEnded = isTripEnded()
         popupMenu.menu.findItem(R.id.action_view_map)?.isVisible = !isTripEnded
@@ -250,13 +250,13 @@ class TripDetailActivity : AppCompatActivity() {
             .setNegativeButton("Cancel", null)
             .show()
     }
-    
+
     private fun deleteTrip() {
         val tripIdToDelete = tripId ?: return
-        
+
         CoroutineScope(Dispatchers.IO).launch {
             val result = tripRepository.deleteTrip(tripIdToDelete)
-            
+
             withContext(Dispatchers.Main) {
                 if (result.isSuccess) {
                     Toast.makeText(this@TripDetailActivity, "Trip deleted successfully!", Toast.LENGTH_SHORT).show()
@@ -304,17 +304,17 @@ class TripDetailActivity : AppCompatActivity() {
             }
             dialogBinding.tvPrivacyValue.text = displayText
         }
-        
+
         // Initialize privacy display
         updatePrivacyText(currentPrivacy)
-        
+
         // Setup privacy selector click listener
         dialogBinding.layoutPrivacySelector.setOnClickListener {
             val popupMenu = PopupMenu(this, dialogBinding.layoutPrivacySelector)
             popupMenu.menu.add(0, 0, 0, "Private")
             popupMenu.menu.add(0, 1, 1, "Public")
             popupMenu.menu.add(0, 2, 2, "Follower")
-            
+
             popupMenu.setOnMenuItemClickListener { menuItem ->
                 currentPrivacy = when (menuItem.itemId) {
                     1 -> "public"
@@ -492,9 +492,10 @@ class TripDetailActivity : AppCompatActivity() {
         val intent = Intent(this, TripMapActivity::class.java)
         intent.putExtra("tripId", tripId)
         intent.putExtra("tripTitle", viewModel.tripDetails.value?.title ?: "Trip")
+        intent.putExtra("tripUserId", currentTrip?.userId)
         startActivity(intent)
     }
-    
+
     /**
      * Check if the trip has ended
      */
@@ -509,7 +510,7 @@ class TripDetailActivity : AppCompatActivity() {
             false
         }
     }
-    
+
     /**
      * Update plan button text and icon based on trip status
      */
@@ -520,7 +521,7 @@ class TripDetailActivity : AppCompatActivity() {
             binding.btnAddNewPlan.text = "Add new plan"
         }
     }
-    
+
     /**
      * Handle plan button click - navigate to different screen based on trip status
      */
@@ -531,4 +532,6 @@ class TripDetailActivity : AppCompatActivity() {
             navigateToPlanSelection()
         }
     }
+
+
 }

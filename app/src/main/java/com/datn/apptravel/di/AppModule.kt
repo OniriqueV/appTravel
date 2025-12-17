@@ -23,6 +23,8 @@ import com.datn.apptravel.ui.trip.viewmodel.PlanDetailViewModel
 import com.datn.apptravel.ui.trip.viewmodel.TripMapViewModel
 import com.datn.apptravel.ui.auth.OnboardingViewModel
 
+import com.datn.apptravel.ui.discover.network.DiscoverApiClient
+import com.datn.apptravel.ui.discover.network.DiscoverRepository
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -46,13 +48,16 @@ val appModule = module {
     single { UserRepository(get(), androidContext()) }
     single { com.datn.apptravel.data.repository.PlacesRepository(get()) }
     single { com.datn.apptravel.data.repository.TripRepository(get()) }
+    single { DiscoverApiClient.api }
+    single { DiscoverRepository(get()) }
     single { com.datn.apptravel.data.repository.ImageSearchRepository(get()) }
+
 
     // ViewModels
     viewModel { SplashViewModel(get()) }
     viewModel { OnboardingViewModel() }
     viewModel { MainViewModel(get()) }
-    viewModel { DiscoverViewModel() }
+    viewModel { DiscoverViewModel(get()) }
     viewModel { NotificationViewModel() }
 
     // Profile

@@ -6,12 +6,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import com.datn.apptravel.R
 import com.datn.apptravel.databinding.ItemPlanConnectorBinding
 import com.datn.apptravel.databinding.ItemPlanMapHorizontalBinding
+
 import com.datn.apptravel.databinding.ItemTripMapDateBinding
+
 import com.datn.apptravel.ui.trip.model.PlanLocation
 import com.datn.apptravel.ui.trip.model.ScheduleItem
+import com.datn.apptravel.utils.ApiConfig
 
 class ScheduleTripMapAdapter(
     private val items: List<ScheduleItem>,
@@ -118,7 +122,20 @@ class ScheduleTripMapAdapter(
                 tvPlanName.text = plan.name
                 tvTime.text = plan.time
                 tvLocation.text = plan.detail
-                ivPlanImage.setImageResource(plan.iconResId)
+                
+                // Load image from photoUrl using Glide
+                val imageUrl = ApiConfig.getImageUrl(plan.photoUrl)
+                if (imageUrl != null) {
+                    Glide.with(binding.root.context)
+                        .load(imageUrl)
+                        .placeholder(plan.iconResId)
+                        .error(plan.iconResId)
+                        .centerCrop()
+                        .into(ivPlanImage)
+                } else {
+                    // Fallback to icon if no photoUrl
+                    ivPlanImage.setImageResource(plan.iconResId)
+                }
 
                 // Highlight effect based on plan position, not adapter position
                 val isHighlighted = planPos == highlightedPlanPosition

@@ -11,7 +11,7 @@ import com.datn.apptravel.ui.notification.NotificationFragment
 import com.datn.apptravel.ui.profile.ProfileFragment
 import com.datn.apptravel.ui.trip.TripsFragment
 import com.datn.apptravel.ui.app.MainViewModel
-import com.datn.apptravel.ui.discover.search.SearchExploreFragment
+//import com.datn.apptravel.ui.discover.search.SearchExploreFragment
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.NavController
@@ -32,12 +32,12 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
         super.onCreate(savedInstanceState)
 
         // Handle window insets properly - add padding for status bar and navigation bar
-        ViewCompat.setOnApplyWindowInsetsListener(binding.navHostFragment) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(0, systemBars.top, 0, 0)
-            insets
-        }
-        
+//        ViewCompat.setOnApplyWindowInsetsListener(binding.navHostFragment) { view, insets ->
+//            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+//            view.setPadding(0, systemBars.top, 0, 0)
+//            insets
+//        }
+
         // Set default fragment
         if (savedInstanceState == null) {
             val tripsFragment = TripsFragment()
@@ -87,7 +87,11 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
 
 
                 R.id.nav_discover -> {
-                    replaceFragment(DiscoverFragment())
+                    val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""  // hoặc FirebaseAuth.getInstance().currentUser?.uid
+                    replaceFragment(
+                        fragment = DiscoverFragment()
+                    )
+
                     true
                 }
                 R.id.nav_profile -> {
@@ -100,9 +104,9 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     }
 
 
-    fun openSearchExplore() {
-        replaceFragment(SearchExploreFragment())
-    }
+//    fun openSearchExplore() {
+//        replaceFragment(SearchExploreFragment())
+//    }
 
 
 
@@ -113,5 +117,6 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     }
 
     override fun handleLoading(isLoading: Boolean) {}
+
 
 }

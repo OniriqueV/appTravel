@@ -6,13 +6,16 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.datn.apptravel.data.repository.AuthRepository
 import com.datn.apptravel.databinding.ActivityTripMapBinding
 import com.datn.apptravel.ui.trip.adapter.ScheduleTripMapAdapter
 import com.datn.apptravel.ui.trip.model.PlanLocation
 import com.datn.apptravel.ui.trip.model.ScheduleItem
 import com.datn.apptravel.ui.trip.viewmodel.TripMapViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
@@ -23,11 +26,14 @@ import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import org.koin.android.ext.android.inject
+
 
 class TripMapActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTripMapBinding
     private val viewModel: TripMapViewModel by viewModel()
+    private val authRepository: AuthRepository by inject()
     private lateinit var scheduleAdapter: ScheduleTripMapAdapter
     private val plans = mutableListOf<PlanLocation>()
     private val scheduleItems = mutableListOf<ScheduleItem>()
@@ -37,6 +43,7 @@ class TripMapActivity : AppCompatActivity() {
 
     private val setZoom = 14.0
     private var tripId: String? = null
+    private var tripUserId: String? = null
     private var startDate: String = ""
     private var endDate: String = ""
 
@@ -169,6 +176,7 @@ class TripMapActivity : AppCompatActivity() {
     private fun loadTripData() {
         // Get trip info from intent
         tripId = intent.getStringExtra("tripId")
+        tripUserId = intent.getStringExtra("tripUserId")
         val tripTitle = intent.getStringExtra("tripTitle") ?: "Trip"
 
         if (tripId == null) {
@@ -177,8 +185,16 @@ class TripMapActivity : AppCompatActivity() {
             return
         }
 
-        // Load data through ViewModel
-        viewModel.loadTripData(tripId!!, packageName)
+        // Get current user ID and load data through ViewModel
+        lifecycleScope.launch {
+            authRepository.currentUser.collect { user ->
+                if (user != null) {
+                    val currentUserId = user.id
+                    viewModel.loadTripData(tripId!!, packageName, currentUserId, tripUserId)
+                }
+                return@collect
+            }
+        }
     }
 
     private fun updateScheduleItems() {

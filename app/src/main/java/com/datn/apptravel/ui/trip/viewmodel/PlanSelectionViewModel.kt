@@ -103,7 +103,15 @@ class PlanSelectionViewModel(
 
         // Check if current plan type is NONE
         val currentPlanType = _selectedPlanType.value ?: PlanType.NONE
+
+        if (currentPlanType == PlanType.NONE) {
+            _places.value = emptyList()
+            setLoading(false)
+            return
+        }
+
         val hasPlanType = currentPlanType != PlanType.NONE
+
 
         setLoading(true)
 
@@ -122,6 +130,7 @@ class PlanSelectionViewModel(
                         // Save searched location coordinates
                         searchLatitude = searchedPlace.latitude
                         searchLongitude = searchedPlace.longitude
+
 
                         android.util.Log.d("PlanViewModel", "Found location: ${searchedPlace.name} at (${searchedPlace.latitude}, ${searchedPlace.longitude})")
 

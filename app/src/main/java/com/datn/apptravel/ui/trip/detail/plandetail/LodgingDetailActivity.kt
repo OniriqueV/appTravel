@@ -175,6 +175,12 @@ class LodgingDetailActivity : AppCompatActivity() {
                 return
             }
             
+            // Validate that checkout datetime is after checkin datetime
+            if (!isCheckoutAfterCheckin(checkInDate, checkInTime, checkoutDate, checkoutTime)) {
+                Toast.makeText(this, "Thời gian trả phòng phải sau thời gian nhận phòng", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
             // Convert to ISO format
             val startTimeISO = convertDateTimeToISO(checkInDate, checkInTime)
             val endTimeISO = convertDateTimeToISO(checkoutDate, checkoutTime)
@@ -319,6 +325,17 @@ class LodgingDetailActivity : AppCompatActivity() {
         
         if (expense > 0) {
             binding.etExpense.setText(expense.toString())
+        }
+    }
+    
+    private fun isCheckoutAfterCheckin(checkInDate: String, checkInTime: String, checkoutDate: String, checkoutTime: String): Boolean {
+        return try {
+            val checkInDateTime = convertDateTimeToISO(checkInDate, checkInTime)
+            val checkoutDateTime = convertDateTimeToISO(checkoutDate, checkoutTime)
+            
+            checkoutDateTime > checkInDateTime
+        } catch (e: Exception) {
+            true // If parsing fails, allow the operation
         }
     }
 }
