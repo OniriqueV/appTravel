@@ -1,0 +1,19 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- AI Sparkle Icon - Biểu tượng AI đẹp mắt -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,2L9.19,8.63L2,11.5L9.19,14.37L12,21L14.81,14.37L22,11.5L14.81,8.63L12,2Z"/>
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M19,9L18,11L16,12L18,13L19,15L20,13L22,12L20,11L19,9Z"/>
+
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5,9L4,11L2,12L4,13L5,15L6,13L8,12L6,11L5,9Z"/>
+</vector>

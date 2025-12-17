@@ -1,28 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-
     <!-- ===== Permissions ===== -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- Location -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> <!-- Location -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Storage (Android <= 32) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /> <!-- Storage (Android <= 32) -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-
-    <!-- Android 13+ images -->
+        android:maxSdkVersion="32" /> <!-- Android 13+ images -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
 
-    <!-- ===== Application ===== -->
     <application
         android:name=".AppTravelApplication"
         android:allowBackup="true"
@@ -36,7 +27,12 @@
         android:theme="@style/Theme.AppTravel"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
-
+        <activity
+            android:name=".ui.aisuggest.AISuggestActivity"
+            android:exported="false"
+            android:label="Lập Kế Hoạch Du Lịch"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain"/>
         <!-- ===== Splash (Launcher) ===== -->
         <activity
             android:name=".ui.activity.SplashActivity"
@@ -44,108 +40,84 @@
             android:theme="@style/Theme.AppTravel.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <!-- ===== Onboarding ===== -->
+        </activity> <!-- ===== Onboarding ===== -->
         <activity
             android:name=".ui.activity.OnboardingActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
-        <!-- ===== Auth ===== -->
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" /> <!-- ===== Auth ===== -->
         <activity
             android:name=".ui.auth.SignInActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.auth.SignUpActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.auth.ForgotPasswordActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
-        <!-- ===== Main ===== -->
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" /> <!-- ===== Main ===== -->
         <activity
             android:name=".ui.activity.MainActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
-        <!-- ===== Profile ===== -->
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" /> <!-- ===== Profile ===== -->
         <activity
             android:name=".ui.profile.edit.EditProfileActivity"
             android:exported="false"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppTravel" />
-
         <activity
             android:name=".ui.profile.password.ChangePasswordActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppTravel" />
-
-        <!-- ===== Trip ===== -->
+            android:theme="@style/Theme.AppTravel" /> <!-- ===== Trip ===== -->
         <activity
             android:name=".ui.trip.CreateTripActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.detail.tripdetail.TripDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.map.TripMapActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.list.PlanSelectionActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
-        <!-- ===== Plan Detail ===== -->
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" /> <!-- ===== Plan Detail ===== -->
         <activity
             android:name=".ui.trip.detail.PlanDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.detail.plandetail.FlightDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.detail.plandetail.LodgingDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.detail.plandetail.BoatDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.detail.plandetail.ActivityDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.detail.plandetail.RestaurantDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
         <activity
             android:name=".ui.trip.detail.plandetail.CarRentalDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
     </application>
 
 </manifest>

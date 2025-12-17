@@ -43,7 +43,7 @@ val appModule = module {
 
     // Repositories
     single { AuthRepository() }
-    single { UserRepository(get(), androidContext()) } // CHỈ 1 DÒNG này thôi!
+    single { UserRepository(get(), androidContext()) }
     single { com.datn.apptravel.data.repository.PlacesRepository(get()) }
     single { com.datn.apptravel.data.repository.TripRepository(get()) }
     single { com.datn.apptravel.data.repository.ImageSearchRepository(get()) }

@@ -11,6 +11,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.bumptech.glide.Glide
 import com.datn.apptravel.R
 import com.datn.apptravel.databinding.FragmentProfileBinding
+import com.datn.apptravel.ui.aisuggest.AISuggestActivity
 import com.datn.apptravel.ui.auth.SignInActivity
 import com.datn.apptravel.ui.base.BaseFragment
 import com.datn.apptravel.ui.profile.edit.EditProfileActivity
@@ -54,6 +55,12 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding, ProfileViewModel>()
     }
 
     private fun setupClickListeners() {
+        // AI Suggest - Nút mới thêm vào
+        binding.btnAISuggest.setOnClickListener {
+            val intent = Intent(requireContext(), AISuggestActivity::class.java)
+            startActivity(intent)
+        }
+
         // Edit profile
         binding.cardProfile.setOnClickListener {
             val intent = Intent(requireContext(), EditProfileActivity::class.java)
