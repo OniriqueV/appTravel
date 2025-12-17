@@ -1,21 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
-    
-    <!-- Internet permission for API calls and map tiles -->
+
+    <!-- ===== Permissions ===== -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    
-    <!-- Location permissions -->
+
+    <!-- Location -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    
-    <!-- Storage permissions for OSMDroid caching -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" 
+
+    <!-- Storage (Android <= 32) -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- Android 13+ images -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+
+    <!-- ===== Application ===== -->
     <application
         android:name=".AppTravelApplication"
         android:allowBackup="true"
@@ -23,13 +30,14 @@
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppTravel"
-        android:networkSecurityConfig="@xml/network_security_config"
-        android:usesCleartextTraffic="true">
-        
-        <!-- Splash Activity - Launcher -->
+        android:usesCleartextTraffic="true"
+        tools:targetApi="31">
+
+        <!-- ===== Splash (Launcher) ===== -->
         <activity
             android:name=".ui.activity.SplashActivity"
             android:exported="true"
@@ -39,42 +47,49 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
-        <!-- Language Selection Activity -->
-<!--        <activity-->
-<!--            android:name=".ui.activity.LanguageSelectionActivity"-->
-<!--            android:exported="false"-->
-<!--            android:theme="@style/Theme.AppTravel.NoActionBarMain" />-->
-        
-        <!-- Onboarding Activity -->
+
+        <!-- ===== Onboarding ===== -->
         <activity
             android:name=".ui.activity.OnboardingActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-        
-        <!-- Authentication Activities -->
+
+        <!-- ===== Auth ===== -->
         <activity
             android:name=".ui.auth.SignInActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-        
+
         <activity
             android:name=".ui.auth.SignUpActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-        
+
         <activity
             android:name=".ui.auth.ForgotPasswordActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-        
-        <!-- Main Activity -->
+
+        <!-- ===== Main ===== -->
         <activity
             android:name=".ui.activity.MainActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-        
-        <!-- Create Trip Activity -->
+
+        <!-- ===== Profile ===== -->
+        <activity
+            android:name=".ui.profile.edit.EditProfileActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppTravel" />
+
+        <activity
+            android:name=".ui.profile.password.ChangePasswordActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppTravel" />
+
+        <!-- ===== Trip ===== -->
         <activity
             android:name=".ui.trip.CreateTripActivity"
             android:exported="false"
@@ -94,55 +109,43 @@
             android:name=".ui.trip.list.PlanSelectionActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-            
-        <!-- Flight Detail Activity -->
-        <activity
-            android:name=".ui.trip.detail.plandetail.FlightDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-            
-        <!-- Lodging Detail Activity -->
-        <activity
-            android:name=".ui.trip.detail.plandetail.LodgingDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-            
-        <!-- Boat Detail Activity -->
-        <activity
-            android:name=".ui.trip.detail.plandetail.BoatDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-            
-        <!-- Train Detail Activity -->
-<!--        <activity-->
-<!--            android:name=".ui.plandetail.TrainDetailActivity"-->
-<!--            android:exported="false"-->
-<!--            android:theme="@style/Theme.AppTravel.NoActionBarMain" />-->
-            
-        <!-- Activity Detail Activity -->
-        <activity
-            android:name=".ui.trip.detail.plandetail.ActivityDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-            
-        <!-- Restaurant Detail Activity -->
-        <activity
-            android:name=".ui.trip.detail.plandetail.RestaurantDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-            
-        <!-- Car Rental Detail Activity -->
-        <activity
-            android:name=".ui.trip.detail.plandetail.CarRentalDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-            
-        <!-- Plan Detail Activity -->
+
+        <!-- ===== Plan Detail ===== -->
         <activity
             android:name=".ui.trip.detail.PlanDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-            
+
+        <activity
+            android:name=".ui.trip.detail.plandetail.FlightDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
+
+        <activity
+            android:name=".ui.trip.detail.plandetail.LodgingDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
+
+        <activity
+            android:name=".ui.trip.detail.plandetail.BoatDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
+
+        <activity
+            android:name=".ui.trip.detail.plandetail.ActivityDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
+
+        <activity
+            android:name=".ui.trip.detail.plandetail.RestaurantDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
+
+        <activity
+            android:name=".ui.trip.detail.plandetail.CarRentalDetailActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
+
     </application>
 
 </manifest>
