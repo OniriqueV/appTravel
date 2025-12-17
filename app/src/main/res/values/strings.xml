@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">appTravel</string>
+    <string name="cd_destination">Nhập địa điểm du lịch</string>
 </resources>
