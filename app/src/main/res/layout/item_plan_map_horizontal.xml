@@ -24,12 +24,10 @@
 
             <ImageView
                 android:id="@+id/ivPlanImage"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_gravity="center"
-                android:src="@drawable/placeholder_reef"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:scaleType="centerCrop"
-                android:background="@drawable/circular_image_background" />
+                android:src="@drawable/placeholder_reef" />
 
         </FrameLayout>
 
