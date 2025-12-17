@@ -49,7 +49,7 @@ class TripMapViewModel(
         val total: Int
     )
 
-    fun loadTripData(tripId: String, packageName: String) {
+    fun loadTripData(tripId: String, packageName: String, currentUserId: String? = null, tripUserId: String? = null) {
         viewModelScope.launch {
             try {
                 setLoading(true)
@@ -68,8 +68,31 @@ class TripMapViewModel(
                         return@onSuccess
                     }
 
+                    // Filter plans based on ownership
+                    val filteredPlans = if (currentUserId != null && tripUserId != null && currentUserId != tripUserId) {
+                        // User is not owner - only show plans that have already occurred
+                        val today = java.time.LocalDate.now()
+                        apiPlans.filter { plan ->
+                            try {
+                                val planDateTime = LocalDateTime.parse(
+                                    plan.startTime,
+                                    DateTimeFormatter.ISO_DATE_TIME
+                                )
+                                val planDate = planDateTime.toLocalDate()
+                                // Show plans from today or before (planDate <= today)
+                                !planDate.isAfter(today)
+                            } catch (e: Exception) {
+                                Log.e("TripMapViewModel", "Error parsing date for plan: ${plan.title}", e)
+                                false // Don't show plans with invalid dates
+                            }
+                        }
+                    } else {
+                        // User is owner or no user info - show all plans
+                        apiPlans
+                    }
+
                     // Convert API plans to PlanLocation with geocoding
-                    val planLocations = convertPlansToLocations(apiPlans, packageName)
+                    val planLocations = convertPlansToLocations(filteredPlans, packageName)
                     _planLocations.value = planLocations
 
                     if (planLocations.isNotEmpty()) {
@@ -134,7 +157,8 @@ class TripMapViewModel(
                             detail = plan.address ?: "",
                             latitude = coordinates.first,
                             longitude = coordinates.second,
-                            iconResId = getIconForPlanType(plan.type)
+                            iconResId = getIconForPlanType(plan.type),
+                            photoUrl = plan.photoUrl
                         )
                     } else {
                         Log.w("TripMapViewModel", "Could not get coordinates for: ${plan.title}")

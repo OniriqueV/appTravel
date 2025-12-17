@@ -195,6 +195,12 @@ class ActivityDetailActivity : AppCompatActivity() {
             return
         }
         
+        // Validate that end datetime is after start datetime
+        if (!isEndDateTimeAfterStart(startDate, startTime, endDate, endTime)) {
+            Toast.makeText(this, "Thời gian kết thúc phải sau thời gian bắt đầu", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         tripId?.let { id ->
             // Validate dates are within trip dates
             if (!isDateWithinTripRange(startDate) || !isDateWithinTripRange(endDate)) {
@@ -357,6 +363,18 @@ class ActivityDetailActivity : AppCompatActivity() {
         
         if (expense > 0) {
             binding.etExpense.setText(expense.toString())
+        }
+    }
+    
+    private fun isEndDateTimeAfterStart(startDate: String, startTime: String, endDate: String, endTime: String): Boolean {
+        return try {
+            // Convert dd/MM/yyyy and HH:mm to yyyy-MM-dd'T'HH:mm for comparison
+            val startDateTime = convertDateTimeToISO(startDate, startTime)
+            val endDateTime = convertDateTimeToISO(endDate, endTime)
+            
+            endDateTime > startDateTime
+        } catch (e: Exception) {
+            true // If parsing fails, allow the operation
         }
     }
 }

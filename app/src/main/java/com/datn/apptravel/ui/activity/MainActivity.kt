@@ -32,12 +32,12 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
         super.onCreate(savedInstanceState)
 
         // Handle window insets properly - add padding for status bar and navigation bar
-        ViewCompat.setOnApplyWindowInsetsListener(binding.navHostFragment) { view, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(0, systemBars.top, 0, 0)
-            insets
-        }
-        
+//        ViewCompat.setOnApplyWindowInsetsListener(binding.navHostFragment) { view, insets ->
+//            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+//            view.setPadding(0, systemBars.top, 0, 0)
+//            insets
+//        }
+
         // Set default fragment
         if (savedInstanceState == null) {
             val tripsFragment = TripsFragment()

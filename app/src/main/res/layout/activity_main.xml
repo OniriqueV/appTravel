@@ -4,38 +4,43 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0D7BB"
+    android:background="@android:color/transparent"
     tools:context=".ui.activity.MainActivity">
 
     <!-- Main content -->
+
+    <!-- Bottom Navigation -->
+
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/nav_host_fragment"
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
 
-    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="@drawable/bg_bottom_nav_curve"
-        android:paddingTop="4dp"
-        android:paddingBottom="2dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
         android:clipToPadding="false"
         android:clipChildren="false"
-        app:itemIconSize="22dp"
+        app:itemIconSize="24dp"
         app:itemIconTint="@color/bottom_nav_item_color"
+        app:itemPaddingBottom="2dp"
+        app:itemPaddingTop="2dp"
         app:itemTextColor="@color/bottom_nav_item_color"
         app:labelVisibilityMode="labeled"
-        app:itemPaddingTop="2dp"
-        app:itemPaddingBottom="2dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/fabAdd"
         app:menu="@menu/bottom_navigation_menu" />
 
     <!-- Add Button - Rectangle Shape -->
@@ -51,15 +56,14 @@
         app:icon="@drawable/ic_add"
         app:iconGravity="textStart"
         app:iconPadding="0dp"
-        app:iconSize="28dp"
+        app:iconSize="24dp"
         app:iconTint="@android:color/white"
         app:backgroundTint="#C89F6D"
         app:cornerRadius="18dp"
-        app:layout_constraintBottom_toBottomOf="@id/bottom_navigation"
-        app:layout_constraintTop_toTopOf="@id/bottom_navigation"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        android:layout_marginBottom="45dp"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="28dp" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

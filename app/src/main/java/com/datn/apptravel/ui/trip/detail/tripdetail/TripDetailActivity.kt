@@ -492,6 +492,7 @@ class TripDetailActivity : AppCompatActivity() {
         val intent = Intent(this, TripMapActivity::class.java)
         intent.putExtra("tripId", tripId)
         intent.putExtra("tripTitle", viewModel.tripDetails.value?.title ?: "Trip")
+        intent.putExtra("tripUserId", currentTrip?.userId)
         startActivity(intent)
     }
 
