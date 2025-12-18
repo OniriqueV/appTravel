@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.auth
+package com.datn.apptravel.ui.app
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

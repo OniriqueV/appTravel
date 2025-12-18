@@ -39,7 +39,7 @@ class SplashActivity : BaseActivity<ActivitySplashBinding, SplashViewModel>() {
                     finish()
                 }
                 SplashViewModel.SplashNavigationState.ToSignIn -> {
-                    startActivity(Intent(this, com.datn.apptravel.ui.auth.SignInActivity::class.java))
+                    startActivity(Intent(this, SignInActivity::class.java))
                     finish()
                 }
             }

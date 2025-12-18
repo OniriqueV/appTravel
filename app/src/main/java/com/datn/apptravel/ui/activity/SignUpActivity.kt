@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.auth
+package com.datn.apptravel.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -12,24 +12,23 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.datn.apptravel.R
 import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.ui.activity.MainActivity
-import com.datn.apptravel.ui.auth.AuthViewModel
+import com.datn.apptravel.ui.app.AuthViewModel
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class SignUpActivity : AppCompatActivity() {
-    
+
     private val viewModel: AuthViewModel by viewModel()
     private val sessionManager: SessionManager by inject()
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_up)
-        
+
         // Set up UI elements
         setupUI()
-        
+
         // Observe sign up result
         viewModel.signUpResult.observe(this) { result ->
             result.onSuccess { user ->
@@ -45,7 +44,7 @@ class SignUpActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun setupUI() {
         // Set up register button
         findViewById<Button>(R.id.btnRegister)?.setOnClickListener {
@@ -55,7 +54,7 @@ class SignUpActivity : AppCompatActivity() {
             val password = findViewById<EditText>(R.id.etPassword)?.text.toString()
             val confirmPassword = findViewById<EditText>(R.id.etConfirmPassword)?.text.toString()
             val termsAccepted = findViewById<CheckBox>(R.id.cbTerms)?.isChecked ?: false
-            
+
             // Validate inputs
             when {
                 firstName.isEmpty() -> {
@@ -85,13 +84,13 @@ class SignUpActivity : AppCompatActivity() {
                 }
             }
         }
-        
+
         // Set up sign in text
         findViewById<TextView>(R.id.tvSignIn)?.setOnClickListener {
             finish() // Go back to sign in
         }
     }
-    
+
     /**
      * Navigate to Main screen
      */

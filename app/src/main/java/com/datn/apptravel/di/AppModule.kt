@@ -15,13 +15,13 @@ import com.datn.apptravel.ui.profile.password.ChangePasswordViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.datn.apptravel.ui.trip.viewmodel.TripsViewModel
-import com.datn.apptravel.ui.auth.AuthViewModel
+import com.datn.apptravel.ui.app.AuthViewModel
 import com.datn.apptravel.ui.trip.viewmodel.CreateTripViewModel
 import com.datn.apptravel.ui.trip.viewmodel.TripDetailViewModel
 import com.datn.apptravel.ui.trip.viewmodel.PlanSelectionViewModel
 import com.datn.apptravel.ui.trip.viewmodel.PlanDetailViewModel
 import com.datn.apptravel.ui.trip.viewmodel.TripMapViewModel
-import com.datn.apptravel.ui.auth.OnboardingViewModel
+import com.datn.apptravel.ui.app.OnboardingViewModel
 
 import com.datn.apptravel.ui.discover.network.DiscoverApiClient
 import com.datn.apptravel.ui.discover.network.DiscoverRepository

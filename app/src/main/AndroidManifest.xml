@@ -51,15 +51,15 @@
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" /> <!-- ===== Auth ===== -->
         <activity
-            android:name=".ui.auth.SignInActivity"
+            android:name=".ui.activity.SignInActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
         <activity
-            android:name=".ui.auth.SignUpActivity"
+            android:name=".ui.activity.SignUpActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
         <activity
-            android:name=".ui.auth.ForgotPasswordActivity"
+            android:name=".ui.activity.ForgotPasswordActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" /> <!-- ===== Main ===== -->
         <activity

@@ -13,7 +13,7 @@ import com.datn.apptravel.R
 import com.datn.apptravel.databinding.FragmentProfileBinding
 import com.datn.apptravel.ui.aisuggest.AISuggestActivity
 import com.datn.apptravel.ui.aisuggest.ExtendedAISuggestActivity
-import com.datn.apptravel.ui.auth.SignInActivity
+import com.datn.apptravel.ui.activity.SignInActivity
 import com.datn.apptravel.ui.base.BaseFragment
 import com.datn.apptravel.ui.profile.edit.EditProfileActivity
 import com.datn.apptravel.ui.profile.password.ChangePasswordActivity
