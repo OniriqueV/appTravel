@@ -13,6 +13,8 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" /> <!-- Android 13+ images -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Android 13+ notifications -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".AppTravelApplication"
@@ -131,6 +133,15 @@
 <!--        <activity android:name=".ui.discover.detail.CommentActivity" />-->
         <activity android:name=".ui.discover.post.CreatePostActivity" />
         <activity android:name=".ui.discover.post.SelectTripForPostActivity" />
+
+        <!-- ===== Firebase Cloud Messaging Service ===== -->
+        <service
+            android:name=".data.api.NotificationService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
     </application>
 

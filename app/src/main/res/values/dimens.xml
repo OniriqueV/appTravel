@@ -11,4 +11,8 @@
     <dimen name="schedule_card_margin_horizontal">4dp</dimen>
     <dimen name="schedule_card_corner_radius">12dp</dimen>
     <dimen name="schedule_card_elevation">4dp</dimen>
+    
+    <!-- Pagination dots -->
+    <dimen name="dot_size">8dp</dimen>
+    <dimen name="dot_margin">4dp</dimen>
 </resources>

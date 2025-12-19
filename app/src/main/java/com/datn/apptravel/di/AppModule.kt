@@ -51,6 +51,7 @@ val appModule = module {
     single { DiscoverApiClient.api }
     single { DiscoverRepository(get()) }
     single { com.datn.apptravel.data.repository.ImageSearchRepository(get()) }
+    single { com.datn.apptravel.data.repository.NotificationRepository(get()) }
 
 
     // ViewModels
@@ -58,7 +59,7 @@ val appModule = module {
     viewModel { OnboardingViewModel() }
     viewModel { MainViewModel(get()) }
     viewModel { DiscoverViewModel(get()) }
-    viewModel { NotificationViewModel() }
+    viewModel { NotificationViewModel(get()) }
 
     // Profile
     viewModel { ProfileViewModel(get(), get()) }

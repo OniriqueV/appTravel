@@ -17,7 +17,7 @@ class SessionManager(private val context: Context) {
         private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "session_prefs")
         private val AUTH_TOKEN = stringPreferencesKey("auth_token")
         private val USER_ID = stringPreferencesKey("user_id")
-        private val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
+        private val NOTIFICATIONS_ENABLED = stringPreferencesKey("notifications_enabled")
     }
     suspend fun saveAuthToken(token: String) {
         context.dataStore.edit { preferences ->
@@ -42,16 +42,25 @@ class SessionManager(private val context: Context) {
             }.first()
         }
     }
-    
-    suspend fun saveSelectedLanguage(languageCode: String) {
+
+    suspend fun saveNotificationsEnabled(enabled: Boolean) {
         context.dataStore.edit { preferences ->
-            preferences[SELECTED_LANGUAGE] = languageCode
+            preferences[NOTIFICATIONS_ENABLED] = enabled.toString()
         }
     }
-
-    val selectedLanguage: Flow<String?> = context.dataStore.data.map { preferences ->
-        preferences[SELECTED_LANGUAGE]
+    
+    val notificationsEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[NOTIFICATIONS_ENABLED]?.toBoolean() ?: true // Default to enabled
     }
+    
+    fun getNotificationsEnabled(): Boolean {
+        return runBlocking {
+            context.dataStore.data.map { preferences ->
+                preferences[NOTIFICATIONS_ENABLED]?.toBoolean() ?: true
+            }.first()
+        }
+    }
+    
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
             preferences.clear()
