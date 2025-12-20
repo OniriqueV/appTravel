@@ -1,49 +1,49 @@
 package com.datn.apptravel.ui.discover.feed
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.DiscoverViewModel
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.detail.PostDetailActivity
-import org.koin.androidx.viewmodel.ext.android.viewModel
-import com.datn.apptravel.ui.discover.adapter.DiscoverFeedAdapter
 import com.datn.apptravel.ui.discover.Refreshable
+import com.datn.apptravel.ui.discover.adapter.DiscoverFeedAdapter
+import com.datn.apptravel.ui.discover.detail.PostDetailActivity
+import com.datn.apptravel.ui.discover.model.DiscoverItem
+import com.google.firebase.auth.FirebaseAuth
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
-
-class FollowingFragment : Fragment(), Refreshable  {
+class FollowingFragment : Fragment(), Refreshable {
 
     private val viewModel: DiscoverViewModel by viewModel()
 
     private lateinit var recycler: RecyclerView
     private lateinit var adapter: DiscoverFeedAdapter
-
     private lateinit var progressBar: ProgressBar
     private lateinit var swipeRefresh: SwipeRefreshLayout
 
-    private var currentUserId = ""
-
-    override fun onRefresh() {
-        viewModel.loadDiscover()
-    }
+    private var currentUserId: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        currentUserId = arguments?.getString("userId") ?: ""
+        currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: ""
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val v = inflater.inflate(R.layout.fragment_following_feed, container, false)
 
         recycler = v.findViewById(R.id.recyclerFollowing)
@@ -56,16 +56,34 @@ class FollowingFragment : Fragment(), Refreshable  {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = DiscoverFeedAdapter { item ->
-            openPostDetail(item)
-        }
+        adapter = DiscoverFeedAdapter(
+            onPostClick = { item -> openPostDetail(item) },
+            onComment = { postId -> openPostDetailById(postId) }
+        )
+
+        recycler.layoutManager = LinearLayoutManager(requireContext())
         recycler.adapter = adapter
 
-        observeViewModel()
-        loadData()
+        swipeRefresh.setOnRefreshListener { onRefresh() }
 
-        swipeRefresh.setOnRefreshListener { loadData() }
+        observeViewModel()
     }
+
+    override fun onResume() {
+        super.onResume()
+        loadData()
+    }
+
+    // ================= ACTIVITY RESULT =================
+
+    private val postDetailLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                loadData()
+            }
+        }
+
+    // ================= OBSERVE =================
 
     private fun observeViewModel() {
         viewModel.followingList.observe(viewLifecycleOwner) {
@@ -82,7 +100,11 @@ class FollowingFragment : Fragment(), Refreshable  {
         }
     }
 
+    // ================= LOAD DATA =================
+
     private fun loadData() {
+        Log.d("FOLLOWING_UI", "loadData userId=$currentUserId")
+
         if (currentUserId.isBlank()) {
             Toast.makeText(requireContext(), "Thiếu userId", Toast.LENGTH_SHORT).show()
             return
@@ -91,18 +113,24 @@ class FollowingFragment : Fragment(), Refreshable  {
         viewModel.loadFollowing(currentUserId, 0, 20)
     }
 
-    private fun openPostDetail(item: DiscoverItem) {
-        val intent = Intent(requireContext(), PostDetailActivity::class.java)
-        intent.putExtra("postId", item.postId)
-        intent.putExtra("userId", currentUserId)
-        startActivity(intent)
+    override fun onRefresh() {
+        loadData()
     }
 
-    companion object {
-        fun newInstance(userId: String) = FollowingFragment().apply {
-            arguments = Bundle().apply {
-                putString("userId", userId)
-            }
+    // ================= NAVIGATION =================
+
+    private fun openPostDetail(item: DiscoverItem) {
+        val intent = Intent(requireContext(), PostDetailActivity::class.java).apply {
+            putExtra(PostDetailActivity.EXTRA_POST_ID, item.postId)
         }
+        postDetailLauncher.launch(intent)
+    }
+
+    private fun openPostDetailById(postId: String) {
+        val intent = Intent(requireContext(), PostDetailActivity::class.java).apply {
+            putExtra(PostDetailActivity.EXTRA_POST_ID, postId)
+            putExtra(PostDetailActivity.EXTRA_OPEN_COMMENT, true)
+        }
+        postDetailLauncher.launch(intent)
     }
 }

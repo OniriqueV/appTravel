@@ -1,21 +1,25 @@
 package com.datn.apptravel.ui.discover.network
 
+import com.datn.apptravel.BuildConfig
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import com.datn.apptravel.BuildConfig
-
-
 
 object DiscoverApiClient {
 
-    private const val BASE_URL = BuildConfig.DISCOVER_SERVICE_BASE_URL
-
-
-
-
     val api: DiscoverApi by lazy {
+        val logging = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+
+        val client = OkHttpClient.Builder()
+            .addInterceptor(logging)
+            .build()
+
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(BuildConfig.DISCOVER_SERVICE_BASE_URL)
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(DiscoverApi::class.java)

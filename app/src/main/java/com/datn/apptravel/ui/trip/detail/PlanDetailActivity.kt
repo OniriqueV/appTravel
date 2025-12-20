@@ -95,7 +95,7 @@ class PlanDetailActivity : AppCompatActivity() {
                 updateUIWithPlanData(it)
             }
         }
-        
+
         // Observe photos
         viewModel.photos.observe(this) { photos ->
             photoAdapter.updatePhotos(photos)
@@ -307,23 +307,23 @@ class PlanDetailActivity : AppCompatActivity() {
     private fun formatExpense(expense: Double): String {
         return String.Companion.format(Locale.US, "%.0fđ", expense)
     }
-    
+
     private fun loadPlanDataFromViewModel() {
         // This is called after edit to reload data from ViewModel
         viewModel.plan.value?.let { plan ->
             updateUIWithPlanData(plan)
         }
     }
-    
+
     private fun updateUIWithPlanData(plan: com.datn.apptravel.data.model.Plan) {
         // Update UI with plan data
         binding.tvPlanTitle.text = getPlanTypeDisplayName(plan.type)
         binding.tvPlanName.text = plan.title
         binding.ivPlanIcon.setImageResource(getPlanTypeIcon(plan.type))
-        
+
         // Update time
         displayTime(plan.startTime, plan.endTime, plan.type)
-        
+
         // Update expense
         if ((plan.expense ?: 0.0) > 0) {
             binding.tvExpense.text = formatExpense(plan.expense!!)
@@ -372,7 +372,7 @@ class PlanDetailActivity : AppCompatActivity() {
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLAN_TITLE, plan.title)
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLACE_ADDRESS, plan.address)
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_START_TIME, plan.startTime)
-                        
+
                         // Pass plan type-specific fields
                         when (planType) {
                             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
@@ -402,7 +402,7 @@ class PlanDetailActivity : AppCompatActivity() {
                                 // FlightPlan: has arrivalLocation, arrivalAddress, arrivalDate
                                 // arrivalDate is the second time (arrival time)
                                 val arrivalDate = plan.arrivalDate ?: this@PlanDetailActivity.intent.getStringExtra("arrivalDate")
-                                arrivalDate?.let { 
+                                arrivalDate?.let {
                                     intent.putExtra("arrivalDate", it)
                                     intent.putExtra("end_time", it) // Also set as end_time for general use
                                 }
@@ -413,7 +413,7 @@ class PlanDetailActivity : AppCompatActivity() {
                                 // BoatPlan: has arrivalTime, arrivalLocation, arrivalAddress
                                 // arrivalTime is the second time
                                 val arrivalTime = plan.arrivalTime ?: this@PlanDetailActivity.intent.getStringExtra("arrivalTime")
-                                arrivalTime?.let { 
+                                arrivalTime?.let {
                                     intent.putExtra("arrivalTime", it)
                                     intent.putExtra("end_time", it) // Also set as end_time for general use
                                 }
@@ -431,12 +431,12 @@ class PlanDetailActivity : AppCompatActivity() {
                                 plan.endTime?.let { intent.putExtra("end_time", it) }
                             }
                         }
-                        
+
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_EXPENSE, plan.expense ?: 0.0)
                         intent.putExtra("placeLatitude", 0.0) // Will be parsed from plan.location if needed
                         intent.putExtra("placeLongitude", 0.0)
                         intent.putExtra("planType", planType.name) // Pass plan type for editing
-                        
+
                         editPlanLauncher.launch(intent)
                     } else {
                         Toast.makeText(this, "Plan data not available", Toast.LENGTH_SHORT).show()

@@ -5,47 +5,55 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.model.PostComment
+import com.datn.apptravel.ui.discover.model.CommentUiModel
+import com.datn.apptravel.ui.discover.util.TimeUtil
 
-class CommentAdapter : RecyclerView.Adapter<CommentAdapter.VH>() {
 
-    private val list = mutableListOf<PostComment>()
 
-    fun submit(data: List<PostComment>) {
-        list.clear()
-        list.addAll(data)
-        notifyDataSetChanged()
-    }
+class CommentAdapter :
+    ListAdapter<CommentUiModel, CommentAdapter.CommentVH>(DIFF) {
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val view = LayoutInflater.from(parent.context)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommentVH {
+        val v = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_comment, parent, false)
-        return VH(view)
+        return CommentVH(v)
     }
 
-    override fun getItemCount() = list.size
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        holder.bind(list[position])
+    override fun onBindViewHolder(holder: CommentVH, position: Int) {
+        holder.bind(getItem(position))
     }
 
-    class VH(v: View) : RecyclerView.ViewHolder(v) {
+    inner class CommentVH(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
-        private val imgAvatar: ImageView = v.findViewById(R.id.imgAvatar)
-        private val tvUserName: TextView = v.findViewById(R.id.tvUserName)
-        private val tvContent: TextView = v.findViewById(R.id.tvContent)
+        private val imgAvatar: ImageView = itemView.findViewById(R.id.imgAvatar)
+        private val tvName: TextView = itemView.findViewById(R.id.tvUserName)
+        private val tvContent: TextView = itemView.findViewById(R.id.tvContent)
+        private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
 
-        fun bind(c: PostComment) {
-            tvUserName.text = c.userName ?: "User"
-            tvContent.text = c.content
+        fun bind(item: CommentUiModel) {
+            tvName.text = item.userName
+            tvContent.text = item.content
+            tvTime.text = TimeUtil.formatTimeAgo(item.createdAt)
 
-            Glide.with(itemView.context)
-                .load(c.avatar)
+            Glide.with(itemView)
+                .load(item.userAvatar)
                 .placeholder(R.drawable.ic_avatar_placeholder)
+                .error(R.drawable.ic_avatar_placeholder)
+                .circleCrop()
                 .into(imgAvatar)
+        }
+    }
+
+    companion object {
+        private val DIFF = object : DiffUtil.ItemCallback<CommentUiModel>() {
+            override fun areItemsTheSame(o: CommentUiModel, n: CommentUiModel) = o.id == n.id
+            override fun areContentsTheSame(o: CommentUiModel, n: CommentUiModel) = o == n
         }
     }
 }
