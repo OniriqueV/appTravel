@@ -124,10 +124,10 @@
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
 
         <!-- Plan Detail Activity -->
-        <activity
-            android:name=".ui.trip.detail.PlanDetailActivity"
-            android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
+<!--        <activity-->
+<!--            android:name=".ui.trip.detail.PlanDetailActivity"-->
+<!--            android:exported="false"-->
+<!--            android:theme="@style/Theme.AppTravel.NoActionBarMain" />-->
 
         <activity android:name=".ui.discover.detail.PostDetailActivity" />
 <!--        <activity android:name=".ui.discover.detail.CommentActivity" />-->
