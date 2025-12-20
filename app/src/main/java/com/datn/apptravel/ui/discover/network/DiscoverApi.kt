@@ -1,69 +1,60 @@
 package com.datn.apptravel.ui.discover.network
 
-import com.datn.apptravel.ui.discover.model.CreatePostCommentRequest
-import com.datn.apptravel.ui.discover.model.CreatePostRequest
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.model.PostComment
-import com.datn.apptravel.ui.discover.model.PostDetailResponse
+import com.datn.apptravel.ui.discover.model.*
 import retrofit2.http.*
 
 interface DiscoverApi {
 
-    @GET("discover")
+    // ================= DISCOVER =================
+    @GET("api/discover")
     suspend fun getDiscover(
-        @Query("page") page: Int = 0,
-        @Query("size") size: Int = 10,
-        @Query("sort") sort: String = "newest"
+        @Query("page") page: Int,
+        @Query("size") size: Int,
+        @Query("sort") sort: String
     ): List<DiscoverItem>
 
-    @GET("discover/following")
+    @GET("api/discover/following")
     suspend fun getFollowing(
         @Query("userId") userId: String,
-        @Query("page") page: Int = 0,
-        @Query("size") size: Int = 10
+        @Query("page") page: Int,
+        @Query("size") size: Int
     ): List<DiscoverItem>
 
-    @GET("discover/post/{postId}")
+    // ================= POST DETAIL =================
+    @GET("api/discover/posts/{postId}")
     suspend fun getPostDetail(
         @Path("postId") postId: String,
-        @Query("userId") userId: String?
-    ): PostDetailResponse
+        @Query("userId") userId: String? = null
+    ): PostUiModel
 
-
-    @POST("discover/post")
+    // ================= CREATE POST =================
+    @POST("api/discover/posts")
     suspend fun createPost(
         @Body request: CreatePostRequest
-    ): Map<String, Any>      // backend trả { postId, message }
+    ): PostUiModel
 
-    @POST("discover/post/{postId}/like")
+    // ================= LIKE =================
+    @POST("api/discover/posts/{postId}/like")
     suspend fun likePost(
         @Path("postId") postId: String,
         @Query("userId") userId: String
     )
 
-    @DELETE("discover/post/{postId}/like")
+    @DELETE("api/discover/posts/{postId}/like")
     suspend fun unlikePost(
         @Path("postId") postId: String,
         @Query("userId") userId: String
     )
 
-    @GET("/api/discover/post/{postId}/comment")
+    // ================= COMMENT =================
+    @POST("api/discover/posts/{postId}/comments")
+    suspend fun addPostComment(
+        @Path("postId") postId: String,
+        @Body request: CreatePostCommentRequest
+    )
+
+    @GET("api/discover/posts/{postId}/comments")
     suspend fun getPostComments(
         @Path("postId") postId: String
     ): List<PostComment>
-
-    @POST("/api/discover/post/{postId}/comment")
-    suspend fun addPostComment(
-        @Path("postId") postId: String,
-        @Body req: CreatePostCommentRequest
-    )
-
-    @GET("discover/search")
-    suspend fun searchDiscover(
-        @Query("query") query: String,
-        @Query("page") page: Int = 0,
-        @Query("size") size: Int = 10
-    ): List<DiscoverItem>
-
-
 }

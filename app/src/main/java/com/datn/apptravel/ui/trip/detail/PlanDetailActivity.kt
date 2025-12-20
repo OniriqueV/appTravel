@@ -41,6 +41,9 @@ class PlanDetailActivity : AppCompatActivity() {
     private var tripId: String? = null
     private lateinit var photoAdapter: PhotoCollectionAdapter
 
+    private var isReadOnly = false // cho Discover_service
+
+
     // Multiple image picker launcher
     private val multipleImagePickerLauncher = registerForActivityResult(
         ActivityResultContracts.GetMultipleContents()
@@ -65,6 +68,8 @@ class PlanDetailActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        isReadOnly = intent.getBooleanExtra("READ_ONLY", false)
+
         binding = ActivityPlanDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -164,6 +169,14 @@ class PlanDetailActivity : AppCompatActivity() {
         binding.ivLike.setOnClickListener {
             // Toggle like through ViewModel
             viewModel.toggleLike()
+        }
+        if (isReadOnly) {
+            // ❌ Không cho sửa plan
+            binding.btnMenu.visibility = View.GONE
+
+            // ❌ Không cho add ảnh
+            photoAdapter.setReadOnly(true)
+
         }
     }
 
@@ -279,7 +292,10 @@ class PlanDetailActivity : AppCompatActivity() {
     private fun showPlanMenu() {
         val popupMenu = PopupMenu(this, binding.btnMenu)
         popupMenu.menuInflater.inflate(R.menu.plan_detail_menu, popupMenu.menu)
-
+        if (isReadOnly) {
+            popupMenu.menu.findItem(R.id.action_edit_plan)?.isVisible = false
+            popupMenu.menu.findItem(R.id.action_delete_plan)?.isVisible = false
+        }
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.action_edit_plan -> {

@@ -1,45 +1,42 @@
 package com.datn.apptravel.ui.discover
 
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datn.apptravel.ui.discover.model.CreatePostRequest
 import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.model.PostDetailResponse
 import com.datn.apptravel.ui.discover.network.DiscoverRepository
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 class DiscoverViewModel(
     private val repository: DiscoverRepository
 ) : ViewModel() {
 
-
-    // Feed
+    // ================= FEED =================
     val discoverList = MutableLiveData<List<DiscoverItem>>()
     val followingList = MutableLiveData<List<DiscoverItem>>()
-
-    // Post detail
-    private val _postDetail = MutableLiveData<PostDetailResponse?>()
-    val postDetail: LiveData<PostDetailResponse?> = _postDetail
-
-
-    // Create Post
-    val isPosting = MutableLiveData<Boolean>()
-    val postCreated = MutableLiveData<String?>()   // trả về postId
     val errorMessage = MutableLiveData<String?>()
+
+    // ================= CREATE POST =================
+    val isPosting = MutableLiveData(false)
+    val postCreated = MutableLiveData(false)
 
     // -------------------------------------------------------
     // LOAD DISCOVER FEED
     // -------------------------------------------------------
-    fun loadDiscover(page: Int = 0, size: Int = 10, sort: String = "newest") {
+    fun loadDiscover(
+        page: Int = 0,
+        size: Int = 10,
+        sort: String = "newest"
+    ) {
         viewModelScope.launch {
             try {
-                val result = repository.getDiscover(page, size, sort)
-                discoverList.postValue(result)
+                discoverList.postValue(
+                    repository.getDiscover(page, size, sort)
+                )
             } catch (e: Exception) {
                 errorMessage.postValue("Không tải được danh sách khám phá")
-                e.printStackTrace()
             }
         }
     }
@@ -47,28 +44,18 @@ class DiscoverViewModel(
     // -------------------------------------------------------
     // LOAD FOLLOWING FEED
     // -------------------------------------------------------
-    fun loadFollowing(userId: String, page: Int = 0, size: Int = 10) {
+    fun loadFollowing(
+        userId: String,
+        page: Int = 0,
+        size: Int = 10
+    ) {
         viewModelScope.launch {
             try {
-                val result = repository.getFollowing(userId, page, size)
-                followingList.postValue(result)
+                followingList.postValue(
+                    repository.getFollowing(userId, page, size)
+                )
             } catch (e: Exception) {
                 errorMessage.postValue("Không tải được danh sách Following")
-                e.printStackTrace()
-            }
-        }
-    }
-
-    // -------------------------------------------------------
-    // GET POST DETAIL
-    // -------------------------------------------------------
-    fun getPostDetail(postId: String, userId: String?) {
-        viewModelScope.launch {
-            try {
-                val result = repository.getPostDetail(postId, userId)
-                _postDetail.postValue(result)
-            } catch (e: Exception) {
-                errorMessage.postValue("Không tải được chi tiết bài viết")
             }
         }
     }
@@ -80,15 +67,35 @@ class DiscoverViewModel(
         viewModelScope.launch {
             isPosting.postValue(true)
             try {
-                val postId = repository.createPost(request)
-                postCreated.postValue(postId)    // update thành công
+                repository.createPost(request)
+                postCreated.postValue(true)
             } catch (e: Exception) {
                 errorMessage.postValue("Đăng bài thất bại")
-                e.printStackTrace()
             } finally {
                 isPosting.postValue(false)
             }
         }
+    }
+
+    // -------------------------------------------------------
+    // LIKE FROM FEED (fire & forget)
+    // -------------------------------------------------------
+    fun likeFromFeed(postId: String) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        viewModelScope.launch {
+            try {
+                // Feed không cần toggle logic
+                // BE quyết định liked/unliked
+                repository.likePost(postId, userId)
+            } catch (e: Exception) {
+                errorMessage.postValue("Không thể like bài viết")
+            }
+        }
+    }
+
+    fun clearPostCreated() {
+        postCreated.value = false
     }
 
 }

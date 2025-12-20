@@ -1,36 +1,65 @@
 package com.datn.apptravel.ui.discover.network
 
-import com.datn.apptravel.ui.discover.model.CreatePostRequest
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.model.PostDetailResponse
+import com.datn.apptravel.ui.discover.model.*
 
-class DiscoverRepository(private val api: DiscoverApi) {
+class DiscoverRepository(
+    private val api: DiscoverApi = DiscoverApiClient.api
+) {
 
-    /** Lấy danh sách discover chung */
-    suspend fun getDiscover(page: Int = 0, size: Int = 10, sort: String = "newest"): List<DiscoverItem> {
-        return api.getDiscover(page, size, sort)
-    }
+    // ================= FEED =================
 
-    /** Lấy danh sách bài của người dùng mà mình follow */
-    suspend fun getFollowing(userId: String, page: Int = 0, size: Int = 10): List<DiscoverItem> {
-        return api.getFollowing(userId, page, size)
-    }
+    suspend fun getDiscover(
+        page: Int,
+        size: Int,
+        sort: String
+    ): List<DiscoverItem> =
+        api.getDiscover(page, size, sort)
 
-    /** Chi tiết bài viết */
-    suspend fun getPostDetail(postId: String, userId: String?): PostDetailResponse {
-        return api.getPostDetail(postId, userId)
-    }
+    suspend fun getFollowing(
+        userId: String,
+        page: Int,
+        size: Int
+    ): List<DiscoverItem> =
+        api.getFollowing(userId, page, size)
 
-    /** Tạo bài viết mới */
-    suspend fun createPost(request: CreatePostRequest): String {
-        val resp = api.createPost(request)        // backend trả Map<String, Any>
-        val postId = resp["postId"]?.toString() ?: ""
-        return postId
-    }
+    // ================= POST DETAIL =================
 
-    suspend fun searchDiscover(query: String, page: Int = 0, size: Int = 10): List<DiscoverItem> {
-        return api.searchDiscover(query, page, size)
-    }
+    suspend fun getPostDetail(
+        postId: String,
+        userId: String?
+    ): PostUiModel =
+        api.getPostDetail(postId, userId)
 
+    // ================= CREATE POST =================
 
+    suspend fun createPost(request: CreatePostRequest) =
+        api.createPost(request)
+
+    // ================= LIKE / UNLIKE =================
+    // ❗ KHÔNG toggle ở đây – để ViewModel quyết định
+
+    suspend fun likePost(
+        postId: String,
+        userId: String
+    ) =
+        api.likePost(postId, userId)
+
+    suspend fun unlikePost(
+        postId: String,
+        userId: String
+    ) =
+        api.unlikePost(postId, userId)
+
+    // ================= COMMENT =================
+
+    suspend fun addPostComment(
+        postId: String,
+        request: CreatePostCommentRequest
+    ) =
+        api.addPostComment(postId, request)
+
+    suspend fun getPostComments(
+        postId: String
+    ): List<PostComment> =
+        api.getPostComments(postId)
 }

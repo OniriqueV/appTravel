@@ -48,10 +48,14 @@ class TripDetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityTripDetailBinding
     private lateinit var scheduleDayAdapter: ScheduleDayAdapter
 
+    private var isReadOnly = false // Cho Discover
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityTripDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        isReadOnly = intent.getBooleanExtra("READ_ONLY", false) // cho Discover_service
 
         // Get trip ID from intent
         tripId = intent.getStringExtra(TripsFragment.Companion.EXTRA_TRIP_ID)
@@ -100,13 +104,19 @@ class TripDetailActivity : AppCompatActivity() {
         binding.btnShareTrip.setOnClickListener {
             showShareDialog()
         }
+        //Cho Discover_service
+        if (isReadOnly) {
+            binding.btnAddNewPlan.visibility = View.GONE
+            binding.btnShareTrip.visibility = View.GONE
+        }
 
         // Setup schedule RecyclerView
         setupRecyclerView()
     }
 
     private fun setupRecyclerView() {
-        scheduleDayAdapter = ScheduleDayAdapter(emptyList())
+        scheduleDayAdapter = ScheduleDayAdapter(emptyList(), isReadOnly) // thêm isReadOnly Cho Discover_service
+
         binding.recyclerViewSchedule.apply {
             adapter = scheduleDayAdapter
             layoutManager = LinearLayoutManager(this@TripDetailActivity)
@@ -205,6 +215,11 @@ class TripDetailActivity : AppCompatActivity() {
         // Hide "View Map" menu item if trip has ended
         val isTripEnded = isTripEnded()
         popupMenu.menu.findItem(R.id.action_view_map)?.isVisible = !isTripEnded
+        //Cho Discover_service
+        if (isReadOnly) {
+            popupMenu.menu.findItem(R.id.action_edit_trip)?.isVisible = false
+            popupMenu.menu.findItem(R.id.action_delete_trip)?.isVisible = false
+        }
 
         popupMenu.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {

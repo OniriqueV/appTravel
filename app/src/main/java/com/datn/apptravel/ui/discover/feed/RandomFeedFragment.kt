@@ -1,5 +1,6 @@
 package com.datn.apptravel.ui.discover.feed
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -14,10 +16,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.DiscoverViewModel
 import com.datn.apptravel.ui.discover.Refreshable
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.detail.PostDetailActivity
-import org.koin.androidx.viewmodel.ext.android.viewModel
 import com.datn.apptravel.ui.discover.adapter.DiscoverFeedAdapter
+import com.datn.apptravel.ui.discover.detail.PostDetailActivity
+import com.datn.apptravel.ui.discover.model.DiscoverItem
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class RandomFeedFragment : Fragment(), Refreshable {
 
@@ -28,14 +30,10 @@ class RandomFeedFragment : Fragment(), Refreshable {
     private lateinit var progressBar: ProgressBar
     private lateinit var swipeRefresh: SwipeRefreshLayout
 
-    override fun onRefresh() {
-        viewModel.loadDiscover()
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val v = inflater.inflate(R.layout.fragment_random_feed, container, false)
 
         recycler = v.findViewById(R.id.recyclerDiscover)
@@ -48,19 +46,32 @@ class RandomFeedFragment : Fragment(), Refreshable {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = DiscoverFeedAdapter { post ->
-            // 👉 mở PostDetail
-            val intent = Intent(requireContext(), PostDetailActivity::class.java)
-            intent.putExtra("postId", post.postId)
-            startActivity(intent)
-        }
+        adapter = DiscoverFeedAdapter(
+            onPostClick = { item -> openPostDetail(item) },
+            onComment = { postId -> openPostDetailById(postId) }
+        )
 
         recycler.layoutManager = LinearLayoutManager(requireContext())
         recycler.adapter = adapter
 
+        swipeRefresh.setOnRefreshListener {
+            onRefresh()
+        }
+
         observeViewModel()
-        viewModel.loadDiscover()
+        onRefresh()
     }
+
+    // ===== Activity Result =====
+    private val postDetailLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                onRefresh()
+            }
+        }
+
     private fun observeViewModel() {
         viewModel.discoverList.observe(viewLifecycleOwner) { list ->
             swipeRefresh.isRefreshing = false
@@ -76,15 +87,24 @@ class RandomFeedFragment : Fragment(), Refreshable {
         }
     }
 
-    private fun loadData() {
-        progressBar.visibility = View.VISIBLE
-        viewModel.loadDiscover(0, 20, "newest")
+    private fun openPostDetail(item: DiscoverItem) {
+        val intent = Intent(requireContext(), PostDetailActivity::class.java).apply {
+            putExtra(PostDetailActivity.EXTRA_POST_ID, item.postId)
+        }
+        postDetailLauncher.launch(intent)
     }
 
-    private fun openPostDetail(item: DiscoverItem) {
-        val i = Intent(requireContext(), PostDetailActivity::class.java)
-        i.putExtra("postId", item.postId)
-        startActivity(i)
+    private fun openPostDetailById(postId: String) {
+        val intent = Intent(requireContext(), PostDetailActivity::class.java).apply {
+            putExtra(PostDetailActivity.EXTRA_POST_ID, postId)
+            putExtra(PostDetailActivity.EXTRA_OPEN_COMMENT, true)
+        }
+        postDetailLauncher.launch(intent)
+    }
+
+    // ===== Refreshable =====
+    override fun onRefresh() {
+        progressBar.visibility = View.VISIBLE
+        viewModel.loadDiscover()
     }
 }
-

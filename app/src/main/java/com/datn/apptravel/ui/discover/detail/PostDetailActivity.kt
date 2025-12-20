@@ -1,277 +1,294 @@
 package com.datn.apptravel.ui.discover.detail
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.*
+import androidx.activity.addCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
-import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.DiscoverViewModel
-import com.datn.apptravel.ui.discover.model.PostDetailResponse
-import com.datn.apptravel.ui.discover.network.DiscoverApiClient
-import kotlinx.coroutines.launch
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
+import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.adapter.CommentAdapter
+import com.datn.apptravel.ui.discover.model.CommentUiModel
 import com.datn.apptravel.ui.discover.model.CreatePostCommentRequest
+import com.datn.apptravel.ui.discover.model.PostUiModel
+import com.datn.apptravel.ui.discover.network.DiscoverRepository
+import com.datn.apptravel.ui.discover.post.ImageUrlUtil
+import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
+import java.lang.Exception
+import java.util.*
 
 
 class PostDetailActivity : AppCompatActivity() {
 
-    private lateinit var viewModel: DiscoverViewModel
+    companion object {
+        const val EXTRA_POST_ID = "postId"
+        const val EXTRA_OPEN_COMMENT = "openComment"
 
+        const val RESULT_POST_ID = "postId"
+        const val RESULT_COMMENT_COUNT = "commentCount"
+    }
+
+    // ================= DEPENDENCY =================
+    private val repository = DiscoverRepository()
+
+    // ================= UI =================
+    private lateinit var btnBack: ImageButton
     private lateinit var imgUserAvatar: ImageView
     private lateinit var tvUserName: TextView
-    private lateinit var tvCreatedAt: TextView
-    private lateinit var imgPostImage: ImageView
     private lateinit var tvPostContent: TextView
-
-    private lateinit var cardTrip: View
-    private lateinit var imgTripCover: ImageView
-    private lateinit var tvTripTitle: TextView
-
-    private lateinit var progressBar: ProgressBar
-
-    private var postId: String = ""
-    private var userId: String? = null
-
     private lateinit var btnLike: ImageView
     private lateinit var tvLikeCount: TextView
 
-    private var isLiked = false
-    private var likeCount = 0
-
-    private lateinit var edtComment: EditText
-    private lateinit var btnSendComment: ImageButton
     private lateinit var recyclerComments: RecyclerView
+    private lateinit var edtComment: EditText
+    private lateinit var btnSendComment: ImageView
+    private lateinit var progress: View
+    private lateinit var imgTripCover: ImageView
+    private lateinit var cardTrip: View
     private lateinit var commentAdapter: CommentAdapter
 
+    // ================= STATE =================
+    private lateinit var postId: String
+    private var openComment = false
+    private var currentPost: PostUiModel? = null
 
+    private val imageBaseUrl = "http://10.0.2.2:8080/api/files/"
 
+    // ================= LIFECYCLE =================
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_post_detail)
 
-        postId = intent.getStringExtra("postId") ?: ""
-        userId = intent.getStringExtra("userId")
+        postId = intent.getStringExtra(EXTRA_POST_ID).orEmpty()
+        openComment = intent.getBooleanExtra(EXTRA_OPEN_COMMENT, false)
 
-        viewModel = ViewModelProvider(this)[DiscoverViewModel::class.java]
-
-        initViews()
-        observeViewModel()
-        if (postId.isNotEmpty()) {
-            progressBar.visibility = View.VISIBLE
-            viewModel.getPostDetail(postId, userId)
-            loadComments()
+        if (postId.isBlank()) {
+            Toast.makeText(this, "Thiếu postId", Toast.LENGTH_SHORT).show()
+            finish()
+            return
         }
 
+        bindViews()
 
-        if (postId.isNotEmpty()) {
-            progressBar.visibility = View.VISIBLE
-            viewModel.getPostDetail(postId, userId)
-        }
+        // 🔙 Back
+        onBackPressedDispatcher.addCallback(this) { handleBack() }
+        btnBack.setOnClickListener { handleBack() }
 
+        setupComments()
+
+        btnSendComment.setOnClickListener { sendComment() }
+        btnLike.setOnClickListener { toggleLike() }
+
+        loadDetail()
     }
 
-    private fun initViews() {
-        findViewById<ImageButton>(R.id.btnBack).setOnClickListener { finish() }
-
+    // ================= UI SETUP =================
+    private fun bindViews() {
+        btnBack = findViewById(R.id.btnBack)
         imgUserAvatar = findViewById(R.id.imgUserAvatar)
         tvUserName = findViewById(R.id.tvUserName)
-        tvCreatedAt = findViewById(R.id.tvCreatedAt)
-        imgPostImage = findViewById(R.id.imgPostImage)
         tvPostContent = findViewById(R.id.tvPostContent)
-
-        cardTrip = findViewById(R.id.cardTrip)
-        imgTripCover = findViewById(R.id.imgTripCover)
-        tvTripTitle = findViewById(R.id.tvTripTitle)
-
-        progressBar = findViewById(R.id.progressPostDetail)
-
         btnLike = findViewById(R.id.btnLike)
         tvLikeCount = findViewById(R.id.tvLikeCount)
-
+        imgTripCover = findViewById(R.id.imgTripCover)
+        cardTrip = findViewById(R.id.cardTrip)
+        recyclerComments = findViewById(R.id.recyclerComments)
         edtComment = findViewById(R.id.edtComment)
         btnSendComment = findViewById(R.id.btnSendComment)
-        recyclerComments = findViewById(R.id.recyclerComments)
+        progress = findViewById(R.id.progressPostDetail)
+    }
 
+    private fun setupComments() {
         commentAdapter = CommentAdapter()
         recyclerComments.layoutManager = LinearLayoutManager(this)
         recyclerComments.adapter = commentAdapter
+    }
 
-        btnLike.setOnClickListener {
-            if (isLiked) {
-                unlikePost()
-            } else {
-                likePost()
+    // ================= LOAD DETAIL =================
+    private fun loadDetail() {
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+        progress.visibility = View.VISIBLE
+
+        lifecycleScope.launch {
+            try {
+                // 1️⃣ Load post detail
+                val detail = repository.getPostDetail(postId, currentUserId)
+                renderPost(detail)
+                val postOwnerId = detail.userId
+                val postOwnerName = detail.userName
+                // 2️⃣ Load comments
+                val apiComments = repository.getPostComments(postId)
+
+                val uiComments = apiComments.map { c ->
+                    CommentUiModel(
+                        id = c.commentId.orEmpty(),
+                        userName = c.userName?.takeIf { it.isNotBlank() }
+                            ?: c.userId?.let { uid ->
+                                if (uid == currentUserId)
+                                    FirebaseAuth.getInstance().currentUser?.displayName ?: "Bạn"
+                                else
+                                    "User"
+                            } ?: "User",
+                        userAvatar = c.userAvatarUrl,
+                        content = c.content.orEmpty(),
+                        createdAt = c.createdAt ?: 0L,
+                        isMine = c.userId == currentUserId
+                    )
+                }
+
+                commentAdapter.submitList(uiComments)
+
+                if (openComment) focusCommentInput()
+
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@PostDetailActivity,
+                    "Load post detail thất bại",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } finally {
+                progress.visibility = View.GONE
             }
-        }
-
-        btnSendComment.setOnClickListener {
-            sendComment()
         }
     }
 
-    private fun observeViewModel() {
-        viewModel.postDetail.observe(this) { detail ->
-            progressBar.visibility = View.GONE
-            detail?.let { bindPostDetail(it) }
-        }
+    // ================= RENDER =================
+    private fun renderPost(post: PostUiModel) {
+        currentPost = post
 
-        viewModel.errorMessage.observe(this) {
-            if (!it.isNullOrEmpty()) {
-                progressBar.visibility = View.GONE
-                Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
+        tvUserName.text = post.userName
+        tvPostContent.text = post.caption ?: ""
 
-    private fun bindPostDetail(detail: PostDetailResponse) {
-        tvUserName.text = detail.user.userName
-        tvPostContent.text = detail.post.content
-        tvCreatedAt.text = formatTime(detail.post.createdAt)
+        renderLike(post)
 
-        likeCount = detail.likes.count
-        isLiked = detail.likes.userLiked
-
-        tvLikeCount.text = likeCount.toString()
-
+        // avatar
         Glide.with(this)
-            .load(detail.user.avatar)
+            .load(post.userAvatarUrl?.let { imageBaseUrl + it })
             .placeholder(R.drawable.ic_avatar_placeholder)
+            .circleCrop()
             .into(imgUserAvatar)
 
-        detail.post.images.firstOrNull()?.let {
-            Glide.with(this).load(it).into(imgPostImage)
-        }
-
-
-
-        handleTripCard(detail)
-        updateLikeIcon()
-    }
-
-    private fun handleTripCard(detail: PostDetailResponse) {
-        val trip = detail.trip
-        if (trip != null) {
+        // 🔥 TRIP IMAGE (FIX MẤT ẢNH)
+        if (!post.tripImage.isNullOrBlank()) {
             cardTrip.visibility = View.VISIBLE
-            tvTripTitle.text = trip.title
 
             Glide.with(this)
-                .load(trip.coverPhoto)
+                .load(ImageUrlUtil.toFullUrl(post.tripImage))
+                .placeholder(R.drawable.bg_trip_placeholder)
+                .error(R.drawable.bg_trip_placeholder)
                 .into(imgTripCover)
 
             cardTrip.setOnClickListener {
-                openTripDetail(trip.tripId)
+                openTripDetail(post.tripId!!)
             }
+
         } else {
             cardTrip.visibility = View.GONE
         }
     }
 
-    private fun openTripDetail(tripId: String) {
-        val intent = Intent().apply {
-            setClassName(
-                this@PostDetailActivity,
-                "com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity"
-            )
-            putExtra("tripId", tripId)
-        }
-        startActivity(intent)
-    }
-
-    private fun formatTime(timestamp: Long): String {
-        val minutes = (System.currentTimeMillis() - timestamp) / 60000
-        return "$minutes phút trước"
-    }
-
-    private fun updateLikeIcon() {
+    private fun renderLike(post: PostUiModel) {
+        tvLikeCount.text = post.likeCount.toString()
         btnLike.setImageResource(
-            if (isLiked) R.drawable.ic_heart_filled
-            else R.drawable.ic_heart_outline
+            if (post.isLiked)
+                R.drawable.ic_heart_filled
+            else
+                R.drawable.ic_heart_outline
         )
     }
 
-    private fun likePost() {
+    // ================= ACTION =================
+    private fun toggleLike() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val post = currentPost ?: return
+
         lifecycleScope.launch {
             try {
-                val uid = userId ?: return@launch
-                DiscoverApiClient.api.likePost(postId, uid)
+                if (post.isLiked) {
+                    repository.unlikePost(post.postId, userId)
+                } else {
+                    repository.likePost(post.postId, userId)
+                }
 
-                isLiked = true
-                likeCount++
-
-                tvLikeCount.text = likeCount.toString()
-                updateLikeIcon()
-
-            } catch (e: Exception) {
-                Toast.makeText(this@PostDetailActivity, "Like thất bại", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    private fun unlikePost() {
-        lifecycleScope.launch {
-            try {
-                val uid = userId ?: return@launch
-                DiscoverApiClient.api.unlikePost(postId, uid)
-
-                isLiked = false
-                likeCount = maxOf(0, likeCount - 1)
-
-                tvLikeCount.text = likeCount.toString()
-                updateLikeIcon()
+                // 🔥 LUÔN reload từ BE → state chuẩn tuyệt đối
+                loadDetail()
 
             } catch (e: Exception) {
-                Toast.makeText(this@PostDetailActivity, "Unlike thất bại", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-    private fun loadComments() {
-        lifecycleScope.launch {
-            try {
-                val comments =
-                    DiscoverApiClient.api.getPostComments(postId)
-                commentAdapter.submit(comments)
-            } catch (e: Exception) {
-                Toast.makeText(this@PostDetailActivity,
-                    "Không load được comment", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this@PostDetailActivity,
+                    "Không thể cập nhật like",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
 
     private fun sendComment() {
-        val text = edtComment.text.toString().trim()
-        if (text.isBlank()) return
+        val content = edtComment.text.toString().trim()
+        if (content.isBlank()) return
 
-        val uid = userId ?: run {
-            Toast.makeText(this, "Chưa đăng nhập", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val req = CreatePostCommentRequest(
-            userId = uid,
-            userName = tvUserName.text.toString(),
-            avatar = null,
-            content = text
-        )
-
+        val user = FirebaseAuth.getInstance().currentUser ?: return
 
         lifecycleScope.launch {
             try {
-                DiscoverApiClient.api.addPostComment(postId, req)
+                repository.addPostComment(
+                    postId,
+                    CreatePostCommentRequest(
+                        userId = user.uid,
+                        userName = user.displayName ?: user.email ?: "User",
+                        avatar = user.photoUrl?.toString(),
+                        content = content
+                    )
+                )
+
                 edtComment.setText("")
-                loadComments() // refresh
+                loadDetail()
+
             } catch (e: Exception) {
-                Toast.makeText(this@PostDetailActivity,
-                    "Comment thất bại", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this@PostDetailActivity,
+                    "Gửi comment thất bại",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
 
+    private fun focusCommentInput() {
+        edtComment.requestFocus()
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(edtComment, InputMethodManager.SHOW_IMPLICIT)
+    }
 
+    private fun openTripDetail(tripId: String) {
+        val intent = Intent(
+            this,
+            com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity::class.java
+        )
+        intent.putExtra(
+            com.datn.apptravel.ui.trip.TripsFragment.EXTRA_TRIP_ID,
+            tripId
+        )
+        intent.putExtra("READ_ONLY", true)
+        startActivity(intent)
+    }
 
-
+    // ================= BACK =================
+    private fun handleBack() {
+        setResult(
+            Activity.RESULT_OK,
+            Intent().apply {
+                putExtra(RESULT_POST_ID, postId)
+            }
+        )
+        finish()
+    }
 }

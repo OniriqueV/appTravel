@@ -13,7 +13,9 @@ class PhotoCollectionAdapter(
     private val photos: MutableList<String>,
     private val onAddPhotoClick: () -> Unit,
     private val onDeletePhotoClick: (String, Int) -> Unit
+
 ) : RecyclerView.Adapter<PhotoCollectionAdapter.PhotoViewHolder>() {
+    private var isReadOnly = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhotoViewHolder {
         val binding = ItemPhotoCollectionBinding.inflate(
@@ -26,14 +28,21 @@ class PhotoCollectionAdapter(
 
     override fun onBindViewHolder(holder: PhotoViewHolder, position: Int) {
         // First position is always the "Add Photo" button
-        if (position == 0) {
+        if ( !isReadOnly && position == 0) {
             holder.bind("", true, -1)
         } else {
-            holder.bind(photos[position - 1], false, position - 1)
+            val photoIndex = if (isReadOnly) position else position - 1
+            holder.bind(photos[photoIndex], false, photoIndex)
         }
     }
 
-    override fun getItemCount(): Int = photos.size + 1 // +1 for add button at front
+    override fun getItemCount(): Int {
+        return if (isReadOnly) {
+            photos.size          // ❌ KHÔNG +1
+        } else {
+            photos.size + 1      // ✅ có nút +
+        }
+    } // +1 for add button at front
 
     fun updatePhotos(newPhotos: List<String>) {
         photos.clear()
@@ -49,6 +58,12 @@ class PhotoCollectionAdapter(
         }
     }
 
+    fun setReadOnly(readOnly: Boolean) {
+        isReadOnly = readOnly
+        notifyDataSetChanged()
+    }
+
+
     inner class PhotoViewHolder(
         private val binding: ItemPhotoCollectionBinding
     ) : RecyclerView.ViewHolder(binding.root) {
@@ -56,15 +71,20 @@ class PhotoCollectionAdapter(
         fun bind(photoFileName: String, isAddButton: Boolean, photoIndex: Int) {
             if (isAddButton) {
                 binding.ivPhoto.visibility = View.GONE
-                binding.layoutAddPhoto.visibility = View.VISIBLE
                 binding.btnDeletePhoto.visibility = View.GONE
-                binding.layoutAddPhoto.setOnClickListener {
-                    onAddPhotoClick()
-                }
+
+                if (isReadOnly) {
+                    binding.layoutAddPhoto.visibility = View.GONE
+                } else {
+                        binding.layoutAddPhoto.visibility = View.VISIBLE
+                        binding.layoutAddPhoto.setOnClickListener {
+                            onAddPhotoClick()
+                        }
+                    }
             } else {
                 binding.ivPhoto.visibility = View.VISIBLE
                 binding.layoutAddPhoto.visibility = View.GONE
-                binding.btnDeletePhoto.visibility = View.VISIBLE
+                binding.btnDeletePhoto.visibility = View.GONE
 
                 // Load image from server using Glide
                 val imageUrl = ApiConfig.getImageUrl(photoFileName)
@@ -78,12 +98,17 @@ class PhotoCollectionAdapter(
                 binding.ivPhoto.setOnClickListener {
                     // TODO: Open fullscreen photo viewer
                 }
-                
+                if (isReadOnly) {
+                    // 🔒 READ ONLY → KHÔNG CHO XOÁ
+                    binding.btnDeletePhoto.visibility = View.GONE
+                    binding.btnDeletePhoto.setOnClickListener(null)
+                } else {
                 // Delete button click
-                binding.btnDeletePhoto.setOnClickListener {
-                    onDeletePhotoClick(photoFileName, photoIndex)
+                    binding.btnDeletePhoto.visibility = View.VISIBLE
+                    binding.btnDeletePhoto.setOnClickListener {
+                        onDeletePhotoClick(photoFileName, photoIndex)
                 }
             }
         }
     }
-}
+}}

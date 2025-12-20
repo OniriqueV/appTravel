@@ -9,7 +9,8 @@ import com.datn.apptravel.ui.trip.detail.PlanDetailActivity
 import com.datn.apptravel.ui.trip.model.ScheduleActivity
 
 class ScheduleActivityAdapter(
-    private val activities: List<ScheduleActivity>
+    private val activities: List<ScheduleActivity>,
+    private val isReadOnly: Boolean
 ) : RecyclerView.Adapter<ScheduleActivityAdapter.ActivityViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ActivityViewHolder {
@@ -50,6 +51,7 @@ class ScheduleActivityAdapter(
                         // Use likesCount and commentsCount from model (default to 0 if not available)
                         putExtra(PlanDetailActivity.EXTRA_LIKES_COUNT, 0)
                         putExtra(PlanDetailActivity.EXTRA_COMMENTS_COUNT, 0)
+                        putExtra("READ_ONLY", isReadOnly)
                     }
                     context.startActivity(intent)
                 }

@@ -1,83 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:paddingHorizontal="12dp"
+    android:paddingTop="10dp">
 
-    <!-- Title Discover -->
-    <TextView
-        android:id="@+id/tvDiscoverTitle"
+    <!-- Top right actions: Post + Search -->
+    <LinearLayout
+        android:id="@+id/layoutTopActions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Discover"
-        android:textStyle="bold"
-        android:textSize="22sp"
-        android:textColor="@color/black"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
-
-    <!-- Search Bar -->
-    <LinearLayout
-        android:id="@+id/layoutSearch"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
         android:orientation="horizontal"
-        android:padding="8dp"
-        android:background="@drawable/bg_search_bar">
+        android:gravity="center_vertical"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Icon search -->
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_search" />
+        <!-- Post button (giữ id để code cũ vẫn chạy) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnCreatePost"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/grey_300"
+            app:cardBackgroundColor="@android:color/white">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Search people &amp; places"
-            android:textSize="14sp"
-            android:paddingStart="8dp"
-            android:textColor="@color/grey_600" />
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="10dp"
+                android:src="@android:drawable/ic_input_add"
+                app:tint="@android:color/black" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Search button (đổi icon kính lúp). Giữ id cũ cho khỏi ảnh hưởng phần khác -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnTopProfile"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="10dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackgroundBorderless"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="@color/grey_300"
+            app:cardBackgroundColor="@android:color/white">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="10dp"
+                android:src="@android:drawable/ic_menu_search"
+                app:tint="@android:color/black" />
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 
-    <!-- Tabs RANDOM | FOLLOWING -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabDiscover"
+    <!-- Tabs -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardTabs"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        app:layout_constraintTop_toBottomOf="@id/layoutSearch"
+        android:layout_height="44dp"
+        android:layout_marginTop="10dp"
+        app:cardCornerRadius="18dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/grey_300"
+        app:layout_constraintTop_toBottomOf="@id/layoutTopActions"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <!-- ViewPager2 -->
+        <com.google.android.material.tabs.TabLayout
+            android:id="@+id/tabDiscover"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="4dp"
+            app:tabBackground="@drawable/bg_tab_item"
+            app:tabIndicator="@null"
+            app:tabRippleColor="@null"
+            app:tabGravity="fill"
+            app:tabMode="fixed"
+            app:tabTextColor="@color/grey_700"
+            app:tabSelectedTextColor="@color/purple_700" />
+    </com.google.android.material.card.MaterialCardView>
+
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/vpDiscover"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/tabDiscover"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/btnCreatePost"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:src="@drawable/ic_add"
-        android:contentDescription="Create Post"
-        android:layout_margin="16dp"
+        android:layout_marginTop="10dp"
+        app:layout_constraintTop_toBottomOf="@id/cardTabs"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:tint="@android:color/white"
-        app:backgroundTint="@color/teal_700" />
-
-
-
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
