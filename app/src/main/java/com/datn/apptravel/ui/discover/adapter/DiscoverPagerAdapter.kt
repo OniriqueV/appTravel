@@ -1,36 +1,35 @@
 package com.datn.apptravel.ui.discover.adapter
 
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.datn.apptravel.ui.discover.Refreshable
 import com.datn.apptravel.ui.discover.feed.FollowingFragment
 import com.datn.apptravel.ui.discover.feed.RandomFeedFragment
 
 class DiscoverPagerAdapter(
-    fragment: Fragment,
-    private val userId: String
-) : FragmentStateAdapter(fragment) {
+    hostFragment: Fragment
+) : FragmentStateAdapter(hostFragment) {
 
-    // ✅ Giữ instance fragment – KHÔNG tạo mới mỗi lần
     private val fragments: List<Fragment> = listOf(
         RandomFeedFragment(),
-        FollowingFragment.newInstance(userId)
+        FollowingFragment()
     )
 
     override fun getItemCount(): Int = fragments.size
 
-    override fun createFragment(position: Int): Fragment {
-        return fragments[position]
-    }
+    override fun createFragment(position: Int): Fragment = fragments[position]
 
-    /**
-     * 🔁 Gọi khi Create Post xong
-     * DiscoverFragment sẽ gọi hàm này
-     */
     fun refresh() {
-        fragments.forEach { fragment ->
-            if (fragment is Refreshable) {
-                fragment.onRefresh()
+        fragments.forEach { f ->
+            val canRefresh =
+                f is Refreshable &&
+                        f.isAdded &&
+                        f.view != null &&
+                        f.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
+
+            if (canRefresh) {
+                (f as Refreshable).onRefresh()
             }
         }
     }

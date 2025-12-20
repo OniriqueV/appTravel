@@ -8,7 +8,8 @@ import com.datn.apptravel.databinding.ItemScheduleDayBinding
 import com.datn.apptravel.ui.trip.model.ScheduleDay
 
 class ScheduleDayAdapter(
-    private var scheduleDays: List<ScheduleDay>
+    private var scheduleDays: List<ScheduleDay>,
+    private val isReadOnly: Boolean // Thêm isReadOnly cho Discover_service
 ) : RecyclerView.Adapter<ScheduleDayAdapter.ScheduleDayViewHolder>() {
 
     private var currentSelectedDay = 0
@@ -65,7 +66,10 @@ class ScheduleDayAdapter(
         private fun updateActivities(scheduleDay: ScheduleDay) {
             binding.apply {
                 if (scheduleDay.activities.isNotEmpty()) {
-                    val activitiesAdapter = ScheduleActivityAdapter(scheduleDay.activities)
+                    val activitiesAdapter = ScheduleActivityAdapter(
+                        scheduleDay.activities,
+
+                    )
                     rvScheduleActivities.adapter = activitiesAdapter
                     rvScheduleActivities.layoutManager = LinearLayoutManager(binding.root.context)
                 }

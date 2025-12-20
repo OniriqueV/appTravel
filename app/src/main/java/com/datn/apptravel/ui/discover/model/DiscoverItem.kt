@@ -1,17 +1,19 @@
 package com.datn.apptravel.ui.discover.model
 
+
 data class DiscoverItem(
-    val postId: String,
-    val title: String?,
-    val coverPhoto: String?,     // ảnh đại diện post
-    val createdAt: Long,
+    val postId: String = "",
+    val userId: String = "",
+    val userName: String = "",
+    val userAvatar: String? = null,
 
-    val tags: List<String>?,
+    val tripId: String = "",
+    val tripImage: String? = null,
 
-    val userId: String?,
-    val userName: String?,
-    val userAvatar: String?,
-
-    val likesCount: Int,
-    val commentsCount: Int
+    val caption: String? = null,
+    val likesCount: Long = 0,
+    val commentsCount: Long = 0,
+    val isLiked: Boolean = false,
+    val isPublic: Boolean = true,
+    val createdAt: Long = 0L
 )

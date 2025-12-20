@@ -28,4 +28,8 @@
         <item name="android:navigationBarColor">@android:color/white</item>
         <item name="android:fitsSystemWindows">true</item>
     </style>
+    <style name="Theme.AppTravel.PostDetail"
+        parent="Theme.AppTravel.NoActionBarMain">
+        <!-- Không cần thêm gì nữa -->
+    </style>
 </resources>
