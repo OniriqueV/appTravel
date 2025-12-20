@@ -62,7 +62,7 @@ class TripMapViewModel(
                 // Load plans from API
                 tripRepository.getPlansByTripId(tripId).onSuccess { apiPlans ->
                     if (apiPlans.isEmpty()) {
-                        setError("No plans found for this trip")
+//                        setError("No plans found for this trip")
                         _planLocations.value = emptyList()
                         setLoading(false)
                         return@onSuccess

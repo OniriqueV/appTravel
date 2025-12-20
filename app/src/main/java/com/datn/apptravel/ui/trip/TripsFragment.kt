@@ -101,9 +101,9 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
             startActivity(intent)
         }
 
-        binding.tvViewAll?.setOnClickListener {
-            // Show all past trips
-        }
+//        binding.tvViewAll?.setOnClickListener {
+//            // Show all past trips
+//        }
     }
 
     /**

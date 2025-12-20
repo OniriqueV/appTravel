@@ -29,7 +29,7 @@ android {
         }
 
         val tripServiceBaseUrl = localProperties.getProperty("AUTH_BASE_URL")
-
+        buildConfigField("String", "api", "\"${localProperties.getProperty("api")}\"")
         buildConfigField("String", "GEOAPIFY_API_KEY", "\"${localProperties.getProperty("GEOAPIFY_API_KEY")}\"")
         buildConfigField("String", "GEOAPIFY_BASE_URL", "\"${localProperties.getProperty("GEOAPIFY_BASE_URL")}\"")
         buildConfigField("String", "OSRM_BASE_URL", "\"${localProperties.getProperty("OSRM_BASE_URL")}\"")

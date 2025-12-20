@@ -20,6 +20,7 @@ import com.datn.apptravel.data.model.TopicSelection
 import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.model.TripTopic
 import com.datn.apptravel.data.model.request.CreateTripRequest
+import com.datn.apptravel.data.repository.AuthRepository
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityTripDetailBinding
 import com.datn.apptravel.databinding.DialogShareTripBinding
@@ -30,8 +31,10 @@ import com.datn.apptravel.ui.trip.list.PlanSelectionActivity
 import com.datn.apptravel.ui.trip.map.TripMapActivity
 import com.datn.apptravel.ui.trip.viewmodel.TripDetailViewModel
 import com.datn.apptravel.utils.ApiConfig
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
@@ -43,6 +46,7 @@ class TripDetailActivity : AppCompatActivity() {
 
     private val viewModel: TripDetailViewModel by viewModel()
     private val tripRepository: TripRepository by inject()
+    private val authRepository: AuthRepository by inject()
     private var tripId: String? = null
     private var currentTrip: Trip? = null
     private lateinit var binding: ActivityTripDetailBinding
@@ -54,11 +58,16 @@ class TripDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityTripDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        // Hide UI initially until ownership is verified
+        binding.root.visibility = View.GONE
 
         isReadOnly = intent.getBooleanExtra("READ_ONLY", false) // cho Discover_service
 
         // Get trip ID from intent
         tripId = intent.getStringExtra(TripsFragment.Companion.EXTRA_TRIP_ID)
+        
+        Log.d("TripDetailActivity", "onCreate - tripId: $tripId, isReadOnly: $isReadOnly")
 
         setupUI()
         setupObservers()
@@ -76,8 +85,10 @@ class TripDetailActivity : AppCompatActivity() {
 
     private fun loadTripData() {
         tripId?.let {
+            Log.d("TripDetailActivity", "loadTripData - Loading trip: $it")
             viewModel.getTripDetails(it)
         } ?: run {
+            Log.d("TripDetailActivity", "loadTripData - No trip ID")
             // If no trip ID, show empty state
             binding.emptyPlansContainer.visibility = View.VISIBLE
             binding.recyclerViewSchedule.visibility = View.GONE
@@ -124,10 +135,46 @@ class TripDetailActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
+        Log.d("TripDetailActivity", "setupObservers - Setting up observers")
+        
         // Observe trip details
         viewModel.tripDetails.observe(this) { trip ->
+            Log.d("TripDetailActivity", "Observer triggered - trip: ${trip?.id}, userId: ${trip?.userId}")
             currentTrip = trip
-            updateUI(trip)
+            
+            // Check if current user is the trip owner
+            if (trip != null) {
+                Log.d("TripDetailActivity", "Checking ownership - trip is not null")
+                lifecycleScope.launch {
+                    val user = authRepository.currentUser.first()
+                    Log.d("TripDetailActivity", "Current user ID: ${user?.id}")
+                    Log.d("TripDetailActivity", "Trip user ID: ${trip.userId}")
+                    Log.d("TripDetailActivity", "Is owner: ${user?.id == trip.userId}")
+                    Log.d("TripDetailActivity", "isReadOnly: $isReadOnly")
+                    
+                    if (user != null && user.id != trip.userId) {
+                        // User is not the owner, redirect to map view immediately
+                        Log.d("TripDetailActivity", "User is not owner, redirecting to map view immediately")
+                        val intent = Intent(this@TripDetailActivity, TripMapActivity::class.java)
+                        intent.putExtra("tripId", tripId)
+                        intent.putExtra("tripTitle", trip.title ?: "Trip")
+                        intent.putExtra("tripUserId", trip.userId)
+                        startActivity(intent)
+                        finish()
+                        return@launch
+                    } else {
+                        Log.d("TripDetailActivity", "User is owner, showing detail view")
+                        // User is the owner, show the UI
+                        binding.root.visibility = View.VISIBLE
+                    }
+                    
+                    updateUI(trip)
+                }
+            } else {
+                // Show UI if trip is null to display empty state
+                binding.root.visibility = View.VISIBLE
+                updateUI(trip)
+            }
         }
 
         // Observe error messages

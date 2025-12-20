@@ -68,14 +68,16 @@ class TripMapActivity : AppCompatActivity() {
             plans.clear()
             plans.addAll(planLocations)
 
-            if (plans.isEmpty()) {
-                Toast.makeText(this, "No plans found for this trip", Toast.LENGTH_SHORT).show()
-                return@observe
-            }
-
+            // Always update schedule items to show start/end dates even without plans
             updateScheduleItems()
-            addMarkersToMap()
-            viewModel.drawRoute(plans)
+            
+            if (plans.isNotEmpty()) {
+                addMarkersToMap()
+                viewModel.drawRoute(plans)
+            } else {
+                // No plans, but still show the map with trip location (if available)
+//                Toast.makeText(this, "No plans found for this trip", Toast.LENGTH_SHORT).show()
+            }
         }
 
         // Observe trip dates
@@ -170,6 +172,9 @@ class TripMapActivity : AppCompatActivity() {
             overlays.add(rotationGestureOverlay)
 
             controller.setZoom(setZoom)
+            
+            // Set default center position (Vietnam center) in case no plans available
+            controller.setCenter(GeoPoint(16.0544, 108.2022))
         }
     }
 
@@ -198,7 +203,7 @@ class TripMapActivity : AppCompatActivity() {
     }
 
     private fun updateScheduleItems() {
-        if (plans.isEmpty() || startDate.isEmpty() || endDate.isEmpty()) return
+        if (startDate.isEmpty() || endDate.isEmpty()) return
 
         scheduleItems.clear()
 
