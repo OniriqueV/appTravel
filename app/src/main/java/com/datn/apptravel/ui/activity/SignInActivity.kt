@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.auth
+package com.datn.apptravel.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -12,8 +12,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.datn.apptravel.R
 import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.ui.activity.MainActivity
-import com.datn.apptravel.ui.auth.AuthViewModel
+import com.datn.apptravel.ui.app.AuthViewModel
+import com.datn.apptravel.ui.activity.SignUpActivity
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -25,22 +25,22 @@ import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class SignInActivity : AppCompatActivity() {
-    
+
     private val viewModel: AuthViewModel by viewModel()
     private val sessionManager: SessionManager by inject()
     private lateinit var googleSignInClient: GoogleSignInClient
-    
+
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         handleGoogleSignInResult(task)
     }
-    
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_sign_in)
-        
+
         // Configure Google Sign-In
         // Use default_web_client_id from google-services.json
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -48,12 +48,12 @@ class SignInActivity : AppCompatActivity() {
             .requestEmail()
             .requestProfile()
             .build()
-        
+
         googleSignInClient = GoogleSignIn.getClient(this, gso)
-        
+
         // Set up UI elements
         setupUI()
-        
+
         // Observe sign in result
         viewModel.signInResult.observe(this) { result ->
             result.onSuccess { user ->
@@ -69,7 +69,7 @@ class SignInActivity : AppCompatActivity() {
                 Toast.makeText(this, "Sign in failed: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         }
-        
+
         // Observe Google sign in result
         viewModel.googleSignInResult.observe(this) { result ->
             result.onSuccess { user ->
@@ -86,43 +86,43 @@ class SignInActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun setupUI() {
         // Set up sign in button
         findViewById<Button>(R.id.btnSignIn)?.setOnClickListener {
             val email = findViewById<EditText>(R.id.etEmail)?.text.toString().trim()
             val password = findViewById<EditText>(R.id.etPassword)?.text.toString()
-            
+
             if (email.isEmpty()) {
                 Toast.makeText(this, "Please enter email", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            
+
             if (password.isEmpty()) {
                 Toast.makeText(this, "Please enter password", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            
+
             // Sign in with provided credentials
             viewModel.signIn(email, password)
         }
-        
+
         // Set up Google sign in button
         findViewById<Button>(R.id.btnGoogleSignIn)?.setOnClickListener {
             signInWithGoogle()
         }
-        
+
         // Set up sign up text
         findViewById<TextView>(R.id.tvSignUp)?.setOnClickListener {
             navigateToSignUp()
         }
-        
+
         // Set up forgot password text
         findViewById<TextView>(R.id.tvForgotPassword)?.setOnClickListener {
             navigateToForgotPassword()
         }
     }
-    
+
     private fun signInWithGoogle() {
         // Sign out first to force account picker to show every time
         googleSignInClient.signOut().addOnCompleteListener {
@@ -130,12 +130,12 @@ class SignInActivity : AppCompatActivity() {
             googleSignInLauncher.launch(signInIntent)
         }
     }
-    
+
     private fun handleGoogleSignInResult(completedTask: Task<GoogleSignInAccount>) {
         try {
             val account = completedTask.getResult(ApiException::class.java)
             val idToken = account.idToken
-            
+
             if (idToken != null) {
                 Log.d("SignInActivity", "Google ID Token received")
                 viewModel.signInWithGoogle(idToken)
@@ -147,7 +147,7 @@ class SignInActivity : AppCompatActivity() {
             Toast.makeText(this, "Google sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
-    
+
     private fun navigateToMain() {
         val intent = Intent(this, MainActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

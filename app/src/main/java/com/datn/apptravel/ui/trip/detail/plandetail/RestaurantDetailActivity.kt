@@ -200,6 +200,7 @@ class RestaurantDetailActivity : AppCompatActivity() {
                     result.onSuccess { plan ->
                         Log.d("RestaurantDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@RestaurantDetailActivity, "Restaurant saved", Toast.LENGTH_SHORT).show()
+                        setResult(RESULT_OK)
                         finish()
                     }.onFailure { exception ->
                         Log.e("RestaurantDetail", "Failed to save plan", exception)

@@ -68,7 +68,7 @@ class ScheduleDayAdapter(
                 if (scheduleDay.activities.isNotEmpty()) {
                     val activitiesAdapter = ScheduleActivityAdapter(
                         scheduleDay.activities,
-                        isReadOnly
+
                     )
                     rvScheduleActivities.adapter = activitiesAdapter
                     rvScheduleActivities.layoutManager = LinearLayoutManager(binding.root.context)

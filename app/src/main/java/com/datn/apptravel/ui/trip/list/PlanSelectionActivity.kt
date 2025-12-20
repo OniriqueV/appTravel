@@ -313,10 +313,11 @@ class PlanSelectionActivity : AppCompatActivity() {
             PlanType.LODGING -> Intent(this, LodgingDetailActivity::class.java)
             PlanType.FLIGHT -> Intent(this, FlightDetailActivity::class.java)
             PlanType.BOAT -> Intent(this, BoatDetailActivity::class.java)
-            PlanType.CAR_RENTAL,PlanType.TRAIN -> Intent(this, CarRentalDetailActivity::class.java)
+            PlanType.CAR_RENTAL -> Intent(this, CarRentalDetailActivity::class.java)
+            PlanType.TRAIN -> Intent(this, CarRentalDetailActivity::class.java)
             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
             PlanType.CAMPING, PlanType.RELIGION -> Intent(this, ActivityDetailActivity::class.java)
-            else -> {
+            PlanType.NONE, null -> {
                 Toast.makeText(this, "Please select a plan type first", Toast.LENGTH_SHORT).show()
                 return
             }

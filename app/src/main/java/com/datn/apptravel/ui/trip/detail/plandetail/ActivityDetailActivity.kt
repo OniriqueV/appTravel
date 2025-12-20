@@ -31,6 +31,7 @@ class ActivityDetailActivity : AppCompatActivity() {
     
     private var isEditMode = false
     private var planId: String? = null
+    private var selectedPlanType: PlanType = PlanType.ACTIVITY
     
     // Store selected date and time separately
     private var startDate: String = ""
@@ -77,12 +78,15 @@ class ActivityDetailActivity : AppCompatActivity() {
         
         // Get plan type and update title
         val planTypeName = intent.getStringExtra("planType")
+        Log.d("ActivityDetail", "Received planType from intent: $planTypeName")
         planTypeName?.let {
             try {
-                val planType = PlanType.valueOf(it)
-                binding.tvActivityTitle.text = planType.displayName
+                selectedPlanType = PlanType.valueOf(it)
+                binding.tvActivityTitle.text = selectedPlanType.displayName
+                Log.d("ActivityDetail", "Set selectedPlanType to: ${selectedPlanType.name}")
             } catch (e: Exception) {
-                // Keep default title if plan type is invalid
+                Log.e("ActivityDetail", "Error parsing plan type: $it", e)
+                // Keep default plan type if invalid
             }
         }
         
@@ -195,6 +199,12 @@ class ActivityDetailActivity : AppCompatActivity() {
             return
         }
         
+        // Validate that end datetime is after start datetime
+        if (!isEndDateTimeAfterStart(startDate, startTime, endDate, endTime)) {
+            Toast.makeText(this, "Thời gian kết thúc phải sau thời gian bắt đầu", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         tripId?.let { id ->
             // Validate dates are within trip dates
             if (!isDateWithinTripRange(startDate) || !isDateWithinTripRange(endDate)) {
@@ -237,10 +247,11 @@ class ActivityDetailActivity : AppCompatActivity() {
                         endTime = endTimeISO,
                         expense = binding.etExpense.text.toString().toDoubleOrNull(),
                         photoUrl = uploadedFilename,
-                        type = PlanType.ACTIVITY.name
+                        type = selectedPlanType.name
                     )
                     
                     Log.d("ActivityDetail", "Creating activity plan for tripId: $id")
+                    Log.d("ActivityDetail", "Using plan type: ${selectedPlanType.name}")
                     Log.d("ActivityDetail", "Request: $request")
             
                     val result = if (isEditMode && planId != null) {
@@ -252,6 +263,7 @@ class ActivityDetailActivity : AppCompatActivity() {
                     result.onSuccess { plan ->
                         Log.d("ActivityDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@ActivityDetailActivity, "Activity saved", Toast.LENGTH_SHORT).show()
+                        setResult(RESULT_OK)
                         finish()
                     }.onFailure { exception ->
                         Log.e("ActivityDetail", "Failed to save plan", exception)
@@ -357,6 +369,18 @@ class ActivityDetailActivity : AppCompatActivity() {
         
         if (expense > 0) {
             binding.etExpense.setText(expense.toString())
+        }
+    }
+    
+    private fun isEndDateTimeAfterStart(startDate: String, startTime: String, endDate: String, endTime: String): Boolean {
+        return try {
+            // Convert dd/MM/yyyy and HH:mm to yyyy-MM-dd'T'HH:mm for comparison
+            val startDateTime = convertDateTimeToISO(startDate, startTime)
+            val endDateTime = convertDateTimeToISO(endDate, endTime)
+            
+            endDateTime > startDateTime
+        } catch (e: Exception) {
+            true // If parsing fails, allow the operation
         }
     }
 }

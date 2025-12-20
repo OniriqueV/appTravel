@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">appTravel</string>
+    <string name="cd_destination">Nhập địa điểm du lịch</string>
+    
+    <!-- Notifications -->
+    <string name="notifications">Notifications</string>
+    <string name="push_notifications">Nhận thông báo đẩy</string>
+    <string name="notification_icon">Notification Icon</string>
+    <string name="no_notifications">Chưa có thông báo</string>
+    <string name="mark_all_read">Đánh dấu tất cả là đã đọc</string>
 </resources>

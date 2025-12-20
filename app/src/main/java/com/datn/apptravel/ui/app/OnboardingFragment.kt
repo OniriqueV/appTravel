@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.auth
+package com.datn.apptravel.ui.app
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,8 +7,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import com.datn.apptravel.databinding.FragmentOnboardingBinding
+import com.datn.apptravel.ui.activity.SignInActivity
+import com.datn.apptravel.ui.app.OnboardingViewModel
 import com.datn.apptravel.ui.common.model.OnboardingData
-import com.datn.apptravel.ui.auth.OnboardingViewModel
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 
 class OnboardingFragment : Fragment() {

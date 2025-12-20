@@ -31,6 +31,7 @@ class CarRentalDetailActivity : AppCompatActivity() {
     
     private var isEditMode = false
     private var planId: String? = null
+    private var selectedPlanType: PlanType = PlanType.CAR_RENTAL
     
     companion object {
         const val EXTRA_PLAN_ID = "plan_id"
@@ -69,12 +70,15 @@ class CarRentalDetailActivity : AppCompatActivity() {
         
         // Get plan type and update title
         val planTypeName = intent.getStringExtra("planType")
+        Log.d("CarRentalDetail", "Received planType from intent: $planTypeName")
         planTypeName?.let {
             try {
-                val planType = PlanType.valueOf(it)
-                binding.tvCarRentalTitle.text = planType.displayName
+                selectedPlanType = PlanType.valueOf(it)
+                binding.tvCarRentalTitle.text = selectedPlanType.displayName
+                Log.d("CarRentalDetail", "Set selectedPlanType to: ${selectedPlanType.name}")
             } catch (e: Exception) {
-                // Keep default title if plan type is invalid
+                Log.e("CarRentalDetail", "Error parsing plan type: $it", e)
+                // Keep default plan type if invalid
             }
         }
         
@@ -202,13 +206,14 @@ class CarRentalDetailActivity : AppCompatActivity() {
                         endTime = endTimeISO,
                         expense = binding.etExpense.text.toString().toDoubleOrNull(),
                         photoUrl = uploadedFilename,
-                        type = PlanType.CAR_RENTAL.name,
+                        type = selectedPlanType.name,
                         pickupDate = startTimeISO,
                         pickupTime = startTimeISO,
                         phone = binding.etPhone.text.toString().takeIf { it.isNotEmpty() }
                     )
                     
                     Log.d("CarRentalDetail", "Creating car rental plan for tripId: $id")
+                    Log.d("CarRentalDetail", "Using plan type: ${selectedPlanType.name}")
                     Log.d("CarRentalDetail", "Request: $request")
             
                     val result = if (isEditMode && planId != null) {
@@ -220,6 +225,7 @@ class CarRentalDetailActivity : AppCompatActivity() {
                     result.onSuccess { plan ->
                         Log.d("CarRentalDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@CarRentalDetailActivity, "Car rental saved", Toast.LENGTH_SHORT).show()
+                        setResult(RESULT_OK)
                         finish()
                     }.onFailure { exception ->
                         Log.e("CarRentalDetail", "Failed to save plan", exception)

@@ -55,6 +55,10 @@ object RetrofitClient {
         tripServiceRetrofit.create(TripApiService::class.java)
     }
     
+    val notificationApiService: NotificationApiService by lazy {
+        tripServiceRetrofit.create(NotificationApiService::class.java)
+    }
+    
     private val googleApiRetrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(GOOGLE_API_BASE_URL)

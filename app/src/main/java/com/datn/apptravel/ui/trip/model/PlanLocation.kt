@@ -7,5 +7,6 @@ data class PlanLocation(
     val latitude: Double,
     val longitude: Double,
     val iconResId: Int,
+    val photoUrl: String? = null,
     var isHighlighted: Boolean = false
 )

@@ -183,6 +183,12 @@ class BoatDetailActivity : AppCompatActivity() {
                 return
             }
             
+            // Validate that arrival datetime is after departure datetime
+            if (!isArrivalAfterDeparture(departureDate, departureTime, arrivalDate, arrivalTime)) {
+                Toast.makeText(this, "Thời gian đến phải sau thời gian khởi hành", Toast.LENGTH_SHORT).show()
+                return
+            }
+            
             // Convert to ISO format
             val startTimeISO = convertDateTimeToISO(departureDate, departureTime)
             val endTimeISO = convertDateTimeToISO(arrivalDate, arrivalTime)
@@ -236,6 +242,7 @@ class BoatDetailActivity : AppCompatActivity() {
                     result.onSuccess { plan ->
                         Log.d("BoatDetail", "Plan saved successfully: ${plan.id}")
                         Toast.makeText(this@BoatDetailActivity, "Boat saved", Toast.LENGTH_SHORT).show()
+                        setResult(RESULT_OK)
                         finish()
                     }.onFailure { exception ->
                         Log.e("BoatDetail", "Failed to save plan", exception)
@@ -327,6 +334,17 @@ class BoatDetailActivity : AppCompatActivity() {
         
         if (expense > 0) {
             binding.etExpense.setText(expense.toString())
+        }
+    }
+    
+    private fun isArrivalAfterDeparture(departureDate: String, departureTime: String, arrivalDate: String, arrivalTime: String): Boolean {
+        return try {
+            val departureDateTime = convertDateTimeToISO(departureDate, departureTime)
+            val arrivalDateTime = convertDateTimeToISO(arrivalDate, arrivalTime)
+            
+            arrivalDateTime > departureDateTime
+        } catch (e: Exception) {
+            true // If parsing fails, allow the operation
         }
     }
 }
