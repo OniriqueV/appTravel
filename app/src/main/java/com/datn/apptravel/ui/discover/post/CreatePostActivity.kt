@@ -19,18 +19,21 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.DiscoverViewModel
-import com.datn.apptravel.ui.discover.model.CreatePostRequest
+import com.datn.apptravel.data.model.request.CreateTripRequest
+import com.datn.apptravel.data.repository.TripRepository
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
+import java.time.LocalDateTime
 
 class CreatePostActivity : AppCompatActivity() {
 
-    private val viewModel: DiscoverViewModel by viewModel()
+    private val tripRepository: TripRepository by inject()
 
     private lateinit var btnBack: ImageButton
     private lateinit var tvSelectedTrip: TextView
@@ -57,16 +60,18 @@ class CreatePostActivity : AppCompatActivity() {
             if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
             val data = result.data ?: return@registerForActivityResult
 
-            selectedTripId = data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_ID)
-            selectedTripTitle = data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_TITLE)
-            selectedTripImage = data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_IMAGE)
+            selectedTripId =
+                data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_ID)
+            selectedTripTitle =
+                data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_TITLE)
+            selectedTripImage =
+                data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_IMAGE)
 
-            tvSelectedTrip.text = selectedTripTitle?.let { "Trip: $it" } ?: "Trip selected"
+            tvSelectedTrip.text =
+                selectedTripTitle?.let { "Trip: $it" } ?: "Trip selected"
 
-            // ảnh post = ảnh trip (đúng logic bạn yêu cầu)
-            val displayUrl = ImageUrlUtil.toFullUrl(selectedTripImage)
             Glide.with(this)
-                .load(displayUrl)
+                .load(ImageUrlUtil.toFullUrl(selectedTripImage))
                 .placeholder(R.drawable.bg_trip_placeholder)
                 .error(R.drawable.bg_trip_placeholder)
                 .into(imgTripCover)
@@ -77,10 +82,9 @@ class CreatePostActivity : AppCompatActivity() {
 
         WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_create_post)
-        viewModel.clearPostCreated()
         supportActionBar?.hide()
-        val topBar = findViewById<View>(R.id.topBar)
 
+        val topBar = findViewById<View>(R.id.topBar)
         ViewCompat.setOnApplyWindowInsetsListener(topBar) { v, insets ->
             val status = insets.getInsets(WindowInsetsCompat.Type.statusBars())
             v.setPadding(v.paddingLeft, status.top, v.paddingRight, v.paddingBottom)
@@ -90,7 +94,6 @@ class CreatePostActivity : AppCompatActivity() {
         window.statusBarColor = Color.parseColor("#C78C4D")
 
         bindViews()
-        observeVM()
         setupVisibilityMenu()
 
         btnBack.setOnClickListener { finish() }
@@ -140,29 +143,7 @@ class CreatePostActivity : AppCompatActivity() {
         }
     }
 
-    private fun observeVM() {
-        viewModel.isPosting.observe(this) { loading ->
-            progress.isVisible = loading
-            btnPublish.isEnabled = !loading
-            btnSelectTrip.isEnabled = !loading
-            btnVisibility.isEnabled = !loading
-        }
-
-        viewModel.postCreated.observe(this) { created ->
-            if (created == true) {
-                Toast.makeText(this, "Post published successfully!", Toast.LENGTH_SHORT).show()
-                setResult(Activity.RESULT_OK)
-                finish()
-            }
-        }
-
-        viewModel.errorMessage.observe(this) { msg ->
-            if (!msg.isNullOrBlank()) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    /** Tags lấy từ ChipGroup: chip nào checked thì lấy text/tag của chip đó */
-    private fun getSelectedTags(): List<String> {
+    private fun getSelectedTags(): String {
         return chipGroupTopic.children
             .filterIsInstance<Chip>()
             .filter { it.isChecked }
@@ -173,7 +154,7 @@ class CreatePostActivity : AppCompatActivity() {
             }
             .filter { it.isNotBlank() }
             .distinct()
-            .toList()
+            .joinToString(",")
     }
 
     private fun submitPost() {
@@ -195,18 +176,57 @@ class CreatePostActivity : AppCompatActivity() {
             return
         }
 
-        val isPublic = selectedVisibility == VIS_PUBLIC
-        val tags = getSelectedTags()
+        val isPublicValue = when (selectedVisibility) {
+            VIS_PUBLIC -> "public"
+            VIS_FOLLOWER -> "follower"
+            else -> "none"
+        }
 
-        val req = CreatePostRequest(
-            userId = userId,
-            tripId = tripId,
-            content = content,
-            isPublic = isPublic,
-            tags = tags
-        )
+        progress.isVisible = true
+        btnPublish.isEnabled = false
 
-        viewModel.createPost(req)
+        lifecycleScope.launch {
+            try {
+                val req = CreateTripRequest(
+                    userId = userId,
+                    title = selectedTripTitle ?: "",          // ✅ String
+                    startDate = "",                            // ✅ KHÔNG null
+                    endDate = "",                              // ✅ KHÔNG null
+                    isPublic = isPublicValue,
+                    coverPhoto = selectedTripImage ?: "",     // ✅ String
+                    content = content,
+                    tags = getSelectedTags(),
+                    sharedAt = LocalDateTime.now().toString()
+                )
+
+                val result = tripRepository.updateTrip(tripId, req)
+
+                if (result.isSuccess) {
+                    Toast.makeText(
+                        this@CreatePostActivity,
+                        "Chia sẻ chuyến đi thành công",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@CreatePostActivity,
+                        "Chia sẻ thất bại",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@CreatePostActivity,
+                    "Lỗi: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } finally {
+                progress.isVisible = false
+                btnPublish.isEnabled = true
+            }
+        }
     }
 
     companion object {

@@ -3,37 +3,34 @@ package com.datn.apptravel.ui.discover
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.ui.discover.model.CreatePostRequest
+import com.datn.apptravel.data.local.SessionManager
 import com.datn.apptravel.ui.discover.model.DiscoverItem
 import com.datn.apptravel.ui.discover.network.DiscoverRepository
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 class DiscoverViewModel(
-    private val repository: DiscoverRepository
+    private val repository: DiscoverRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
-    // ================= FEED =================
+    private val currentUserId: String?
+        get() = sessionManager.getUserId()
+
+    companion object {
+        private const val PAGE_SIZE = 10
+    }
+
     val discoverList = MutableLiveData<List<DiscoverItem>>()
     val followingList = MutableLiveData<List<DiscoverItem>>()
     val errorMessage = MutableLiveData<String?>()
 
-    // ================= CREATE POST =================
-    val isPosting = MutableLiveData(false)
-    val postCreated = MutableLiveData(false)
-
-    // -------------------------------------------------------
-    // LOAD DISCOVER FEED
-    // -------------------------------------------------------
-    fun loadDiscover(
-        page: Int = 0,
-        size: Int = 10,
-        sort: String = "newest"
-    ) {
+    // ================= EXPLORE =================
+    fun loadDiscover(page: Int = 0) {
+        val userId = currentUserId ?: return
         viewModelScope.launch {
             try {
                 discoverList.postValue(
-                    repository.getDiscover(page, size, sort)
+                    repository.getDiscover(userId, page, PAGE_SIZE)
                 )
             } catch (e: Exception) {
                 errorMessage.postValue("Không tải được danh sách khám phá")
@@ -41,18 +38,13 @@ class DiscoverViewModel(
         }
     }
 
-    // -------------------------------------------------------
-    // LOAD FOLLOWING FEED
-    // -------------------------------------------------------
-    fun loadFollowing(
-        userId: String,
-        page: Int = 0,
-        size: Int = 10
-    ) {
+    // ================= FOLLOWING =================
+    fun loadFollowing(page: Int = 0) {
+        val userId = currentUserId ?: return
         viewModelScope.launch {
             try {
                 followingList.postValue(
-                    repository.getFollowing(userId, page, size)
+                    repository.getFollowing(userId, page, PAGE_SIZE)
                 )
             } catch (e: Exception) {
                 errorMessage.postValue("Không tải được danh sách Following")
@@ -60,42 +52,19 @@ class DiscoverViewModel(
         }
     }
 
-    // -------------------------------------------------------
-    // CREATE POST
-    // -------------------------------------------------------
-    fun createPost(request: CreatePostRequest) {
-        viewModelScope.launch {
-            isPosting.postValue(true)
-            try {
-                repository.createPost(request)
-                postCreated.postValue(true)
-            } catch (e: Exception) {
-                errorMessage.postValue("Đăng bài thất bại")
-            } finally {
-                isPosting.postValue(false)
-            }
+    // 🔥 Feed chỉ follow 1 chiều → chỉ update state local cho UI
+    fun updateFollowState(userId: String, isFollowing: Boolean) {
+        discoverList.value?.let { list ->
+            discoverList.postValue(
+                list.map {
+                    if (it.userId == userId) it.copy(isFollowing = isFollowing) else it
+                }
+            )
         }
     }
 
-    // -------------------------------------------------------
-    // LIKE FROM FEED (fire & forget)
-    // -------------------------------------------------------
-    fun likeFromFeed(postId: String) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-
-        viewModelScope.launch {
-            try {
-                // Feed không cần toggle logic
-                // BE quyết định liked/unliked
-                repository.likePost(postId, userId)
-            } catch (e: Exception) {
-                errorMessage.postValue("Không thể like bài viết")
-            }
-        }
+    fun forceReload() {
+        loadDiscover()
+        loadFollowing()
     }
-
-    fun clearPostCreated() {
-        postCreated.value = false
-    }
-
 }

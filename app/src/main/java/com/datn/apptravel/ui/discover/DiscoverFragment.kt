@@ -48,6 +48,13 @@ class DiscoverFragment : Fragment() {
 
         setupViewPager()
         setupEvents()
+
+        parentFragmentManager.setFragmentResultListener(
+            "FOLLOW_CHANGED",
+            viewLifecycleOwner
+        ) { _, _ ->
+            refreshDiscover()
+        }
     }
 
     private fun setupViewPager() {

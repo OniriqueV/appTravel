@@ -20,21 +20,10 @@ import com.datn.apptravel.ui.notification.NotificationFragment
 import com.datn.apptravel.ui.profile.ProfileFragment
 import com.datn.apptravel.ui.trip.TripsFragment
 import com.datn.apptravel.ui.app.MainViewModel
-//import com.datn.apptravel.ui.discover.search.SearchExploreFragment
-import org.koin.androidx.viewmodel.ext.android.viewModel
-import androidx.navigation.fragment.NavHostFragment
-import androidx.navigation.NavController
 import com.datn.apptravel.ui.trip.CreateTripActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.badge.BadgeDrawable
 import com.datn.apptravel.data.repository.NotificationRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.lifecycle.lifecycleScope
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.android.ext.android.inject
 
 class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
@@ -46,17 +35,14 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     private val notificationRepository: NotificationRepository by inject()
     private var listenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
 
-    // BroadcastReceiver for notification updates
     private val notificationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             if (intent?.action == "com.datn.apptravel.NOTIFICATION_RECEIVED") {
-                Log.d("MainActivity", " Broadcast received: Firestore listener will auto-update badge")
-                // Firestore snapshot listener will automatically detect changes
+                Log.d("MainActivity", "Broadcast received: Firestore listener will auto-update badge")
             }
         }
     }
 
-    // Request notification permission for Android 13+
     private val requestNotificationPermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -73,24 +59,14 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Request notification permission for Android 13+
         requestNotificationPermissionIfNeeded()
 
-        // Handle window insets properly - add padding for status bar and navigation bar
-//        ViewCompat.setOnApplyWindowInsetsListener(binding.navHostFragment) { view, insets ->
-//            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-//            view.setPadding(0, systemBars.top, 0, 0)
-//            insets
-//        }
-
-        // Set default fragment
         if (savedInstanceState == null) {
             val tripsFragment = TripsFragment()
             currentTripsFragment = tripsFragment
             replaceFragment(tripsFragment)
         }
 
-        // Register broadcast receiver for notification updates
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(
                 notificationReceiver,
@@ -105,6 +81,12 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
         }
     }
 
+    override fun setupUI() {
+        setupBottomNavigation()
+        observeLoginStatus()
+        setupNotificationListener()
+    }
+
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             when {
@@ -112,7 +94,7 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
                     this,
                     Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED -> {
-                    Log.d("MainActivity", " Notification permission already granted")
+                    Log.d("MainActivity", "Notification permission already granted")
                 }
                 else -> {
                     requestNotificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -121,21 +103,13 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
         }
     }
 
-    override fun setupUI() {
-        setupBottomNavigation()
-        observeLoginStatus()
-        setupNotificationListener()
-    }
-
     private fun setupNotificationListener() {
         val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
         if (userId == null) {
             Log.e("MainActivity", "User not logged in - cannot setup listener")
             return
         }
-        Log.d("MainActivity", " Setting up Firestore real-time listener for userId: $userId")
 
-        // Create Firestore snapshot listener
         listenerRegistration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
             .collection("notifications")
             .whereEqualTo("userId", userId)
@@ -145,9 +119,7 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
                     Log.e("MainActivity", "Listener failed: ${error.message}")
                     return@addSnapshotListener
                 }
-
                 val unreadCount = snapshot?.size() ?: 0
-                Log.d("MainActivity", "Real-time update: $unreadCount unread notifications")
                 updateNotificationBadge(unreadCount)
             }
     }
@@ -162,10 +134,7 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
 
     override fun onResume() {
         super.onResume()
-        // Refresh trips when returning from CreateTripActivity
         currentTripsFragment?.refreshTrips()
-        
-        // Check login status
         viewModel.checkLoginStatus()
     }
 
@@ -174,20 +143,16 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
         try {
             unregisterReceiver(notificationReceiver)
         } catch (e: Exception) {
-            // Receiver not registered
+            // ignore
         }
-        
-        // Remove Firestore listener
         listenerRegistration?.remove()
     }
 
     private fun setupBottomNavigation() {
-        // Setup notification badge
         notificationBadge = binding.bottomNavigation.getOrCreateBadge(R.id.nav_notification)
         notificationBadge?.backgroundColor = getColor(R.color.red)
         notificationBadge?.badgeTextColor = getColor(R.color.white)
-        
-        // FAB Add button
+
         binding.fabAdd.setOnClickListener {
             startActivity(Intent(this, CreateTripActivity::class.java))
         }
@@ -195,24 +160,21 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_trips -> {
-                    replaceFragment(TripsFragment())
+                    val f = TripsFragment()
+                    currentTripsFragment = f
+                    replaceFragment(f)
                     true
                 }
                 R.id.nav_notification -> {
                     replaceFragment(NotificationFragment())
                     true
                 }
-
-
                 R.id.nav_discover -> {
-                    val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: ""  // hoặc FirebaseAuth.getInstance().currentUser?.uid
-                    replaceFragment(
-                        fragment = DiscoverFragment()
-                    )
-
+                    replaceFragment(DiscoverFragment())
                     true
                 }
                 R.id.nav_profile -> {
+                    // ✅ profile của CHÍNH MÌNH
                     replaceFragment(ProfileFragment())
                     true
                 }
@@ -221,9 +183,23 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
         }
     }
 
+    /**
+     * ✅ MỞ PROFILE CỦA NGƯỜI KHÁC (profileFollow/UserProfileFragment)
+     * - Không dùng NavController
+     * - Dùng FragmentManager replace theo kiến trúc hiện tại
+     */
+    fun openUserProfile(userId: String) {
+        val fragment = com.datn.apptravel.ui.discover.profileFollow.UserProfileFragment().apply {
+            arguments = Bundle().apply { putString("userId", userId) }
+        }
+        replaceFragment(fragment)
+        // Không ép selected tab = profile vì tab profile là của mình
+    }
+
     private fun replaceFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.nav_host_fragment, fragment)
+            .addToBackStack(null) // ✅ back quay lại feed
             .commit()
     }
 

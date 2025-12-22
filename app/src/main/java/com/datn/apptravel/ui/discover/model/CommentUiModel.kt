@@ -5,6 +5,6 @@ data class CommentUiModel(
     val userName: String,
     val userAvatar: String?,
     val content: String,
-    val createdAt: Long,
+    val createdAt: String = "",
     val isMine: Boolean = false
 )

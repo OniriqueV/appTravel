@@ -1,24 +1,34 @@
 package com.datn.apptravel.ui.discover.util
 
+import java.time.LocalDateTime
 import java.util.concurrent.TimeUnit
+import java.time.Duration
+
 
 object TimeUtil {
 
-    fun formatTimeAgo(timeMillis: Long?): String {
-        if (timeMillis == null || timeMillis == 0L) return ""
+    fun formatTimeAgo(isoTime: String): String {
+        return try {
+            val sdf = java.text.SimpleDateFormat(
+                "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
+                java.util.Locale.getDefault()
+            )
+            sdf.timeZone = java.util.TimeZone.getDefault()
 
-        val now = System.currentTimeMillis()
-        val diff = now - timeMillis
+            val time = sdf.parse(isoTime) ?: return ""
+            val now = System.currentTimeMillis()
+            val diff = now - time.time
 
-        return when {
-            diff < TimeUnit.MINUTES.toMillis(1) -> "Vừa xong"
-            diff < TimeUnit.HOURS.toMillis(1) ->
-                "${TimeUnit.MILLISECONDS.toMinutes(diff)} phút trước"
-            diff < TimeUnit.DAYS.toMillis(1) ->
-                "${TimeUnit.MILLISECONDS.toHours(diff)} giờ trước"
-            diff < TimeUnit.DAYS.toMillis(7) ->
-                "${TimeUnit.MILLISECONDS.toDays(diff)} ngày trước"
-            else -> "Lâu rồi"
+            val minutes = diff / (60 * 1000)
+
+            when {
+                minutes < 1 -> "Vừa xong"
+                minutes < 60 -> "$minutes phút trước"
+                minutes < 1440 -> "${minutes / 60} giờ trước"
+                else -> "${minutes / 1440} ngày trước"
+            }
+        } catch (e: Exception) {
+            ""
         }
     }
 }
