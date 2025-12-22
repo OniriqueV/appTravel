@@ -3,22 +3,30 @@ package com.datn.apptravel.ui.discover.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.model.DiscoverItem
+import com.datn.apptravel.ui.discover.network.FollowRepository
 import com.datn.apptravel.ui.discover.post.ImageUrlUtil
+import com.datn.apptravel.ui.discover.util.TimeUtil
+import com.google.android.material.button.MaterialButton
+import kotlinx.coroutines.launch
 
 class DiscoverFeedAdapter(
-    private val onPostClick: (DiscoverItem) -> Unit,
-    private val onComment: (String) -> Unit
+    private val currentUserId: String?,
+    private val items: MutableList<DiscoverItem>,
+    private val followRepository: FollowRepository,
+    private val lifecycleOwner: LifecycleOwner,
+    private val onTripClick: (String) -> Unit,
+    private val onUserClick: (String) -> Unit,
+    private val onFollowChanged: (String, Boolean) -> Unit
 ) : RecyclerView.Adapter<DiscoverFeedAdapter.VH>() {
-
-    private val items = mutableListOf<DiscoverItem>()
 
     fun submitList(list: List<DiscoverItem>) {
         items.clear()
@@ -27,9 +35,9 @@ class DiscoverFeedAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val v = LayoutInflater.from(parent.context)
+        val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_discover_post, parent, false)
-        return VH(v)
+        return VH(view)
     }
 
     override fun getItemCount(): Int = items.size
@@ -45,73 +53,103 @@ class DiscoverFeedAdapter(
         private val tvTime: TextView = itemView.findViewById(R.id.tvTime)
         private val tvCaption: TextView = itemView.findViewById(R.id.tvCaption)
         private val imgPost: ImageView = itemView.findViewById(R.id.imgPost)
-        private val btnLike: ImageView = itemView.findViewById(R.id.btnLike)
-        private val btnComment: TextView = itemView.findViewById(R.id.btnComment)
-        private val tvLikeCount: TextView = itemView.findViewById(R.id.tvLikeCount)
+        private val btnFollow: MaterialButton = itemView.findViewById(R.id.btnFollow)
 
         fun bind(item: DiscoverItem) {
+            // ===== USER NAME =====
+            tvUserName.text = item.userName ?: "Unknown"
 
-            tvUserName.text = item.userName ?: "Người dùng"
-            tvCaption.text = item.caption ?: ""
-            tvTime.text = formatTimeAgo(item.createdAt ?: 0L)
+            // ===== TIME (dùng TimeUtil bạn đưa) =====
+            tvTime.text = TimeUtil.formatTimeAgo(item.sharedAt ?: "")
 
-            Glide.with(itemView)
-                .load(ImageUrlUtil.toFullUrl(item.userAvatar))
-                .placeholder(R.drawable.ic_avatar_placeholder)
-                .transform(CircleCrop())
-                .into(imgAvatar)
+            // ===== CAPTION =====
+            if (item.caption.isNullOrBlank()) {
+                tvCaption.visibility = View.GONE
+            } else {
+                tvCaption.visibility = View.VISIBLE
+                tvCaption.text = item.caption
+            }
 
-            Glide.with(itemView)
-                .load(ImageUrlUtil.toFullUrl(item.tripImage))
-                .placeholder(R.drawable.bg_trip_placeholder)
-                .error(R.drawable.bg_trip_placeholder)
+            // ===== AVATAR =====
+            val avatarUrl = item.userAvatar
+            if (avatarUrl.isNullOrBlank()) {
+                imgAvatar.setImageResource(R.drawable.ic_avatar_placeholder)
+            } else {
+                Glide.with(imgAvatar)
+                    .load(avatarUrl)
+                    .transform(CircleCrop())
+                    .placeholder(R.drawable.ic_avatar_placeholder)
+                    .error(R.drawable.ic_avatar_placeholder)
+                    .into(imgAvatar)
+            }
+
+            // ===== CLICK PROFILE (AVATAR + USERNAME) =====
+            val userId = item.userId
+            imgAvatar.setOnClickListener { userId?.let(onUserClick) }
+            tvUserName.setOnClickListener { userId?.let(onUserClick) }
+
+            // ===== POST IMAGE =====
+            val imageUrl = ImageUrlUtil.toFullUrl(item.tripImage)
+            Glide.with(imgPost)
+                .load(imageUrl)
+                .placeholder(R.drawable.ic_image_placeholder)
+                .error(R.drawable.ic_image_placeholder)
                 .into(imgPost)
 
-            tvLikeCount.text = (item.likesCount ?: 0L).toString()
-            btnComment.text = "💬 ${item.commentsCount ?: 0}"
-
-            // ❗ FEED CHỈ HIỂN THỊ – KHÔNG TOGGLE LIKE
-            btnLike.setImageResource(R.drawable.ic_heart_outline)
-            btnLike.setColorFilter(0xFF666666.toInt())
-
-            // 👉 Click mở PostDetail
-            itemView.setOnClickListener { onPostClick(item) }
-            imgPost.setOnClickListener { onPostClick(item) }
-
-            // ❤️ Click tim → mở detail (UX giống Facebook)
-            btnLike.setOnClickListener {
-                btnLike.animate()
-                    .scaleX(1.2f).scaleY(1.2f)
-                    .setInterpolator(AccelerateDecelerateInterpolator())
-                    .setDuration(120)
-                    .withEndAction {
-                        btnLike.animate().scaleX(1f).scaleY(1f).setDuration(120).start()
-                    }
-                    .start()
-
-                onPostClick(item)
+            imgPost.setOnClickListener {
+                item.tripId?.let(onTripClick)
             }
 
-            // 💬 Comment
-            btnComment.setOnClickListener {
-                item.postId?.let { onComment(it) }
+            // ===== FOLLOW =====
+            if (item.userId == currentUserId) {
+                btnFollow.visibility = View.GONE
+            } else {
+                btnFollow.visibility = View.VISIBLE
+                renderFollow(item)
+                btnFollow.setOnClickListener {
+                    if (!item.isFollowing) follow(item)
+                }
             }
         }
-    }
 
-    private fun formatTimeAgo(createdAtMillis: Long): String {
-        if (createdAtMillis <= 0L) return ""
-        val diff = System.currentTimeMillis() - createdAtMillis
-        val min = diff / 60_000
-        val hour = diff / 3_600_000
-        val day = diff / 86_400_000
+        private fun renderFollow(item: DiscoverItem) {
+            if (item.isFollowing) {
+                btnFollow.text = "Đã theo dõi"
+                btnFollow.isEnabled = false
+                btnFollow.alpha = 0.6f
+            } else {
+                btnFollow.text = "Follow"
+                btnFollow.isEnabled = true
+                btnFollow.alpha = 1f
+            }
+        }
 
-        return when {
-            min < 1 -> "Vừa xong"
-            min < 60 -> "$min phút trước"
-            hour < 24 -> "$hour giờ trước"
-            day < 7 -> "$day ngày trước"
-            else -> "${day / 7} tuần trước"
+        private fun follow(item: DiscoverItem) {
+            val me = currentUserId ?: return
+            val target = item.userId ?: return
+
+            // optimistic update (update hết các post của target trong list)
+            items.forEachIndexed { index, it ->
+                if (it.userId == target) {
+                    it.isFollowing = true
+                    notifyItemChanged(index)
+                }
+            }
+
+            lifecycleOwner.lifecycleScope.launch {
+                try {
+                    followRepository.follow(me, target)
+                    onFollowChanged(target, true)
+                } catch (e: Exception) {
+                    // rollback
+                    items.forEachIndexed { index, it ->
+                        if (it.userId == target) {
+                            it.isFollowing = false
+                            notifyItemChanged(index)
+                        }
+                    }
+                }
+            }
         }
     }
 }

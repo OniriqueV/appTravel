@@ -20,11 +20,11 @@ import com.datn.apptravel.ui.discover.network.FollowRepository
 import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 import com.google.firebase.auth.FirebaseAuth
 import org.koin.android.ext.android.inject
-import org.koin.androidx.viewmodel.ext.android.sharedViewModel
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class RandomFeedFragment : Fragment(), Refreshable {
+class FollowingFragment : Fragment(), Refreshable {
 
-    private val viewModel: DiscoverViewModel by sharedViewModel()
+    private val viewModel: DiscoverViewModel by viewModel()
     private val followRepository: FollowRepository by inject()
 
     private lateinit var recycler: RecyclerView
@@ -39,10 +39,10 @@ class RandomFeedFragment : Fragment(), Refreshable {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val view = inflater.inflate(R.layout.fragment_random_feed, container, false)
-        recycler = view.findViewById(R.id.recyclerDiscover)
-        progressBar = view.findViewById(R.id.progressDiscover)
-        swipeRefresh = view.findViewById(R.id.swipeRefreshDiscover)
+        val view = inflater.inflate(R.layout.fragment_following_feed, container, false)
+        recycler = view.findViewById(R.id.recyclerFollowing)
+        progressBar = view.findViewById(R.id.progressFollowing)
+        swipeRefresh = view.findViewById(R.id.swipeRefreshFollowing)
         return view
     }
 
@@ -75,13 +75,12 @@ class RandomFeedFragment : Fragment(), Refreshable {
         recycler.adapter = adapter
 
         swipeRefresh.setOnRefreshListener { onRefresh() }
-
         observeViewModel()
         onRefresh()
     }
 
     private fun observeViewModel() {
-        viewModel.discoverList.observe(viewLifecycleOwner) {
+        viewModel.followingList.observe(viewLifecycleOwner) {
             swipeRefresh.isRefreshing = false
             progressBar.visibility = View.GONE
             adapter.submitList(it)
@@ -97,6 +96,6 @@ class RandomFeedFragment : Fragment(), Refreshable {
 
     override fun onRefresh() {
         progressBar.visibility = View.VISIBLE
-        viewModel.loadDiscover()
+        viewModel.loadFollowing()
     }
 }

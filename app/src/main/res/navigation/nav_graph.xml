@@ -20,6 +20,11 @@
         <action
             android:id="@+id/action_discoverFragment_to_searchExploreFragment"
             app:destination="@id/searchExploreFragment" />
+
+        <!-- ✅ NEW: mở profile user -->
+        <action
+            android:id="@+id/action_discoverFragment_to_userProfileFragment"
+            app:destination="@id/userProfileFragment" />
     </fragment>
 
     <fragment
@@ -33,4 +38,18 @@
             app:argType="string"
             android:defaultValue="" />
     </fragment>
+
+    <!-- ✅ NEW: User Profile Fragment -->
+    <fragment
+        android:id="@+id/userProfileFragment"
+        android:name="com.datn.apptravel.ui.discover.profileFollow.UserProfileFragment"
+        android:label="User Profile"
+        tools:layout="@layout/fragment_user_profile">
+
+        <argument
+            android:name="userId"
+            app:argType="string"
+            app:nullable="false" />
+    </fragment>
+
 </navigation>

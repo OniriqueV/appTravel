@@ -1,8 +1,6 @@
 package com.datn.apptravel.ui.discover.model
 
-
 data class DiscoverItem(
-    val postId: String = "",
     val userId: String = "",
     val userName: String = "",
     val userAvatar: String? = null,
@@ -11,9 +9,13 @@ data class DiscoverItem(
     val tripImage: String? = null,
 
     val caption: String? = null,
-    val likesCount: Long = 0,
-    val commentsCount: Long = 0,
-    val isLiked: Boolean = false,
-    val isPublic: Boolean = true,
-    val createdAt: Long = 0L
+    val tags: String? = null,
+
+    // 🔥 BE trả String ("public" | "follower")
+    val isPublic: String = "public",
+
+    // 🔥 BE trả ISO String
+    val sharedAt: String = "",
+
+    var isFollowing: Boolean = false, // ⭐ THÊM
 )
