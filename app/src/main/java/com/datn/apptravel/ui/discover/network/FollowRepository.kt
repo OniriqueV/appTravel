@@ -16,6 +16,6 @@ class FollowRepository(
         followerId: String,
         followingId: String
     ): Boolean {
-        return api.isFollowing(followerId, followingId).isFollowing
+        return api.isFollowing(followerId, followingId)
     }
 }

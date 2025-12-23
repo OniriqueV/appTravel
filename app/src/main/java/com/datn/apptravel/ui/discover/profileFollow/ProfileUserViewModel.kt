@@ -1,34 +1,30 @@
 package com.datn.apptravel.ui.discover.profileFollow
 
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datn.apptravel.ui.discover.model.DiscoverItem
+import com.datn.apptravel.ui.discover.network.ProfileApi
 import kotlinx.coroutines.launch
 
 class ProfileUserViewModel(
     private val profileRepository: ProfileRepository
 ) : ViewModel() {
 
-    val trips = MutableLiveData<List<DiscoverItem>>()
-    val loading = MutableLiveData(false)
-    val error = MutableLiveData<String?>()
+    private val _trips = MutableLiveData<List<DiscoverItem>>()
+    val trips: LiveData<List<DiscoverItem>> = _trips
 
-    fun loadTrips(
-        profileUserId: String,
-        viewerId: String?
-    ) {
+    fun loadTrips(userId: String, viewerId: String?) {
         viewModelScope.launch {
-            loading.postValue(true)
             try {
-                trips.postValue(
-                    profileRepository.getUserTrips(profileUserId, viewerId)
-                )
+                _trips.value = profileRepository.getUserTrips(userId, viewerId)
             } catch (e: Exception) {
-                error.postValue("Không tải được bài viết")
-            } finally {
-                loading.postValue(false)
+                _trips.value = emptyList()
             }
         }
     }
 }
+
+
+

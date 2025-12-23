@@ -17,6 +17,8 @@ import com.google.firebase.auth.FirebaseAuth
 import androidx.core.os.bundleOf
 import androidx.navigation.fragment.findNavController
 import com.datn.apptravel.R
+import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
+
 //import com.datn.apptravel.ui.discover.search.SearchExploreFragment
 
 
@@ -111,6 +113,12 @@ class DiscoverFragment : Fragment() {
     private fun refreshDiscover() {
         val adapter = binding.vpDiscover.adapter as? DiscoverPagerAdapter
         adapter?.refresh()
+    }
+
+    private fun openTripDetail(tripId: String) {
+        val intent = Intent(requireContext(), TripDetailActivity::class.java)
+        intent.putExtra("tripId", tripId)
+        startActivity(intent)
     }
 
 }

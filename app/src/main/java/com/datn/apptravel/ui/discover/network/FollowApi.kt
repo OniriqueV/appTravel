@@ -25,5 +25,5 @@ interface FollowApi {
     suspend fun isFollowing(
         @Query("followerId") followerId: String,
         @Query("followingId") followingId: String
-    ): FollowStatusResponse
+    ): Boolean
 }

@@ -1,5 +1,7 @@
 package com.datn.apptravel.ui.discover.model
 
+import com.google.gson.annotations.SerializedName
+
 data class DiscoverItem(
     val userId: String = "",
     val userName: String = "",
@@ -16,6 +18,6 @@ data class DiscoverItem(
 
     // 🔥 BE trả ISO String
     val sharedAt: String = "",
-
+    @SerializedName("following")
     var isFollowing: Boolean = false, // ⭐ THÊM
 )
