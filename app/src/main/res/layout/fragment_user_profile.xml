@@ -1,74 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FFFFFF"
     android:padding="16dp">
 
-    <!-- USER INFO -->
+    <!-- BACK BUTTON -->
+    <ImageView
+        android:id="@+id/btnBack"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_back"
+        app:tint="#2B2B2B"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- USER HEADER -->
     <LinearLayout
-        android:orientation="horizontal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
 
         <ImageView
             android:id="@+id/imgAvatar"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/ic_avatar_placeholder"/>
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_avatar_placeholder"
+            android:background="@drawable/bg_avatar_circle"/>
 
         <LinearLayout
-            android:layout_marginStart="12dp"
-            android:orientation="vertical"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1">
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="10dp">
 
             <TextView
                 android:id="@+id/tvUserName"
-                android:text="Tom Hank"
-                android:textStyle="bold"
-                android:textSize="16sp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-
-            <LinearLayout
-                android:orientation="horizontal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp">
+                android:text="minh hieu"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#2B2B2B"/>
 
-                <TextView
-                    android:id="@+id/tvLikeCount"
-                    android:text="♡ 0"
-                    android:layout_marginEnd="12dp"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-
-                <TextView
-                    android:id="@+id/tvCommentCount"
-                    android:text="💬 3"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            </LinearLayout>
+            <TextView
+                android:id="@+id/tvTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2 người theo dõi"
+                android:textSize="12sp"
+                android:textColor="#8A8A8A"/>
         </LinearLayout>
 
-        <!-- FOLLOW / UNFOLLOW -->
-        <Button
+        <!-- FOLLOW BUTTON SMALL -->
+        <TextView
             android:id="@+id/btnFollow"
-            android:text="Following"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:text="FOLLOW"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#8B5A2B"
+            android:paddingHorizontal="14dp"
+            android:paddingVertical="6dp"
+            android:background="@drawable/bg_follow_pill"/>
     </LinearLayout>
 
     <!-- USER TRIPS -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerTrips"
-        android:layout_marginTop="16dp"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"/>
-
 </LinearLayout>

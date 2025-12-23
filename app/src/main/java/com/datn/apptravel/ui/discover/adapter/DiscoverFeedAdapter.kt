@@ -101,26 +101,16 @@ class DiscoverFeedAdapter(
             }
 
             // ===== FOLLOW =====
-            if (item.userId == currentUserId) {
+            if (item.userId == currentUserId || item.isFollowing) {
                 btnFollow.visibility = View.GONE
             } else {
                 btnFollow.visibility = View.VISIBLE
-                renderFollow(item)
-                btnFollow.setOnClickListener {
-                    if (!item.isFollowing) follow(item)
-                }
-            }
-        }
-
-        private fun renderFollow(item: DiscoverItem) {
-            if (item.isFollowing) {
-                btnFollow.text = "Đã theo dõi"
-                btnFollow.isEnabled = false
-                btnFollow.alpha = 0.6f
-            } else {
                 btnFollow.text = "Follow"
                 btnFollow.isEnabled = true
                 btnFollow.alpha = 1f
+                btnFollow.setOnClickListener {
+                    follow(item)
+                }
             }
         }
 

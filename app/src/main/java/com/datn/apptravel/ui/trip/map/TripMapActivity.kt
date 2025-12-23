@@ -203,7 +203,8 @@ class TripMapActivity : AppCompatActivity() {
     }
 
     private fun updateScheduleItems() {
-        if (startDate.isEmpty() || endDate.isEmpty()) return
+        if (startDate.isNullOrEmpty() || endDate.isNullOrEmpty()) return
+
 
         scheduleItems.clear()
 

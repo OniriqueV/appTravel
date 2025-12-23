@@ -17,6 +17,7 @@ import com.datn.apptravel.ui.discover.DiscoverViewModel
 import com.datn.apptravel.ui.discover.Refreshable
 import com.datn.apptravel.ui.discover.adapter.DiscoverFeedAdapter
 import com.datn.apptravel.ui.discover.network.FollowRepository
+import com.datn.apptravel.ui.trip.TripsFragment
 import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 import com.google.firebase.auth.FirebaseAuth
 import org.koin.android.ext.android.inject
@@ -59,8 +60,8 @@ class FollowingFragment : Fragment(), Refreshable {
 
             onTripClick = { tripId ->
                 val intent = Intent(requireContext(), TripDetailActivity::class.java)
-                intent.putExtra("tripId", tripId)
-                intent.putExtra("READ_ONLY", true)
+                intent.putExtra(
+                    TripsFragment.EXTRA_TRIP_ID, tripId )
                 startActivity(intent)
             },
 

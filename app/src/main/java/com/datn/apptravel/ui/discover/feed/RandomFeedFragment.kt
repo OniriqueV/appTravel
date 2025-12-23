@@ -21,6 +21,8 @@ import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 import com.google.firebase.auth.FirebaseAuth
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel
+import com.datn.apptravel.ui.trip.TripsFragment
+
 
 class RandomFeedFragment : Fragment(), Refreshable {
 
@@ -59,8 +61,7 @@ class RandomFeedFragment : Fragment(), Refreshable {
 
             onTripClick = { tripId ->
                 val intent = Intent(requireContext(), TripDetailActivity::class.java)
-                intent.putExtra("tripId", tripId)
-                intent.putExtra("READ_ONLY", true)
+                intent.putExtra(TripsFragment.EXTRA_TRIP_ID, tripId)
                 startActivity(intent)
             },
 
