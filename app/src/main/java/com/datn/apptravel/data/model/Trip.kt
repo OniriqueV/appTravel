@@ -11,6 +11,8 @@ data class Trip(
     val content: String? = null,
     val tags: String? = null,
     val plans: List<Plan>? = null,
+    val members: List<User>? = null, // List of members who can participate and manage plans in the trip
+    val sharedWithUsers: List<User>? = null, // When isPublic="follower", share only with these users; empty = all followers
     val createdAt: String? = null,
     val sharedAt: String? = null
 )

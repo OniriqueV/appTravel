@@ -33,7 +33,7 @@
             android:id="@+id/tvShareTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="Chia sẻ chuyến đi"
+            android:text="Share Trip"
             android:textColor="#1F2937"
             android:textSize="20sp"
             android:textStyle="bold"
@@ -41,7 +41,7 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Feelings Input -->
+        <!-- Privacy Selector -->
         <LinearLayout
             android:id="@+id/layoutPrivacySelector"
             android:layout_width="wrap_content"
@@ -75,13 +75,68 @@
 
         </LinearLayout>
 
+        <!-- Shared Users Section (visible only when privacy = Follower) -->
+        <LinearLayout
+            android:id="@+id/layoutSharedUsers"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/layoutPrivacySelector">
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <!-- Add Button -->
+                    <FrameLayout
+                        android:id="@+id/btnSelectSharedUsers"
+                        android:layout_width="56dp"
+                        android:layout_height="56dp"
+                        android:layout_marginEnd="12dp"
+                        android:background="@drawable/circle_blue_background"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_add"
+                            android:tint="@android:color/white" />
+
+                    </FrameLayout>
+
+                    <!-- Selected shared users RecyclerView -->
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvSharedUsers"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal" />
+
+                </LinearLayout>
+
+            </HorizontalScrollView>
+
+        </LinearLayout>
+
+        <!-- Feelings Input -->
         <EditText
             android:id="@+id/etFeelings"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:background="@drawable/bg_date_tab_unselected"
-            android:hint="Cảm nhận của bạn..."
+            android:hint="Your thoughts..."
             android:inputType="textMultiLine"
             android:maxLines="4"
             android:minHeight="80dp"
@@ -92,7 +147,7 @@
             android:gravity="top|start"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/layoutPrivacySelector" />
+            app:layout_constraintTop_toBottomOf="@id/layoutSharedUsers" />
 
         <!-- Topics Label -->
         <TextView
@@ -100,7 +155,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:text="Chủ đề"
+            android:text="Topics"
             android:textColor="#374151"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="parent"
@@ -125,7 +180,7 @@
             android:layout_height="48dp"
             android:layout_marginTop="20dp"
             android:background="@drawable/bg_date_tab_unselected"
-            android:text="Chia sẻ"
+            android:text="Share"
             android:textAllCaps="false"
             android:textColor="@color/black"
             android:textSize="16sp"
