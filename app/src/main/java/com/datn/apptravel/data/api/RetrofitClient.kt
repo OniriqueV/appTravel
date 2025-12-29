@@ -3,6 +3,7 @@ package com.datn.apptravel.data.api
 import com.datn.apptravel.BuildConfig
 import com.datn.apptravel.data.api.RetrofitClient.retrofit
 import com.datn.apptravel.ui.discover.network.FollowApi
+import com.datn.apptravel.ui.discover.network.PlanMapApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -96,6 +97,14 @@ object RetrofitClient {
 
     val profileApi: ProfileApi by lazy {
         discoverRetrofit.create(ProfileApi::class.java)
+    }
+
+    val planMapApi: PlanMapApi by lazy {
+        discoverRetrofit.create(PlanMapApi::class.java)
+    }
+
+    fun <T> createDiscoverService(service: Class<T>): T {
+        return discoverRetrofit.create(service)
     }
 
     inline fun <reified T> createService(): T = retrofit.create(T::class.java)

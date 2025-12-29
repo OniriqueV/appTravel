@@ -10,12 +10,10 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.datn.apptravel.databinding.FragmentDiscoverBinding
-import com.datn.apptravel.ui.discover.adapter.DiscoverPagerAdapter
+import com.datn.apptravel.ui.discover.feed.adapter.DiscoverPagerAdapter
 import com.datn.apptravel.ui.discover.post.CreatePostActivity
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.auth.FirebaseAuth
-import androidx.core.os.bundleOf
-import androidx.navigation.fragment.findNavController
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 
@@ -78,12 +76,17 @@ class DiscoverFragment : Fragment() {
         // 🔍 Search (nút icon bên phải)
         // 🔍 Search (tạm thời disable)
         binding.btnTopProfile.setOnClickListener {
-            Toast.makeText(
-                requireContext(),
-                "Tính năng tìm kiếm sẽ có sau",
-                Toast.LENGTH_SHORT
-            ).show()
+            parentFragmentManager.beginTransaction()
+                .replace(
+                    R.id.nav_host_fragment,
+                    com.datn.apptravel.ui.search.SearchExploreFragment()
+                )
+                .addToBackStack("search")
+                .commit()
         }
+
+
+
 
         // ➕ Create Post
         binding.btnCreatePost.setOnClickListener {

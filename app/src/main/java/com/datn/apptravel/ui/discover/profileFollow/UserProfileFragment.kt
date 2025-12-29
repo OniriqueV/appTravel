@@ -13,8 +13,9 @@ import com.bumptech.glide.Glide
 import com.datn.apptravel.R
 import com.datn.apptravel.databinding.FragmentUserProfileBinding
 import com.datn.apptravel.ui.discover.network.FollowRepository
-import com.datn.apptravel.ui.discover.post.ImageUrlUtil
-import com.datn.apptravel.ui.discover.profile.ProfileTripAdapter
+import com.datn.apptravel.ui.discover.network.ProfileRepository
+import com.datn.apptravel.ui.discover.util.ImageUrlUtil
+import com.datn.apptravel.ui.discover.profileFollow.adapter.ProfileTripAdapter
 import com.datn.apptravel.ui.trip.TripsFragment
 import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 import com.google.firebase.auth.FirebaseAuth

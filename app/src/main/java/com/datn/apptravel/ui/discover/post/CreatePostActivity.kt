@@ -22,18 +22,19 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.datn.apptravel.R
-import com.datn.apptravel.data.model.request.CreateTripRequest
-import com.datn.apptravel.data.repository.TripRepository
+import com.datn.apptravel.ui.discover.model.ShareTripRequest
+import com.datn.apptravel.ui.discover.network.DiscoverRepository
+import com.datn.apptravel.ui.discover.util.ImageUrlUtil
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
-import java.time.LocalDateTime
+
 
 class CreatePostActivity : AppCompatActivity() {
 
-    private val tripRepository: TripRepository by inject()
+    private val discoverRepository: DiscoverRepository by inject()
 
     private lateinit var btnBack: ImageButton
     private lateinit var tvSelectedTrip: TextView
@@ -187,19 +188,16 @@ class CreatePostActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val req = CreateTripRequest(
-                    userId = userId,
-                    title = selectedTripTitle ?: "",          // ✅ String
-                    startDate = "",                            // ✅ KHÔNG null
-                    endDate = "",                              // ✅ KHÔNG null
-                    isPublic = isPublicValue,
-                    coverPhoto = selectedTripImage ?: "",     // ✅ String
+                // ✅ CHỈ ĐỔI ĐOẠN NÀY
+                val req = ShareTripRequest(
+                    tripId = tripId,
                     content = content,
                     tags = getSelectedTags(),
-                    sharedAt = LocalDateTime.now().toString()
+                    isPublic = isPublicValue
                 )
 
-                val result = tripRepository.updateTrip(tripId, req)
+                // ✅ KHÔNG GỌI TRIP API NỮA
+                val result = discoverRepository.shareTrip(req)
 
                 if (result.isSuccess) {
                     Toast.makeText(
@@ -228,6 +226,7 @@ class CreatePostActivity : AppCompatActivity() {
             }
         }
     }
+
 
     companion object {
         const val EXTRA_USER_ID = "userId"

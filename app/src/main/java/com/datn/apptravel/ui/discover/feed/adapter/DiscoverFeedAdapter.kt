@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.adapter
+package com.datn.apptravel.ui.discover.feed.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -13,7 +13,7 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.model.DiscoverItem
 import com.datn.apptravel.ui.discover.network.FollowRepository
-import com.datn.apptravel.ui.discover.post.ImageUrlUtil
+import com.datn.apptravel.ui.discover.util.ImageUrlUtil
 import com.datn.apptravel.ui.discover.util.TimeUtil
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.launch
@@ -28,11 +28,36 @@ class DiscoverFeedAdapter(
     private val onFollowChanged: (String, Boolean) -> Unit
 ) : RecyclerView.Adapter<DiscoverFeedAdapter.VH>() {
 
+    /* =========================
+       PUBLIC API FOR FRAGMENT
+       ========================= */
+
     fun submitList(list: List<DiscoverItem>) {
         items.clear()
         items.addAll(list)
         notifyDataSetChanged()
     }
+
+    fun clear() {
+        items.clear()
+        notifyDataSetChanged()
+    }
+
+    /** 🔥 HÀM QUAN TRỌNG – FEED UPDATE REALTIME */
+    fun updateTripLikeCount(tripId: String, delta: Int) {
+        val index = items.indexOfFirst { it.tripId == tripId }
+        if (index == -1) return
+
+        val item = items[index]
+        items[index] = item.copy(
+            likeCount = (item.likeCount + delta).coerceAtLeast(0)
+        )
+        notifyItemChanged(index)
+    }
+
+    /* =========================
+       ADAPTER
+       ========================= */
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val view = LayoutInflater.from(parent.context)
@@ -46,6 +71,10 @@ class DiscoverFeedAdapter(
         holder.bind(items[position])
     }
 
+    /* =========================
+       VIEW HOLDER
+       ========================= */
+
     inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
 
         private val imgAvatar: ImageView = itemView.findViewById(R.id.imgAvatar)
@@ -56,13 +85,10 @@ class DiscoverFeedAdapter(
         private val btnFollow: MaterialButton = itemView.findViewById(R.id.btnFollow)
 
         fun bind(item: DiscoverItem) {
-            // ===== USER NAME =====
-            tvUserName.text = item.userName ?: "Unknown"
 
-            // ===== TIME (dùng TimeUtil bạn đưa) =====
+            tvUserName.text = item.userName ?: "Unknown"
             tvTime.text = TimeUtil.formatTimeAgo(item.sharedAt ?: "")
 
-            // ===== CAPTION =====
             if (item.caption.isNullOrBlank()) {
                 tvCaption.visibility = View.GONE
             } else {
@@ -70,44 +96,38 @@ class DiscoverFeedAdapter(
                 tvCaption.text = item.caption
             }
 
-            // ===== AVATAR =====
-            val avatarUrl = item.userAvatar
-            if (avatarUrl.isNullOrBlank()) {
+            // Avatar
+            if (item.userAvatar.isNullOrBlank()) {
                 imgAvatar.setImageResource(R.drawable.ic_avatar_placeholder)
             } else {
                 Glide.with(imgAvatar)
-                    .load(avatarUrl)
+                    .load(item.userAvatar)
                     .transform(CircleCrop())
-                    .placeholder(R.drawable.ic_avatar_placeholder)
-                    .error(R.drawable.ic_avatar_placeholder)
                     .into(imgAvatar)
             }
 
-            // ===== CLICK PROFILE (AVATAR + USERNAME) =====
-            val userId = item.userId
-            imgAvatar.setOnClickListener { userId?.let(onUserClick) }
-            tvUserName.setOnClickListener { userId?.let(onUserClick) }
+            imgAvatar.setOnClickListener {
+                item.userId?.let(onUserClick)
+            }
+            tvUserName.setOnClickListener {
+                item.userId?.let(onUserClick)
+            }
 
-            // ===== POST IMAGE =====
-            val imageUrl = ImageUrlUtil.toFullUrl(item.tripImage)
+            // Trip image
             Glide.with(imgPost)
-                .load(imageUrl)
+                .load(ImageUrlUtil.toFullUrl(item.tripImage))
                 .placeholder(R.drawable.ic_image_placeholder)
-                .error(R.drawable.ic_image_placeholder)
                 .into(imgPost)
 
             imgPost.setOnClickListener {
                 item.tripId?.let(onTripClick)
             }
 
-            // ===== FOLLOW =====
+            // Follow
             if (item.userId == currentUserId || item.isFollowing) {
                 btnFollow.visibility = View.GONE
             } else {
                 btnFollow.visibility = View.VISIBLE
-                btnFollow.text = "Follow"
-                btnFollow.isEnabled = true
-                btnFollow.alpha = 1f
                 btnFollow.setOnClickListener {
                     follow(item)
                 }
@@ -118,7 +138,6 @@ class DiscoverFeedAdapter(
             val me = currentUserId ?: return
             val target = item.userId ?: return
 
-            // optimistic update (update hết các post của target trong list)
             items.forEachIndexed { index, it ->
                 if (it.userId == target) {
                     it.isFollowing = true
@@ -131,7 +150,6 @@ class DiscoverFeedAdapter(
                     followRepository.follow(me, target)
                     onFollowChanged(target, true)
                 } catch (e: Exception) {
-                    // rollback
                     items.forEachIndexed { index, it ->
                         if (it.userId == target) {
                             it.isFollowing = false

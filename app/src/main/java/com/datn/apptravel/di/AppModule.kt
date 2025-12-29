@@ -6,8 +6,9 @@ import com.datn.apptravel.data.local.SessionManager
 import com.datn.apptravel.data.repository.*
 import com.datn.apptravel.ui.app.*
 import com.datn.apptravel.ui.discover.DiscoverViewModel
+import com.datn.apptravel.ui.discover.PlanMap.PlanMapDetailViewModel
 import com.datn.apptravel.ui.discover.network.*
-import com.datn.apptravel.ui.discover.profileFollow.ProfileRepository
+import com.datn.apptravel.ui.discover.network.ProfileRepository
 import com.datn.apptravel.ui.discover.profileFollow.ProfileUserViewModel
 import com.datn.apptravel.ui.notification.NotificationViewModel
 import com.datn.apptravel.ui.profile.ProfileViewModel
@@ -20,32 +21,37 @@ import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
-
 val appModule = module {
 
-    // ================= API =================
+    /* ================= API CORE ================= */
     single { RetrofitClient.createService<ApiService>() }
     single { RetrofitClient.tripApiService }
     single { RetrofitClient.googleImageSearchService }
 
-    // ================= DISCOVER =================
+    /* ================= DISCOVER ================= */
     single { DiscoverApiClient.api }
     single { DiscoverRepository(get()) }
 
-    // ================= FOLLOW =================
+    /* ================= PLAN MAP DETAIL (🔥 QUAN TRỌNG) ================= */
+    // ⚠️ TUYỆT ĐỐI KHÔNG dùng createService()
+    single { RetrofitClient.planMapApi }              // ← discoverRetrofit (8080)
+    single { PlanMapDetailRepository(get()) }
+    viewModel { PlanMapDetailViewModel(get(), get()) }
+
+    /* ================= FOLLOW ================= */
     single<FollowApi> { RetrofitClient.followApi }
     single { FollowRepository(get()) }
 
-    // ================= PROFILE (USER KHÁC) =================
+    /* ================= PROFILE (USER KHÁC) ================= */
     single<ProfileApi> { RetrofitClient.profileApi }
     single { ProfileRepository(get()) }
 
-    // ================= LOCAL / FIREBASE =================
+    /* ================= LOCAL / FIREBASE ================= */
     single { SessionManager(androidContext()) }
     single { FirebaseAuth.getInstance() }
     single { FirebaseFirestore.getInstance() }
 
-    // ================= OTHER REPOS =================
+    /* ================= OTHER REPOSITORIES ================= */
     single { AuthRepository() }
     single { UserRepository(get(), androidContext()) }
     single { NotificationRepository(get()) }
@@ -53,19 +59,20 @@ val appModule = module {
     single { TripRepository(get()) }
     single { ImageSearchRepository(get()) }
 
-    // ================= VIEWMODELS =================
+    /* ================= VIEWMODELS ================= */
     viewModel { SplashViewModel(get()) }
     viewModel { OnboardingViewModel() }
     viewModel { MainViewModel(get()) }
     viewModel { DiscoverViewModel(get(), sessionManager = get()) }
     viewModel { NotificationViewModel(get()) }
-    viewModel { ProfileUserViewModel(profileRepository = get())}
-    // ===== profile của CHÍNH MÌNH =====
+    viewModel { ProfileUserViewModel(profileRepository = get()) }
+
+    // ===== PROFILE CỦA CHÍNH MÌNH =====
     viewModel { ProfileViewModel(get(), get()) }
     viewModel { EditProfileViewModel(get(), get()) }
     viewModel { ChangePasswordViewModel(get()) }
 
-    // ===== trips =====
+    // ===== TRIPS =====
     viewModel { TripsViewModel(get(), get()) }
     viewModel { AuthViewModel(get()) }
     viewModel { CreateTripViewModel(get(), get()) }
@@ -73,5 +80,4 @@ val appModule = module {
     viewModel { PlanSelectionViewModel(get()) }
     viewModel { PlanDetailViewModel(get()) }
     viewModel { TripMapViewModel(get()) }
-
 }

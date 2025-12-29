@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.post
+package com.datn.apptravel.ui.discover.util
 
 import com.datn.apptravel.BuildConfig
 

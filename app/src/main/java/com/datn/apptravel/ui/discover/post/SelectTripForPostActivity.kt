@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.model.TripItem
 import com.datn.apptravel.ui.discover.network.TripApiClient
+import com.datn.apptravel.ui.discover.post.adapter.TripSelectAdapter
 import kotlinx.coroutines.launch
 
 class SelectTripForPostActivity : AppCompatActivity() {
@@ -38,7 +39,7 @@ class SelectTripForPostActivity : AppCompatActivity() {
                 putExtra(EXTRA_TRIP_TITLE, trip.title ?: "")
                 putExtra(EXTRA_TRIP_IMAGE, trip.coverPhoto ?: "")
             }
-            setResult(Activity.RESULT_OK, data)
+            setResult(RESULT_OK, data)
             finish()
         }
 
