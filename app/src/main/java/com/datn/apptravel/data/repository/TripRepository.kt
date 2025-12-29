@@ -602,4 +602,38 @@ class TripRepository(private val tripApiService: TripApiService) {
             Result.failure(e)
         }
     }
+    
+    // Sharing management methods
+    suspend fun updateSharedUsers(tripId: String, sharedUserIds: List<String>, currentUserId: String): Result<Trip> {
+        return try {
+            val request = UpdateSharedUsersRequest(sharedWithUserIds = sharedUserIds)
+            val response = tripApiService.updateSharedUsers(tripId, request, currentUserId)
+            if (response.isSuccessful) {
+                val trip = response.body()
+                if (trip != null) {
+                    Result.success(trip)
+                } else {
+                    Result.failure(Exception("Trip data is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to update shared users"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getFollowers(userId: String): Result<List<com.datn.apptravel.data.model.User>> {
+        return try {
+            val response = tripApiService.getFollowers(userId)
+            if (response.isSuccessful) {
+                val followers = response.body() ?: emptyList()
+                Result.success(followers)
+            } else {
+                Result.failure(Exception("Failed to get followers"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

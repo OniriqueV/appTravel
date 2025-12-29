@@ -4,17 +4,28 @@ import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.datn.apptravel.data.model.User
+import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityCreateTripBinding
+import com.datn.apptravel.databinding.DialogSelectFollowersBinding
+import com.datn.apptravel.ui.trip.adapter.FollowerSelectionAdapter
+import com.datn.apptravel.ui.trip.adapter.TripMemberAdapter
 import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 import com.datn.apptravel.ui.trip.viewmodel.CreateTripViewModel
 import com.datn.apptravel.utils.ApiConfig
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.Calendar
 
@@ -22,10 +33,16 @@ class CreateTripActivity : AppCompatActivity() {
     
     private lateinit var binding: ActivityCreateTripBinding
     private val viewModel: CreateTripViewModel by viewModel()
+    private val tripRepository: TripRepository by inject()
     private var selectedImageUri: Uri? = null
     private var isEditMode = false
     private var tripId: String? = null
     private var existingCoverPhoto: String? = null
+    
+    // Member selection
+    private val selectedMembers = mutableListOf<User>()
+    private lateinit var memberAdapter: TripMemberAdapter
+    private val auth = FirebaseAuth.getInstance()
     
     companion object {
         const val EXTRA_TRIP_ID = "trip_id"
@@ -60,6 +77,20 @@ class CreateTripActivity : AppCompatActivity() {
     }
     
     private fun setupUI() {
+        // Setup member RecyclerView
+        memberAdapter = TripMemberAdapter { user ->
+            removeMember(user)
+        }
+        binding.rvMembers.apply {
+            layoutManager = LinearLayoutManager(this@CreateTripActivity, LinearLayoutManager.HORIZONTAL, false)
+            adapter = memberAdapter
+        }
+        
+        // Add member button
+        binding.btnAddMember.setOnClickListener {
+            showFollowerSelectionDialog()
+        }
+        
         // Back button
         binding.ivBack.setOnClickListener {
             finish()
@@ -167,7 +198,8 @@ class CreateTripActivity : AppCompatActivity() {
                 tripName, 
                 startDate, 
                 endDate, 
-                if (isEditMode) tripId else null
+                if (isEditMode) tripId else null,
+                if (selectedMembers.isNotEmpty()) selectedMembers else null
             )
             
             // Upload image
@@ -182,22 +214,24 @@ class CreateTripActivity : AppCompatActivity() {
                     title = tripName,
                     startDate = startDate,
                     endDate = endDate,
-                    coverPhotoUri = existingCoverPhoto
+                    coverPhotoUri = existingCoverPhoto,
+                    members = if (selectedMembers.isNotEmpty()) selectedMembers else null
                 )
             } else {
-                // Create new trip
+                // Create new trip with members
                 viewModel.createTrip(
                     title = tripName,
                     startDate = startDate,
                     endDate = endDate,
-                    coverPhotoUri = null
+                    coverPhotoUri = null,
+                    members = if (selectedMembers.isNotEmpty()) selectedMembers else null
                 )
             }
         }
     }
 
     private fun loadEditData() {
-        if (isEditMode) {
+        if (isEditMode && tripId != null) {
             // Load existing trip data from intent
             val title = intent.getStringExtra(EXTRA_TRIP_TITLE)
             val startDate = intent.getStringExtra(EXTRA_START_DATE)
@@ -218,6 +252,26 @@ class CreateTripActivity : AppCompatActivity() {
                     com.bumptech.glide.Glide.with(this)
                         .load(imageUrl)
                         .into(binding.ivCoverPreview)
+                }
+            }
+            
+            // Load members from backend
+            lifecycleScope.launch {
+                try {
+                    val result = tripRepository.getTripById(tripId!!)
+                    result.onSuccess { trip ->
+                        if (!trip.members.isNullOrEmpty()) {
+                            selectedMembers.clear()
+                            selectedMembers.addAll(trip.members)
+                            // Create new list to trigger DiffUtil
+                            memberAdapter.submitList(ArrayList(selectedMembers))
+                            android.util.Log.d("CreateTripActivity", "Loaded ${trip.members.size} existing members")
+                        }
+                    }.onFailure { exception ->
+                        android.util.Log.e("CreateTripActivity", "Failed to load trip members: ${exception.message}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("CreateTripActivity", "Error loading trip members: ${e.message}")
                 }
             }
         }
@@ -250,6 +304,111 @@ class CreateTripActivity : AppCompatActivity() {
             end > start
         } catch (e: Exception) {
             true // If parsing fails, allow the operation
+        }
+    }
+    
+    private fun showFollowerSelectionDialog() {
+        val dialogBinding = DialogSelectFollowersBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(this)
+        dialog.setContentView(dialogBinding.root)
+        
+        // Setup follower RecyclerView
+        val followerAdapter = FollowerSelectionAdapter(
+            onAddMember = { user ->
+                addMember(user)
+                dialog.dismiss()
+            },
+            selectedMembers = selectedMembers
+        )
+        
+        dialogBinding.rvFollowers.apply {
+            layoutManager = LinearLayoutManager(this@CreateTripActivity)
+            adapter = followerAdapter
+        }
+        
+        // Load followers
+        lifecycleScope.launch {
+            try {
+                val followers = loadFollowers()
+                if (followers.isEmpty()) {
+                    dialogBinding.rvFollowers.visibility = View.GONE
+                    dialogBinding.layoutEmpty.visibility = View.VISIBLE
+                } else {
+                    dialogBinding.rvFollowers.visibility = View.VISIBLE
+                    dialogBinding.layoutEmpty.visibility = View.GONE
+                    followerAdapter.submitList(followers)
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@CreateTripActivity, "Error loading followers: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+        // Close button
+        dialogBinding.ivClose.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialog.show()
+    }
+    
+    private suspend fun loadFollowers(): List<User> {
+        return try {
+            val currentUserId = auth.currentUser?.uid ?: return emptyList()
+            android.util.Log.d("CreateTripActivity", "Current userId: $currentUserId")
+            
+            // Get followers from backend API
+            val result = tripRepository.getFollowers(currentUserId)
+            
+            result.onSuccess { followers ->
+                android.util.Log.d("CreateTripActivity", "API SUCCESS: Received ${followers.size} followers")
+                followers.forEachIndexed { index, user ->
+                    android.util.Log.d("CreateTripActivity", "  [$index] ${user.firstName} ${user.lastName} (${user.id})")
+                }
+                
+                // Filter out already selected members
+                val filtered = followers.filter { user ->
+                    !selectedMembers.any { it.id == user.id }
+                }
+                android.util.Log.d("CreateTripActivity", "After filtering: ${filtered.size} followers")
+                android.util.Log.d("CreateTripActivity", "=== loadFollowers END ===")
+                return filtered
+            }.onFailure { exception ->
+                android.util.Log.e("CreateTripActivity", "API FAILED: ${exception.message}", exception)
+                return emptyList()
+            }
+            
+            emptyList()
+        } catch (e: Exception) {
+            android.util.Log.e("CreateTripActivity", "Error loading followers: ${e.message}", e)
+            emptyList()
+        }
+    }
+    
+    private fun addMember(user: User) {
+        if (!selectedMembers.any { it.id == user.id }) {
+            selectedMembers.add(user)
+            // Create new list to trigger DiffUtil
+            memberAdapter.submitList(ArrayList(selectedMembers))
+            android.util.Log.d("CreateTripActivity", "Added member: ${user.firstName}, total: ${selectedMembers.size}")
+            Toast.makeText(this, "${user.firstName} added as travel buddy", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun removeMember(user: User) {
+        android.util.Log.d("CreateTripActivity", "Removing member: ${user.firstName} (${user.id}), current size: ${selectedMembers.size}")
+        
+        val removed = selectedMembers.removeIf { it.id == user.id }
+        
+        if (removed) {
+            android.util.Log.d("CreateTripActivity", "Member removed successfully, new size: ${selectedMembers.size}")
+            // Create new list to trigger DiffUtil
+            val newList = ArrayList(selectedMembers)
+            memberAdapter.submitList(newList) {
+                // Callback after list is submitted
+                android.util.Log.d("CreateTripActivity", "Adapter updated with ${newList.size} members")
+            }
+            Toast.makeText(this, "${user.firstName} removed", Toast.LENGTH_SHORT).show()
+        } else {
+            android.util.Log.w("CreateTripActivity", "Failed to remove member: ${user.firstName}")
         }
     }
 }
