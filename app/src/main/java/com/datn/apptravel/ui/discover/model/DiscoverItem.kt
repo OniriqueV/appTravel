@@ -20,4 +20,7 @@ data class DiscoverItem(
     val sharedAt: String = "",
     @SerializedName("following")
     var isFollowing: Boolean = false, // ⭐ THÊM
+
+    var likeCount: Int = 0,
+    var isLiked: Boolean = false
 )

@@ -13,19 +13,17 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.activity.MainActivity
-import com.datn.apptravel.ui.discover.DiscoverViewModel
-import com.datn.apptravel.ui.discover.Refreshable
-import com.datn.apptravel.ui.discover.adapter.DiscoverFeedAdapter
+import com.datn.apptravel.ui.discover.DiscoverViewModel import com.datn.apptravel.ui.discover.Refreshable
+import com.datn.apptravel.ui.discover.feed.adapter.DiscoverFeedAdapter
 import com.datn.apptravel.ui.discover.network.FollowRepository
-import com.datn.apptravel.ui.trip.TripsFragment
-import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
+import com.datn.apptravel.ui.trip.map.TripMapActivity
 import com.google.firebase.auth.FirebaseAuth
 import org.koin.android.ext.android.inject
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 
 class FollowingFragment : Fragment(), Refreshable {
 
-    private val viewModel: DiscoverViewModel by viewModel()
+    private val viewModel: DiscoverViewModel by sharedViewModel()
     private val followRepository: FollowRepository by inject()
 
     private lateinit var recycler: RecyclerView
@@ -57,18 +55,14 @@ class FollowingFragment : Fragment(), Refreshable {
             items = mutableListOf(),
             followRepository = followRepository,
             lifecycleOwner = viewLifecycleOwner,
-
             onTripClick = { tripId ->
-                val intent = Intent(requireContext(), TripDetailActivity::class.java)
-                intent.putExtra(
-                    TripsFragment.EXTRA_TRIP_ID, tripId )
+                val intent = Intent(requireContext(), TripMapActivity::class.java)
+                intent.putExtra("tripId", tripId)
                 startActivity(intent)
             },
-
             onUserClick = { userId ->
                 (activity as? MainActivity)?.openUserProfile(userId)
             },
-
             onFollowChanged = { _, _ -> }
         )
 
@@ -76,7 +70,9 @@ class FollowingFragment : Fragment(), Refreshable {
         recycler.adapter = adapter
 
         swipeRefresh.setOnRefreshListener { onRefresh() }
+
         observeViewModel()
+        //observeTripLikeChange()
         onRefresh()
     }
 
@@ -89,14 +85,28 @@ class FollowingFragment : Fragment(), Refreshable {
 
         viewModel.errorMessage.observe(viewLifecycleOwner) {
             swipeRefresh.isRefreshing = false
+            progressBar.visibility = View.GONE
             if (!it.isNullOrBlank()) {
                 Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
             }
         }
     }
 
+    // 🔥 NHẬN LIKE / UNLIKE TỪ STORY
+//    private fun observeTripLikeChange() {
+//        sharedVM.tripLikeDelta.observe(viewLifecycleOwner) { (tripId, delta) ->
+//            adapter.updateTripLikeCount(tripId, delta)
+//        }
+//    }
+
     override fun onRefresh() {
         progressBar.visibility = View.VISIBLE
+        adapter.clear()
         viewModel.loadFollowing()
     }
+    override fun onResume() {
+        super.onResume()
+        onRefresh()
+    }
+
 }

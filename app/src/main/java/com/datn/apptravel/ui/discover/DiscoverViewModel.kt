@@ -23,14 +23,17 @@ class DiscoverViewModel(
     val discoverList = MutableLiveData<List<DiscoverItem>>()
     val followingList = MutableLiveData<List<DiscoverItem>>()
     val errorMessage = MutableLiveData<String?>()
-
+    private var discoverPage = 0
+    private var followingPage = 0
     // ================= EXPLORE =================
-    fun loadDiscover(page: Int = 0) {
+    fun loadDiscover(reset: Boolean = false) {
+        if (reset) discoverPage = 0
         val userId = currentUserId ?: return
+
         viewModelScope.launch {
             try {
                 discoverList.postValue(
-                    repository.getDiscover(userId, page, PAGE_SIZE)
+                    repository.getDiscover(userId, discoverPage, PAGE_SIZE)
                 )
             } catch (e: Exception) {
                 errorMessage.postValue("Không tải được danh sách khám phá")
@@ -38,19 +41,25 @@ class DiscoverViewModel(
         }
     }
 
+
     // ================= FOLLOWING =================
-    fun loadFollowing(page: Int = 0) {
+    fun loadFollowing(reset: Boolean = false) {
+        if (reset) followingPage = 0
         val userId = currentUserId ?: return
+
         viewModelScope.launch {
             try {
                 followingList.postValue(
-                    repository.getFollowing(userId, page, PAGE_SIZE)
+                    repository.getFollowing(userId, followingPage, PAGE_SIZE)
                 )
             } catch (e: Exception) {
-                errorMessage.postValue("Không tải được danh sách Following")
+                errorMessage.postValue("Không tải được danh sách following")
+                // optional: để Following cũng tắt loading nếu cần
+                // followingList.postValue(emptyList())
             }
         }
     }
+
 
     // 🔥 Feed chỉ follow 1 chiều → chỉ update state local cho UI
     fun updateFollowState(userId: String, isFollowing: Boolean) {
@@ -64,7 +73,8 @@ class DiscoverViewModel(
     }
 
     fun forceReload() {
-        loadDiscover()
-        loadFollowing()
+        loadDiscover(reset = true)
+        loadFollowing(reset = true)
     }
+
 }

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.adapter
+package com.datn.apptravel.ui.discover.feed.adapter
 
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter

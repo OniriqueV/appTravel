@@ -152,6 +152,7 @@ class TripMapViewModel(
 
                     if (coordinates != null) {
                         PlanLocation(
+                            planId = plan.id ?: return@mapNotNull null,
                             name = plan.title,
                             time = time,
                             detail = plan.address ?: "",

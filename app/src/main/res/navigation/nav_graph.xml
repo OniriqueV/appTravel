@@ -3,13 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/tripsFragment">
-
-    <fragment
-        android:id="@+id/tripsFragment"
-        android:name="com.datn.apptravel.ui.trip.list.TripsFragment"
-        android:label="Trips"
-        tools:layout="@layout/fragment_trips" />
+    app:startDestination="@id/discoverFragment">
 
     <fragment
         android:id="@+id/discoverFragment"
@@ -21,7 +15,6 @@
             android:id="@+id/action_discoverFragment_to_searchExploreFragment"
             app:destination="@id/searchExploreFragment" />
 
-        <!-- ✅ NEW: mở profile user -->
         <action
             android:id="@+id/action_discoverFragment_to_userProfileFragment"
             app:destination="@id/userProfileFragment" />
@@ -29,7 +22,7 @@
 
     <fragment
         android:id="@+id/searchExploreFragment"
-        android:name="com.datn.apptravel.ui.discover.search.SearchExploreFragment"
+        android:name="com.datn.apptravel.ui.search.SearchExploreFragment"
         android:label="Search Explore"
         tools:layout="@layout/fragment_search_explore">
 
@@ -39,7 +32,6 @@
             android:defaultValue="" />
     </fragment>
 
-    <!-- ✅ NEW: User Profile Fragment -->
     <fragment
         android:id="@+id/userProfileFragment"
         android:name="com.datn.apptravel.ui.discover.profileFollow.UserProfileFragment"
