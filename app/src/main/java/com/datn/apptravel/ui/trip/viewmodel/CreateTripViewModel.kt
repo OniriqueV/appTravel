@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.datn.apptravel.data.local.SessionManager
 import com.datn.apptravel.data.model.Trip
+import com.datn.apptravel.data.model.User
 import com.datn.apptravel.data.model.request.CreateTripRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.ui.base.BaseViewModel
@@ -36,6 +37,7 @@ class CreateTripViewModel(
     private var pendingTripTitle: String? = null
     private var pendingStartDate: String? = null
     private var pendingEndDate: String? = null
+    private var pendingMembers: List<User>? = null
     
     fun uploadCoverPhoto(context: Context, imageUri: Uri) {
         setLoading(true)
@@ -67,32 +69,36 @@ class CreateTripViewModel(
                     title = pendingTripTitle!!,
                     startDate = pendingStartDate!!,
                     endDate = pendingEndDate!!,
-                    coverPhotoUri = coverPhotoFileName
+                    coverPhotoUri = coverPhotoFileName,
+                    members = pendingMembers
                 )
             } else {
-                // Create new trip
+                // Create new trip with members
                 createTrip(
                     title = pendingTripTitle!!,
                     startDate = pendingStartDate!!,
                     endDate = pendingEndDate!!,
-                    coverPhotoUri = coverPhotoFileName
+                    coverPhotoUri = coverPhotoFileName,
+                    members = pendingMembers
                 )
             }
         }
     }
     
-    fun setPendingTripData(title: String, startDate: String, endDate: String, tripId: String? = null) {
+    fun setPendingTripData(title: String, startDate: String, endDate: String, tripId: String? = null, members: List<User>? = null) {
         pendingTripId = tripId
         pendingTripTitle = title
         pendingStartDate = startDate
         pendingEndDate = endDate
+        pendingMembers = members
     }
 
     fun createTrip(
         title: String, 
         startDate: String, 
         endDate: String,
-        coverPhotoUri: String? = null
+        coverPhotoUri: String? = null,
+        members: List<User>? = null
     ) {
         setLoading(true)
         
@@ -128,6 +134,8 @@ class CreateTripViewModel(
                     coverPhoto = coverPhotoUri,
                     content = null,
                     tags = null,
+                    members = members,
+                    sharedWithUsers = null,
                     sharedAt = null
                 )
                 
@@ -157,7 +165,8 @@ class CreateTripViewModel(
         isPublic: String = "none",
         content: String? = null,
         tags: String? = null,
-        sharedAt: String? = null
+        sharedAt: String? = null,
+        members: List<User>? = null
     ) {
         setLoading(true)
         
@@ -200,6 +209,8 @@ class CreateTripViewModel(
                     coverPhoto = coverPhotoUri,
                     content = content,
                     tags = tags,
+                    members = members,
+                    sharedWithUsers = null,
                     sharedAt = sharedAt
                 )
                 

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.profile
+package com.datn.apptravel.ui.discover.profileFollow.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.post.ImageUrlUtil
+import com.datn.apptravel.ui.discover.util.ImageUrlUtil
 import com.datn.apptravel.ui.discover.util.TimeUtil
 
 class ProfileTripAdapter(

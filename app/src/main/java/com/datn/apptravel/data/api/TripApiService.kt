@@ -3,6 +3,7 @@ package com.datn.apptravel.data.api
 
 import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.Trip
+import com.datn.apptravel.data.model.User
 import com.datn.apptravel.data.model.request.*
 import com.datn.apptravel.data.model.response.FileUploadResponse
 import com.datn.apptravel.data.model.response.TripResponse
@@ -124,4 +125,30 @@ interface TripApiService {
     suspend fun uploadImages(
         @Part files: List<MultipartBody.Part>
     ): Response<List<FileUploadResponse>>
+    
+    // Sharing management endpoints
+    @PUT("api/trips/{tripId}/shared-users")
+    suspend fun updateSharedUsers(
+        @Path("tripId") tripId: String,
+        @Body request: UpdateSharedUsersRequest,
+        @Header("X-User-Id") userId: String
+    ): Response<Trip>
+    
+    @GET("api/trips/{tripId}/members/{userId}/check")
+    suspend fun checkMember(
+        @Path("tripId") tripId: String,
+        @Path("userId") memberId: String
+    ): Response<Boolean>
+    
+    @POST("api/trips/{tripId}/check-access")
+    suspend fun checkAccess(
+        @Path("tripId") tripId: String,
+        @Body request: CheckAccessRequest
+    ): Response<Boolean>
+    
+    // Get user followers
+    @GET("api/users/{userId}/followers")
+    suspend fun getFollowers(
+        @Path("userId") userId: String
+    ): Response<List<User>>
 }

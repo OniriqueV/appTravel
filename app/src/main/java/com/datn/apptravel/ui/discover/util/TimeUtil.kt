@@ -7,7 +7,8 @@ import java.time.Duration
 
 object TimeUtil {
 
-    fun formatTimeAgo(isoTime: String): String {
+    fun formatTimeAgo(isoTime: String?): String {
+        if (isoTime.isNullOrBlank()) return ""
         return try {
             val sdf = java.text.SimpleDateFormat(
                 "yyyy-MM-dd'T'HH:mm:ss.SSSSSS",
@@ -31,4 +32,5 @@ object TimeUtil {
             ""
         }
     }
+
 }

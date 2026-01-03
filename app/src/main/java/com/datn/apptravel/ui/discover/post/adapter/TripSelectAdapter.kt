@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.post
+package com.datn.apptravel.ui.discover.post.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.model.TripItem
-
+import com.datn.apptravel.ui.discover.util.ImageUrlUtil
 
 class TripSelectAdapter(
     private val items: List<TripItem>,

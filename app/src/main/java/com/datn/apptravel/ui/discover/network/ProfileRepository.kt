@@ -1,9 +1,6 @@
-package com.datn.apptravel.ui.discover.profileFollow
+package com.datn.apptravel.ui.discover.network
 
 import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.network.ProfileApi
-import com.datn.apptravel.ui.discover.model.ProfileResponse
-
 
 class ProfileRepository(
     private val api: ProfileApi

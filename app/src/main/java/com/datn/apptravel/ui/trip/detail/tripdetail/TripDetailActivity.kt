@@ -24,14 +24,20 @@ import com.datn.apptravel.data.repository.AuthRepository
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityTripDetailBinding
 import com.datn.apptravel.databinding.DialogShareTripBinding
+import com.datn.apptravel.databinding.DialogSelectFollowersBinding
+import com.datn.apptravel.ui.trip.adapter.FollowerSelectionAdapter
 import com.datn.apptravel.ui.trip.adapter.ScheduleDayAdapter
 import com.datn.apptravel.ui.trip.adapter.TopicAdapter
+import com.datn.apptravel.ui.trip.adapter.TripMemberAdapter
+import com.datn.apptravel.ui.trip.adapter.TripMemberSmallAdapter
 import com.datn.apptravel.ui.trip.TripsFragment
 import com.datn.apptravel.ui.trip.list.PlanSelectionActivity
 import com.datn.apptravel.ui.trip.map.TripMapActivity
 import com.datn.apptravel.ui.trip.viewmodel.TripDetailViewModel
 import com.datn.apptravel.utils.ApiConfig
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.firebase.auth.FirebaseAuth
 import com.datn.apptravel.data.model.UserInsight
 import com.datn.apptravel.ui.trip.ai.AIInsightDialogFragment
 import com.datn.apptravel.ui.trip.ai.AISuggestionPreviewActivity
@@ -50,10 +56,12 @@ class TripDetailActivity : AppCompatActivity() {
     private val viewModel: TripDetailViewModel by viewModel()
     private val tripRepository: TripRepository by inject()
     private val authRepository: AuthRepository by inject()
+    private val auth: FirebaseAuth by inject()
     private var tripId: String? = null
     private var currentTrip: Trip? = null
     private lateinit var binding: ActivityTripDetailBinding
     private lateinit var scheduleDayAdapter: ScheduleDayAdapter
+    private lateinit var memberAdapter: TripMemberSmallAdapter
 
     private var isReadOnly = false // Cho Discover
 
@@ -168,6 +176,13 @@ class TripDetailActivity : AppCompatActivity() {
             adapter = scheduleDayAdapter
             layoutManager = LinearLayoutManager(this@TripDetailActivity)
         }
+
+        // Setup member RecyclerView
+        memberAdapter = TripMemberSmallAdapter()
+        binding.rvTripMembers.apply {
+            adapter = memberAdapter
+            layoutManager = LinearLayoutManager(this@TripDetailActivity, LinearLayoutManager.HORIZONTAL, false)
+        }
     }
 
     private fun setupObservers() {
@@ -273,6 +288,17 @@ class TripDetailActivity : AppCompatActivity() {
         val endDate = "End Date: $formattedEndDate"
         tvTripStartDate?.text = startDate
         tvTripEndDate?.text = endDate
+
+        // Display members
+        android.util.Log.d("TripDetailActivity", "Trip members: ${trip.members?.size ?: 0}")
+        if (!trip.members.isNullOrEmpty()) {
+            binding.layoutTravelBuddies.visibility = View.VISIBLE
+            memberAdapter.submitList(trip.members)
+            android.util.Log.d("TripDetailActivity", "Displaying ${trip.members.size} members")
+        } else {
+            binding.layoutTravelBuddies.visibility = View.GONE
+            android.util.Log.d("TripDetailActivity", "No members to display")
+        }
 
         // Load cover photo if available
         val imageUrl = ApiConfig.getImageUrl(trip.coverPhoto)
@@ -388,6 +414,10 @@ class TripDetailActivity : AppCompatActivity() {
         val existingTags = trip?.tags?.split(",")?.map { it.trim() } ?: emptyList()
         val existingContent = trip?.content ?: ""
 
+        // Track selected shared users
+        val selectedSharedUserIds = mutableSetOf<String>()
+        trip?.sharedWithUsers?.mapNotNull { it.id }?.let { selectedSharedUserIds.addAll(it) }
+
         // Pre-fill feelings if trip already has content
         if (existingContent.isNotEmpty()) {
             dialogBinding.etFeelings.setText(existingContent)
@@ -403,8 +433,18 @@ class TripDetailActivity : AppCompatActivity() {
             dialogBinding.tvPrivacyValue.text = displayText
         }
 
+        // Update shared users section visibility
+        fun updateSharedUsersVisibility() {
+            if (currentPrivacy == "follower") {
+                dialogBinding.layoutSharedUsers.visibility = android.view.View.VISIBLE
+            } else {
+                dialogBinding.layoutSharedUsers.visibility = android.view.View.GONE
+            }
+        }
+
         // Initialize privacy display
         updatePrivacyText(currentPrivacy)
+        updateSharedUsersVisibility()
 
         // Setup privacy selector click listener
         dialogBinding.layoutPrivacySelector.setOnClickListener {
@@ -420,9 +460,77 @@ class TripDetailActivity : AppCompatActivity() {
                     else -> "none"
                 }
                 updatePrivacyText(currentPrivacy)
+                updateSharedUsersVisibility()
                 true
             }
             popupMenu.show()
+        }
+
+        // Track selected shared users list
+        val selectedSharedUsers = mutableListOf<com.datn.apptravel.data.model.User>()
+
+        // Setup shared users RecyclerView with member adapter
+        lateinit var sharedUserAdapter: TripMemberAdapter
+        sharedUserAdapter = TripMemberAdapter(
+            onRemoveMember = { user ->
+                selectedSharedUsers.removeIf { it.id == user.id }
+                selectedSharedUserIds.remove(user.id ?: "")
+                // Create new list to trigger DiffUtil
+                sharedUserAdapter.submitList(ArrayList(selectedSharedUsers))
+                Log.d("TripDetail", "Removed user, remaining: ${selectedSharedUsers.size}")
+            }
+        )
+
+        dialogBinding.rvSharedUsers.apply {
+            adapter = sharedUserAdapter
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(
+                this@TripDetailActivity,
+                androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL,
+                false
+            )
+            setHasFixedSize(false) // Allow height changes
+            visibility = android.view.View.VISIBLE
+        }
+
+        Log.d("TripDetail", "RecyclerView setup complete")
+
+        // Load existing shared users if available
+        trip?.sharedWithUsers?.let { existingUsers ->
+            selectedSharedUsers.addAll(existingUsers)
+            selectedSharedUserIds.addAll(existingUsers.mapNotNull { it.id })
+            Log.d("TripDetail", "Loading existing ${existingUsers.size} shared users")
+            sharedUserAdapter.submitList(ArrayList(selectedSharedUsers)) {
+                Log.d("TripDetail", "Existing users loaded, adapter count: ${sharedUserAdapter.itemCount}")
+            }
+        }
+
+        // Handle select shared users button click
+        dialogBinding.btnSelectSharedUsers.setOnClickListener {
+            Log.d("TripDetail", "Select shared users button clicked")
+            showFollowerSelectionDialog { selectedUsers ->
+                Log.d("TripDetail", "Received ${selectedUsers.size} users from dialog")
+                // Add only new users that aren't already selected
+                selectedUsers.forEach { user ->
+                    Log.d("TripDetail", "Processing user: ${user.firstName} ${user.lastName}, id: ${user.id}")
+                    if (!selectedSharedUsers.any { it.id == user.id }) {
+                        selectedSharedUsers.add(user)
+                        selectedSharedUserIds.add(user.id ?: "")
+                        Log.d("TripDetail", "Added user: ${user.firstName} ${user.lastName}")
+                    } else {
+                        Log.d("TripDetail", "User already in list, skipping")
+                    }
+                }
+
+                // Update RecyclerView with new list
+                val newList = ArrayList(selectedSharedUsers)
+                Log.d("TripDetail", "Submitting list with ${newList.size} users to adapter")
+                newList.forEachIndexed { index, user ->
+                    Log.d("TripDetail", "  [$index] ${user.firstName} ${user.lastName}")
+                }
+                sharedUserAdapter.submitList(newList) {
+                    Log.d("TripDetail", "List submitted successfully, adapter count: ${sharedUserAdapter.itemCount}")
+                }
+            }
         }
 
         // Create topic list with all available topics and pre-select existing ones
@@ -435,11 +543,11 @@ class TripDetailActivity : AppCompatActivity() {
 
         // Update UI based on whether trip has been shared
         if (hasBeenShared) {
-            dialogBinding.btnDone.text = "Lưu"
-            dialogBinding.tvShareTitle.text = "Chỉnh sửa bài viết"
+            dialogBinding.btnDone.text = "Save"
+            dialogBinding.tvShareTitle.text = "Edit Post"
         } else {
-            dialogBinding.btnDone.text = "Chia sẻ"
-            dialogBinding.tvShareTitle.text = "Chia sẻ chuyến đi"
+            dialogBinding.btnDone.text = "Share"
+            dialogBinding.tvShareTitle.text = "Share Trip"
         }
 
         // Setup topics RecyclerView
@@ -468,7 +576,7 @@ class TripDetailActivity : AppCompatActivity() {
             if (feelings.isEmpty()) {
                 Toast.makeText(
                     this,
-                    "Vui lòng nhập cảm nhận của bạn",
+                    "Please share your thoughts",
                     Toast.LENGTH_SHORT
                 ).show()
                 return@setOnClickListener
@@ -478,7 +586,7 @@ class TripDetailActivity : AppCompatActivity() {
             if (selectedTopics.isEmpty()) {
                 Toast.makeText(
                     this,
-                    "Vui lòng chọn ít nhất một chủ đề",
+                    "Please select at least one topic",
                     Toast.LENGTH_SHORT
                 ).show()
                 return@setOnClickListener
@@ -487,7 +595,7 @@ class TripDetailActivity : AppCompatActivity() {
             if (currentTrip == null) {
                 Toast.makeText(
                     this,
-                    "Không tìm thấy thông tin chuyến đi",
+                    "Trip information not found",
                     Toast.LENGTH_SHORT
                 ).show()
                 return@setOnClickListener
@@ -508,14 +616,21 @@ class TripDetailActivity : AppCompatActivity() {
                 null // Not sharing
             }
 
+            // Prepare shared user list (empty list if none selected means share with all followers)
+            val sharedUsersList = if (currentPrivacy == "follower") {
+                selectedSharedUsers.toList()
+            } else {
+                null
+            }
+
             // Call API to update trip
-            shareTrip(feelings, tags, selectedPrivacy, sharedAtValue, dialog)
+            shareTrip(feelings, tags, selectedPrivacy, sharedAtValue, sharedUsersList, dialog)
         }
 
         dialog.show()
     }
 
-    private fun shareTrip(content: String, tags: String, isPublic: String, sharedAt: String?, dialog: Dialog) {
+    private fun shareTrip(content: String, tags: String, isPublic: String, sharedAt: String?, sharedWithUsers: List<com.datn.apptravel.data.model.User>?, dialog: Dialog) {
         currentTrip?.let { trip ->
             val updateRequest = CreateTripRequest(
                 userId = trip.userId,
@@ -526,6 +641,8 @@ class TripDetailActivity : AppCompatActivity() {
                 coverPhoto = trip.coverPhoto,
                 content = content,
                 tags = tags,
+                members = trip.members,
+                sharedWithUsers = sharedWithUsers,
                 sharedAt = sharedAt
             )
 
@@ -536,17 +653,17 @@ class TripDetailActivity : AppCompatActivity() {
                     withContext(Dispatchers.Main) {
                         if (result.isSuccess) {
                             var message=""
-                            if(dialog.findViewById<TextView>(R.id.tvShareTitle)?.text?.toString().equals("Chỉnh sửa bài viết")){
+                            if(dialog.findViewById<TextView>(R.id.tvShareTitle)?.text?.toString().equals("Edit Post")){
                                 message = when (isPublic) {
-                                    "public" -> "Cập nhật bài viết thành công"
-                                    "follower" -> "Cập nhật bài viết thành công"
-                                    else -> "Cập nhật bài viết thành công"
+                                    "public" -> "Post updated successfully"
+                                    "follower" -> "Post updated successfully"
+                                    else -> "Post updated successfully"
                                 }
                             }else{
                                 message = when (isPublic) {
-                                    "public" -> "Đã chia sẻ thành công"
-                                    "follower" -> "Đã chia sẻ thành công"
-                                    else -> "Đã lưu bài viết (không công khai)"
+                                    "public" -> "Shared successfully"
+                                    "follower" -> "Shared successfully"
+                                    else -> "Post saved (not public)"
                                 }
                             }
 
@@ -562,7 +679,7 @@ class TripDetailActivity : AppCompatActivity() {
                         } else {
                             Toast.makeText(
                                 this@TripDetailActivity,
-                                "Lỗi: ${result.exceptionOrNull()?.message}",
+                                "Error: ${result.exceptionOrNull()?.message}",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
@@ -571,7 +688,7 @@ class TripDetailActivity : AppCompatActivity() {
                     withContext(Dispatchers.Main) {
                         Toast.makeText(
                             this@TripDetailActivity,
-                            "Lỗi kết nối: ${e.message}",
+                            "Connection error: ${e.message}",
                             Toast.LENGTH_SHORT
                         ).show()
                     }
@@ -629,6 +746,63 @@ class TripDetailActivity : AppCompatActivity() {
         } else {
             navigateToPlanSelection()
         }
+    }
+
+    /**
+     * Show follower selection dialog for sharing with specific users
+     */
+    private fun showFollowerSelectionDialog(onUsersSelected: (List<com.datn.apptravel.data.model.User>) -> Unit) {
+        val dialogBinding = DialogSelectFollowersBinding.inflate(layoutInflater)
+        val dialog = BottomSheetDialog(this)
+        dialog.setContentView(dialogBinding.root)
+
+        // Track selected users (single select mode for adding one at a time)
+        val selectedUsers = mutableListOf<com.datn.apptravel.data.model.User>()
+
+        // Setup follower RecyclerView with single-select adapter
+        val followerAdapter = FollowerSelectionAdapter(
+            onAddMember = { user ->
+                selectedUsers.add(user)
+                onUsersSelected(selectedUsers)
+                dialog.dismiss()
+            },
+            selectedMembers = emptyList() // No pre-selection needed
+        )
+
+        dialogBinding.rvFollowers.apply {
+            layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@TripDetailActivity)
+            adapter = followerAdapter
+        }
+
+        // Load followers
+        lifecycleScope.launch {
+            try {
+                val currentUserId = auth.currentUser?.uid ?: return@launch
+                val result = tripRepository.getFollowers(currentUserId)
+
+                result.onSuccess { followers ->
+                    if (followers.isEmpty()) {
+                        dialogBinding.rvFollowers.visibility = android.view.View.GONE
+                        dialogBinding.layoutEmpty.visibility = android.view.View.VISIBLE
+                    } else {
+                        dialogBinding.rvFollowers.visibility = android.view.View.VISIBLE
+                        dialogBinding.layoutEmpty.visibility = android.view.View.GONE
+                        followerAdapter.submitList(followers)
+                    }
+                }.onFailure {
+                    Toast.makeText(this@TripDetailActivity, "Error loading followers", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@TripDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Close button
+        dialogBinding.ivClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
 

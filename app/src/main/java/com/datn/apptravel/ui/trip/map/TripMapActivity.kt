@@ -1,5 +1,6 @@
 package com.datn.apptravel.ui.trip.map
 
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.data.repository.AuthRepository
 import com.datn.apptravel.databinding.ActivityTripMapBinding
+import com.datn.apptravel.ui.discover.PlanMap.PlanMapDetailActivity
 import com.datn.apptravel.ui.trip.adapter.ScheduleTripMapAdapter
 import com.datn.apptravel.ui.trip.model.PlanLocation
 import com.datn.apptravel.ui.trip.model.ScheduleItem
@@ -132,6 +134,10 @@ class TripMapActivity : AppCompatActivity() {
             items = scheduleItems,
             onPlanClick = { position, plan ->
                 onPlanClicked(position, plan)
+                //mở story (PlanMapDetail)
+                startActivity(
+                    Intent(this@TripMapActivity, PlanMapDetailActivity::class.java)
+                        .putExtra("planId", plan.planId))
             },
             onConnectorClick = { fromPos, toPos ->
                 onConnectorClicked(fromPos, toPos)
@@ -203,8 +209,7 @@ class TripMapActivity : AppCompatActivity() {
     }
 
     private fun updateScheduleItems() {
-        if (startDate.isNullOrEmpty() || endDate.isNullOrEmpty()) return
-
+        if (startDate.isEmpty() || endDate.isEmpty()) return
 
         scheduleItems.clear()
 

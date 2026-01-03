@@ -1,6 +1,7 @@
 package com.datn.apptravel.ui.trip.model
 
 data class PlanLocation(
+    val planId: String,
     val name: String,
     val time: String,
     val detail: String,

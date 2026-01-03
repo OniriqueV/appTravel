@@ -1,6 +1,7 @@
 package com.datn.apptravel.ui.discover.network
 
 import com.datn.apptravel.ui.discover.model.DiscoverItem
+import com.datn.apptravel.ui.discover.model.ShareTripRequest
 
 class DiscoverRepository(
     private val api: DiscoverApi = DiscoverApiClient.api
@@ -22,4 +23,14 @@ class DiscoverRepository(
     ): List<DiscoverItem> =
         api.getFollowing(userId, page, size)
 
+
+    suspend fun shareTrip(req: ShareTripRequest): Result<Unit> {
+        return try {
+            api.shareTrip(req)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
+

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.datn.apptravel.ui.discover.model.DiscoverItem
 import com.datn.apptravel.ui.discover.network.ProfileApi
+import com.datn.apptravel.ui.discover.network.ProfileRepository
 import kotlinx.coroutines.launch
 
 class ProfileUserViewModel(
