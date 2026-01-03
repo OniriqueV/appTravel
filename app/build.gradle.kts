@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -42,6 +43,11 @@ android {
         buildConfigField("String", "GOOGLE_API_BASE_URL", "\"${localProperties.getProperty("GOOGLE_API_BASE_URL")}\"")
         buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_API_KEY", "\"${localProperties.getProperty("api_key")}\"")
         buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_CX", "\"${localProperties.getProperty("cx")}\"")
+        buildConfigField(
+            "String",
+            "GROQ_API_KEY",
+            "\"${localProperties.getProperty("GROQ_API_KEY")}\""
+        )
     }
 
     buildFeatures {

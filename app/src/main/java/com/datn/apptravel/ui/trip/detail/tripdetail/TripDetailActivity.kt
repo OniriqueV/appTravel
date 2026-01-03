@@ -32,6 +32,9 @@ import com.datn.apptravel.ui.trip.map.TripMapActivity
 import com.datn.apptravel.ui.trip.viewmodel.TripDetailViewModel
 import com.datn.apptravel.utils.ApiConfig
 import androidx.lifecycle.lifecycleScope
+import com.datn.apptravel.data.model.UserInsight
+import com.datn.apptravel.ui.trip.ai.AIInsightDialogFragment
+import com.datn.apptravel.ui.trip.ai.AISuggestionPreviewActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -58,7 +61,7 @@ class TripDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityTripDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
+
         // Hide UI initially until ownership is verified
         binding.root.visibility = View.GONE
 
@@ -66,7 +69,7 @@ class TripDetailActivity : AppCompatActivity() {
 
         // Get trip ID from intent
         tripId = intent.getStringExtra(TripsFragment.Companion.EXTRA_TRIP_ID)
-        
+
         Log.d("TripDetailActivity", "onCreate - tripId: $tripId, isReadOnly: $isReadOnly")
 
         setupUI()
@@ -115,6 +118,11 @@ class TripDetailActivity : AppCompatActivity() {
         binding.btnShareTrip.setOnClickListener {
             showShareDialog()
         }
+
+        binding.btnAiSuggest.setOnClickListener {
+            showAIInsightDialog()
+        }
+
         //Cho Discover_service
         if (isReadOnly) {
             binding.btnAddNewPlan.visibility = View.GONE
@@ -123,6 +131,34 @@ class TripDetailActivity : AppCompatActivity() {
 
         // Setup schedule RecyclerView
         setupRecyclerView()
+    }
+
+    private fun showAIInsightDialog() {
+        val dialog = AIInsightDialogFragment.newInstance()
+
+        dialog.setOnResultListener { insight ->
+            // User đã chọn answer hoặc skip
+            navigateToAISuggestions(insight)
+        }
+
+        dialog.show(supportFragmentManager, "AIInsightDialog")
+    }
+
+//    Navigate to AI Suggestion Preview Activity
+
+    private fun navigateToAISuggestions(userInsight: UserInsight?) {
+        val trip = currentTrip ?: run {
+            Toast.makeText(this, "Không tìm thấy thông tin chuyến đi", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val intent = Intent(this, AISuggestionPreviewActivity::class.java)
+        intent.putExtra("tripId", tripId)
+        intent.putExtra("startDate", trip.startDate)
+        intent.putExtra("endDate", trip.endDate)
+        intent.putExtra("userInsight", userInsight)
+
+        startActivity(intent)
     }
 
     private fun setupRecyclerView() {
@@ -136,12 +172,12 @@ class TripDetailActivity : AppCompatActivity() {
 
     private fun setupObservers() {
         Log.d("TripDetailActivity", "setupObservers - Setting up observers")
-        
+
         // Observe trip details
         viewModel.tripDetails.observe(this) { trip ->
             Log.d("TripDetailActivity", "Observer triggered - trip: ${trip?.id}, userId: ${trip?.userId}")
             currentTrip = trip
-            
+
             // Check if current user is the trip owner
             if (trip != null) {
                 Log.d("TripDetailActivity", "Checking ownership - trip is not null")
@@ -151,7 +187,7 @@ class TripDetailActivity : AppCompatActivity() {
                     Log.d("TripDetailActivity", "Trip user ID: ${trip.userId}")
                     Log.d("TripDetailActivity", "Is owner: ${user?.id == trip.userId}")
                     Log.d("TripDetailActivity", "isReadOnly: $isReadOnly")
-                    
+
                     if (user != null && user.id != trip.userId) {
                         // User is not the owner, redirect to map view immediately
                         Log.d("TripDetailActivity", "User is not owner, redirecting to map view immediately")
@@ -167,7 +203,7 @@ class TripDetailActivity : AppCompatActivity() {
                         // User is the owner, show the UI
                         binding.root.visibility = View.VISIBLE
                     }
-                    
+
                     updateUI(trip)
                 }
             } else {

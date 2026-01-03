@@ -84,7 +84,7 @@
             android:layout_height="match_parent"
             android:orientation="horizontal">
 
-            <!-- Trip Image - 35% width -->
+            <!-- Trip Image -->
             <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -94,7 +94,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:gravity="center">>
+                    android:gravity="center">
 
                     <ImageView
                         android:id="@+id/ivTripImage"
@@ -106,7 +106,7 @@
 
             </androidx.cardview.widget.CardView>
 
-            <!-- Trip Details - 65% width -->
+            <!-- Trip Details -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -149,9 +149,9 @@
 
     </androidx.cardview.widget.CardView>
 
-    <!-- Add New Plan Button with Save Icon -->
+    <!-- Action Buttons Row -->
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/addPlanButtonContainer"
+        android:id="@+id/actionButtonsContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -161,10 +161,12 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/trip_header">
 
+        <!-- Add New Plan Button -->
         <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnAddNewPlan"
             android:layout_width="0dp"
             android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
             android:background="@drawable/bg_date_tab_unselected"
             android:text="Add new plan"
             android:textAllCaps="false"
@@ -175,24 +177,106 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        
+        <!-- Share Button -->
         <ImageButton
             android:id="@+id/btnShareTrip"
             android:layout_width="70dp"
             android:layout_height="48dp"
-            android:layout_marginStart="8dp"
             android:background="@drawable/bg_date_tab_unselected"
-        android:contentDescription="Share trip"
-        app:srcCompat="@drawable/ic_share"
-        android:scaleType="centerInside"
-        android:adjustViewBounds="true"
-        app:tint="@color/black"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@id/btnAddNewPlan"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:padding="0dp"  />
+            android:contentDescription="Share trip"
+            android:scaleType="centerInside"
+            android:adjustViewBounds="true"
+            app:srcCompat="@drawable/ic_share"
+            app:tint="@color/black"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/btnAddNewPlan"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:padding="0dp" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- AI Suggest Button (NEW) -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/aiSuggestCard"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="12dp"
+        android:layout_marginEnd="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="3dp"
+        app:cardBackgroundColor="#FFFFFF"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/actionButtonsContainer">
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/btnAiSuggest"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:padding="16dp"
+            android:clickable="true"
+            android:focusable="true">
+
+            <!-- AI Icon -->
+            <TextView
+                android:id="@+id/tvAiIcon"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:gravity="center"
+                android:text="🤖"
+                android:textSize="24sp"
+                android:background="@drawable/bg_ai_icon"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent" />
+
+            <!-- Text Content -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/ivArrowRight"
+                app:layout_constraintStart_toEndOf="@id/tvAiIcon"
+                app:layout_constraintTop_toTopOf="parent">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="AI gợi ý kế hoạch"
+                    android:textColor="#111827"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Để AI tạo lịch trình cho bạn"
+                    android:textColor="#6B7280"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
+
+            <!-- Arrow Icon -->
+            <ImageView
+                android:id="@+id/ivArrowRight"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_arrow_forward"
+                app:tint="#9CA3AF"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+    </androidx.cardview.widget.CardView>
 
     <!-- Schedule RecyclerView -->
     <androidx.core.widget.NestedScrollView
@@ -201,8 +285,8 @@
         android:layout_marginTop="16dp"
         android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/addPlanButtonContainer">
-        
+        app:layout_constraintTop_toBottomOf="@id/aiSuggestCard">
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewSchedule"
             android:layout_width="match_parent"
@@ -210,10 +294,10 @@
             android:clipToPadding="false"
             android:nestedScrollingEnabled="false"
             android:paddingBottom="16dp" />
-            
+
     </androidx.core.widget.NestedScrollView>
-    
-    <!-- Empty Plans Illustration (hidden since we have schedule) -->
+
+    <!-- Empty Plans Illustration -->
     <LinearLayout
         android:id="@+id/empty_plans_container"
         android:layout_width="match_parent"
@@ -223,7 +307,7 @@
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/addPlanButtonContainer">
+        app:layout_constraintTop_toBottomOf="@id/aiSuggestCard">
 
         <ImageView
             android:layout_width="240dp"

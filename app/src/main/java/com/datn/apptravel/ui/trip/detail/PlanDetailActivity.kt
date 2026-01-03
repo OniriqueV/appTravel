@@ -360,7 +360,7 @@ class PlanDetailActivity : AppCompatActivity() {
                             PlanType.TRAIN -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity::class.java)
                             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
                             PlanType.CAMPING, PlanType.RELIGION -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity::class.java)
-                            PlanType.NONE -> {
+                            PlanType.NONE, PlanType.OTHER -> {
                                 Toast.makeText(this, "Cannot edit this plan type", Toast.LENGTH_SHORT).show()
                                 return@setOnMenuItemClickListener false
                             }

@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.datn.apptravel.data.api.TripApiService
 import com.datn.apptravel.data.model.Plan
+import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.model.request.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -12,6 +13,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
+import java.util.Locale
 
 class TripRepository(private val tripApiService: TripApiService) {
     
@@ -599,6 +601,141 @@ class TripRepository(private val tripApiService: TripApiService) {
             }
         } catch (e: Exception) {
             android.util.Log.e("TripRepository", "Error downloading and uploading image: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get all plans for a trip (for AI analysis)
+     * Returns all plans regardless of type
+     */
+    suspend fun getAllPlansForTrip(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body() ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get restaurant plans (for backward compatibility)
+     */
+    suspend fun getRestaurantDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    it.type == PlanType.RESTAURANT
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get restaurant plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get lodging plans
+     */
+    suspend fun getLodgingDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    it.type == PlanType.LODGING
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get lodging plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get activity plans
+     */
+    suspend fun getActivityDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    val type = it.type
+                    type == PlanType.ACTIVITY || type == PlanType.TOUR || type == PlanType.THEATER ||
+                            type == PlanType.SHOPPING || type == PlanType.CAMPING || type == PlanType.RELIGION
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get activity plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get flight plans
+     */
+    suspend fun getFlightDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    it.type == PlanType.FLIGHT
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get flight plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get boat plans
+     */
+    suspend fun getBoatDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    it.type== PlanType.BOAT
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get boat plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get car rental plans
+     */
+    suspend fun getCarRentalDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    val type = it.type
+                    type == PlanType.CAR_RENTAL || type == PlanType.TRAIN
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get car rental plans"))
+            }
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }
