@@ -1,7 +1,6 @@
 package com.datn.apptravel.di
 
-import com.datn.apptravel.data.api.ApiService
-import com.datn.apptravel.data.api.RetrofitClient
+import com.datn.apptravel.data.api.*
 import com.datn.apptravel.data.local.SessionManager
 import com.datn.apptravel.data.repository.*
 import com.datn.apptravel.ui.app.*
@@ -20,6 +19,12 @@ import com.google.firebase.firestore.FirebaseFirestore
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import com.datn.apptravel.data.remote.GeoapifyService
+import com.datn.apptravel.data.remote.GoogleImageService
+import com.datn.apptravel.data.remote.GroqService
+
 
 val appModule = module {
 
@@ -59,6 +64,47 @@ val appModule = module {
     single { TripRepository(get()) }
     single { ImageSearchRepository(get()) }
 
+    // ================= AI / GEO / IMAGE =================
+    single {
+        Retrofit.Builder()
+            .addConverterFactory(GsonConverterFactory.create())
+    }
+
+// Geoapify Service
+    single {
+        get<Retrofit.Builder>()
+            .baseUrl("https://api.geoapify.com/")
+            .build()
+            .create(GeoapifyService::class.java)
+    }
+
+// Google Image Service
+    single {
+        get<Retrofit.Builder>()
+            .baseUrl("https://www.googleapis.com/")
+            .build()
+            .create(GoogleImageService::class.java)
+    }
+
+// Groq AI Service - FAST & FREE
+    single {
+        Retrofit.Builder()
+            .baseUrl("https://api.groq.com/openai/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(GroqService::class.java)
+    }
+
+// AI Repository (với Groq)
+    single {
+        AIRepository(
+            geoapifyService = get(),
+            googleImageService = get(),
+            groqService = get()
+        )
+    }
+
+    // ================= VIEWMODELS =================
     /* ================= VIEWMODELS ================= */
     viewModel { SplashViewModel(get()) }
     viewModel { OnboardingViewModel() }
@@ -68,6 +114,9 @@ val appModule = module {
     viewModel { ProfileUserViewModel(profileRepository = get()) }
 
     // ===== PROFILE CỦA CHÍNH MÌNH =====
+    viewModel { ProfileUserViewModel(profileRepository = get()) }
+
+    // ===== profile của CHÍNH MÌNH =====
     viewModel { ProfileViewModel(get(), get()) }
     viewModel { EditProfileViewModel(get(), get()) }
     viewModel { ChangePasswordViewModel(get()) }
@@ -80,4 +129,12 @@ val appModule = module {
     viewModel { PlanSelectionViewModel(get()) }
     viewModel { PlanDetailViewModel(get()) }
     viewModel { TripMapViewModel(get()) }
+
+    // ===== AI =====
+    viewModel {
+        AISuggestionViewModel(
+            aiRepository = get(),
+            tripRepository = get()
+        )
+    }
 }

@@ -4,4 +4,23 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
+    <style name="FullScreenDialogAnimation">
+        <item name="android:windowEnterAnimation">@android:anim/slide_in_left</item>
+        <item name="android:windowExitAnimation">@android:anim/slide_out_right</item>
+    </style>
+
+    <style name="FullScreenDialogStyle" parent="Theme.MaterialComponents.Light.Dialog">
+        <!-- Full screen -->
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowNoTitle">true</item>
+
+        <!-- Background -->
+        <item name="android:windowBackground">@android:color/transparent</item>
+
+        <!-- Animation (optional) -->
+        <item name="android:windowAnimationStyle">@style/FullScreenDialogAnimation</item>
+    </style>
+
 </resources>

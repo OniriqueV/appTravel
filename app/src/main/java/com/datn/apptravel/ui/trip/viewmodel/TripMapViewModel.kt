@@ -225,9 +225,10 @@ class TripMapViewModel(
             PlanType.SHOPPING -> R.drawable.ic_shopping
             PlanType.CAMPING -> R.drawable.ic_location
             PlanType.RELIGION -> R.drawable.ic_religion
-            PlanType.NONE -> R.drawable.ic_globe
+            PlanType.NONE, PlanType.OTHER -> R.drawable.ic_globe
         }
     }
+
 
     fun drawRoute(plans: List<PlanLocation>) {
         if (plans.size < 2) {

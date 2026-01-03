@@ -317,7 +317,7 @@ class PlanSelectionActivity : AppCompatActivity() {
             PlanType.TRAIN -> Intent(this, CarRentalDetailActivity::class.java)
             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
             PlanType.CAMPING, PlanType.RELIGION -> Intent(this, ActivityDetailActivity::class.java)
-            PlanType.NONE, null -> {
+            PlanType.NONE,PlanType.OTHER, null -> {
                 Toast.makeText(this, "Please select a plan type first", Toast.LENGTH_SHORT).show()
                 return
             }
