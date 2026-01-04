@@ -14,5 +14,6 @@ data class Trip(
     val members: List<User>? = null, // List of members who can participate and manage plans in the trip
     val sharedWithUsers: List<User>? = null, // When isPublic="follower", share only with these users; empty = all followers
     val createdAt: String? = null,
-    val sharedAt: String? = null
+    val sharedAt: String? = null,
+    var hasConflict: Boolean = false // Client-side flag to indicate time conflict with another trip
 )

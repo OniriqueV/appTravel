@@ -1,9 +1,11 @@
 package com.datn.apptravel.ui.trip
 
+import android.app.Dialog
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -153,15 +155,18 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
         lifecycleScope.launch {
             authRepository.currentUser.collect { user ->
                 if (user != null) {
-                    // Kiểm tra xem userId hiện tại có trùng với userId của trip không
-                    if (user.id == trip.userId) {
-                        // Người dùng là chủ trip -> điều hướng đến TripDetailActivity
+                    val isOwner = user.id == trip.userId
+                    val isMember = trip.members?.any { it.id == user.id } == true
+                    
+                    // Owner hoặc member đều vào TripDetailActivity
+                    // TripDetailActivity sẽ tự xử lý permissions
+                    if (isOwner || isMember) {
                         val intent = Intent(requireContext(), TripDetailActivity::class.java).apply {
                             putExtra(EXTRA_TRIP_ID, trip.id.toString())
                         }
                         startActivity(intent)
                     } else {
-                        // Người dùng không phải chủ trip -> điều hướng đến TripMapActivity
+                        // Người ngoài (không phải owner/member) -> redirect sang TripMapActivity
                         val intent = Intent(requireContext(), com.datn.apptravel.ui.trip.map.TripMapActivity::class.java).apply {
                             putExtra("tripId", trip.id.toString())
                             putExtra("tripTitle", trip.title)
@@ -254,6 +259,15 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
         val dayProgress = root.findViewById<TextView>(R.id.tvDayProgress)
         val plansCount = root.findViewById<TextView>(R.id.tvPlansCount)
         val tripImage = root.findViewById<ImageView>(R.id.ivCurrentTripImage)
+        val warningBadge = root.findViewById<ImageView>(R.id.ivCurrentTripWarningBadge)
+        
+        // Show/hide warning badge based on conflict status
+        warningBadge?.visibility = if (trip.hasConflict) View.VISIBLE else View.GONE
+        
+        // Set click listener for warning badge
+        warningBadge?.setOnClickListener {
+            showConflictDialog()
+        }
         
         // Show badge and set text/color based on trip status
         liveBadge.visibility = View.VISIBLE
@@ -350,6 +364,20 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
         root.setOnClickListener {
             navigateToTripDetail(trip)
         }
+    }
+    
+    private fun showConflictDialog() {
+        val dialog = Dialog(requireContext())
+        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+        dialog.setContentView(R.layout.dialog_trip_conflict)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        
+        val ivClose = dialog.findViewById<ImageView>(R.id.ivClose)
+        ivClose.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialog.show()
     }
 
     override fun handleLoading(isLoading: Boolean) {

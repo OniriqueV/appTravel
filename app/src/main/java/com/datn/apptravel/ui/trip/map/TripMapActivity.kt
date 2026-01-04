@@ -38,7 +38,6 @@ class TripMapActivity : AppCompatActivity() {
     private val authRepository: AuthRepository by inject()
     private lateinit var scheduleAdapter: ScheduleTripMapAdapter
     private val plans = mutableListOf<PlanLocation>()
-    private val scheduleItems = mutableListOf<ScheduleItem>()
     private val routePolylines = mutableListOf<Polyline>()
     private val markers = mutableListOf<Marker>()
     private var highlightedPolyline: Polyline? = null
@@ -46,8 +45,6 @@ class TripMapActivity : AppCompatActivity() {
     private val setZoom = 14.0
     private var tripId: String? = null
     private var tripUserId: String? = null
-    private var startDate: String = ""
-    private var endDate: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,24 +66,16 @@ class TripMapActivity : AppCompatActivity() {
         viewModel.planLocations.observe(this) { planLocations ->
             plans.clear()
             plans.addAll(planLocations)
-
-            // Always update schedule items to show start/end dates even without plans
-            updateScheduleItems()
             
             if (plans.isNotEmpty()) {
                 addMarkersToMap()
                 viewModel.drawRoute(plans)
-            } else {
-                // No plans, but still show the map with trip location (if available)
-//                Toast.makeText(this, "No plans found for this trip", Toast.LENGTH_SHORT).show()
             }
         }
-
-        // Observe trip dates
-        viewModel.tripDates.observe(this) { (start, end) ->
-            startDate = start
-            endDate = end
-            updateScheduleItems()
+        
+        // Observe schedule items from ViewModel
+        viewModel.scheduleItems.observe(this) { items ->
+            scheduleAdapter.updateItems(items)
         }
 
         // Observe route segments
@@ -131,7 +120,7 @@ class TripMapActivity : AppCompatActivity() {
 
         // Setup RecyclerView with HORIZONTAL layout and scroll listener
         scheduleAdapter = ScheduleTripMapAdapter(
-            items = scheduleItems,
+            items = emptyList(),
             onPlanClick = { position, plan ->
                 onPlanClicked(position, plan)
                 //mở story (PlanMapDetail)
@@ -205,59 +194,6 @@ class TripMapActivity : AppCompatActivity() {
                 }
                 return@collect
             }
-        }
-    }
-
-    private fun updateScheduleItems() {
-        if (startDate.isEmpty() || endDate.isEmpty()) return
-
-        scheduleItems.clear()
-
-        // Add Start date
-        scheduleItems.add(
-            ScheduleItem.DateItem(
-                label = "Start",
-                date = formatDate(startDate)
-            )
-        )
-
-        // Add all plans with connectors between them
-        plans.forEachIndexed { index, plan ->
-            // Add connector before this plan (except for the first plan)
-            if (index > 0) {
-                scheduleItems.add(
-                    ScheduleItem.ConnectorItem(
-                        fromPlanPosition = index - 1,
-                        toPlanPosition = index
-                    )
-                )
-            }
-
-            scheduleItems.add(
-                ScheduleItem.PlanItem(
-                    plan = plan,
-                    position = index
-                )
-            )
-        }
-
-        // Add End date
-        scheduleItems.add(
-            ScheduleItem.DateItem(
-                label = "End",
-                date = formatDate(endDate)
-            )
-        )
-
-        scheduleAdapter.notifyDataSetChanged()
-    }
-
-    private fun formatDate(dateString: String): String {
-        return try {
-            val date = LocalDate.parse(dateString)
-            date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-        } catch (e: Exception) {
-            dateString
         }
     }
 
@@ -367,6 +303,8 @@ class TripMapActivity : AppCompatActivity() {
 
     private fun highlightVisiblePlan() {
         val layoutManager = binding.rvPlans.layoutManager as? LinearLayoutManager ?: return
+        val scheduleItems = scheduleAdapter.currentList
+        if (scheduleItems.isEmpty()) return
 
         // For horizontal scroll, find the item closest to center
         val recyclerViewCenter = binding.rvPlans.width / 2

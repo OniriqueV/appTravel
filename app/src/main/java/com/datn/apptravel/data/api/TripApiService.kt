@@ -28,6 +28,16 @@ interface TripApiService {
         @Path("userId") userId: String
     ): Response<List<Trip>>
     
+    @GET("api/trips/member/{userId}")
+    suspend fun getTripsByMemberId(
+        @Path("userId") userId: String
+    ): Response<List<Trip>>
+    
+    @GET("api/users/{userId}")
+    suspend fun getUserById(
+        @Path("userId") userId: String
+    ): Response<User>
+    
     @PUT("api/trips/{id}")
     suspend fun updateTrip(
         @Path("id") tripId: String,

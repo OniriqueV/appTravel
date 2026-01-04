@@ -162,7 +162,7 @@ class CreateTripViewModel(
         startDate: String,
         endDate: String,
         coverPhotoUri: String? = null,
-        isPublic: String = "none",
+        isPublic: String? = null,
         content: String? = null,
         tags: String? = null,
         sharedAt: String? = null,
@@ -200,18 +200,25 @@ class CreateTripViewModel(
                     return@launch // Stop if there's a conflict
                 }
                 
+                // Fetch existing trip to preserve sharing settings
+                val existingTripResult = tripRepository.getTripById(tripId)
+                var existingTrip: Trip? = null
+                existingTripResult.onSuccess { trip ->
+                    existingTrip = trip
+                }
+                
                 val request = CreateTripRequest(
                     userId = userId,
                     title = title,
                     startDate = formattedStartDate,
                     endDate = formattedEndDate,
-                    isPublic = isPublic,
+                    isPublic = isPublic ?: existingTrip?.isPublic ?: "none", // Preserve existing isPublic if not provided
                     coverPhoto = coverPhotoUri,
-                    content = content,
-                    tags = tags,
+                    content = content ?: existingTrip?.content, // Preserve existing content if not provided
+                    tags = tags ?: existingTrip?.tags, // Preserve existing tags if not provided
                     members = members,
-                    sharedWithUsers = null,
-                    sharedAt = sharedAt
+                    sharedWithUsers = existingTrip?.sharedWithUsers, // Always preserve sharedWithUsers
+                    sharedAt = sharedAt ?: existingTrip?.sharedAt // Preserve existing sharedAt if not provided
                 )
                 
                 val result = tripRepository.updateTrip(tripId, request)

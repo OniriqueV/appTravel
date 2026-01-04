@@ -19,9 +19,9 @@ class AIRepository(
     private val TAG = "AIRepository"
 
     // API Keys
-    private val GEOAPIFY_KEY = BuildConfig.GEOAPIFY_KEY
-    private val GOOGLE_API_KEY = BuildConfig.GOOGLE_API_KEY
-    private val GOOGLE_CX = BuildConfig.GOOGLE_CX
+    private val GEOAPIFY_KEY = BuildConfig.GEOAPIFY_API_KEY
+    private val GOOGLE_API_KEY = BuildConfig.api
+    private val GOOGLE_CX = BuildConfig.cx
     private val GROQ_API_KEY = BuildConfig.GROQ_API_KEY
 
     /**

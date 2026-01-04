@@ -18,13 +18,16 @@ import com.datn.apptravel.ui.trip.model.ScheduleItem
 import com.datn.apptravel.utils.ApiConfig
 
 class ScheduleTripMapAdapter(
-    private val items: List<ScheduleItem>,
+    private var items: List<ScheduleItem>,
     private val onPlanClick: (Int, PlanLocation) -> Unit,
     private val onConnectorClick: (Int, Int) -> Unit = { _, _ -> }
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     private var highlightedPlanPosition = -1
     private var highlightedConnectorPosition = -1
+    
+    val currentList: List<ScheduleItem>
+        get() = items
 
     companion object {
         private const val VIEW_TYPE_DATE = 0
@@ -67,6 +70,11 @@ class ScheduleTripMapAdapter(
     }
 
     override fun getItemCount(): Int = items.size
+    
+    fun updateItems(newItems: List<ScheduleItem>) {
+        items = newItems
+        notifyDataSetChanged()
+    }
 
     fun highlightPlan(planPosition: Int) {
         val oldPosition = highlightedPlanPosition

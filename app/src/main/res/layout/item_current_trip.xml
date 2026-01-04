@@ -33,6 +33,19 @@
                 android:src="@drawable/bg_a" />
 
         </androidx.cardview.widget.CardView>
+        
+        <!-- Warning Badge - top left for conflicting trips -->
+        <ImageView
+            android:id="@+id/ivCurrentTripWarningBadge"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            android:src="@drawable/ic_warning"
+            android:contentDescription="Trip conflict warning"
+            app:layout_constraintTop_toTopOf="@id/cvTripImage"
+            app:layout_constraintStart_toStartOf="@id/cvTripImage" />
 
         <!-- LIVE Badge - top right -->
         <LinearLayout

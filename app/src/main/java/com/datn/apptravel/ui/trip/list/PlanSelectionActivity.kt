@@ -193,16 +193,19 @@ class PlanSelectionActivity : AppCompatActivity() {
 
             binding.mapView.invalidate()
 
-            if (places.isNotEmpty()) {
-                val planType = viewModel.selectedPlanType.value?.displayName ?: "places"
-                Toast.makeText(this, "Found ${places.size} $planType", Toast.LENGTH_SHORT).show()
+            // Only show toast if plan type is not NONE
+            val currentPlanType = viewModel.selectedPlanType.value
+            if (currentPlanType != null && currentPlanType != PlanType.NONE) {
+                if (places.isNotEmpty()) {
+                    Toast.makeText(this, "Found ${places.size} ${currentPlanType.displayName}", Toast.LENGTH_SHORT).show()
 
-                // Center on first result if it's a search
-                places.firstOrNull()?.let {
-                    binding.mapView.controller.animateTo(GeoPoint(it.latitude, it.longitude))
+                    // Center on first result if it's a search
+                    places.firstOrNull()?.let {
+                        binding.mapView.controller.animateTo(GeoPoint(it.latitude, it.longitude))
+                    }
+                } else {
+                    Toast.makeText(this, "No places found", Toast.LENGTH_SHORT).show()
                 }
-            } else {
-                Toast.makeText(this, "No places found", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -317,7 +320,7 @@ class PlanSelectionActivity : AppCompatActivity() {
             PlanType.TRAIN -> Intent(this, CarRentalDetailActivity::class.java)
             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
             PlanType.CAMPING, PlanType.RELIGION -> Intent(this, ActivityDetailActivity::class.java)
-            PlanType.NONE,PlanType.OTHER, null -> {
+            PlanType.NONE, null -> {
                 Toast.makeText(this, "Please select a plan type first", Toast.LENGTH_SHORT).show()
                 return
             }

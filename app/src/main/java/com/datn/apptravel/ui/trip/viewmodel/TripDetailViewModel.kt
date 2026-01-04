@@ -172,7 +172,7 @@ class TripDetailViewModel(private val tripRepository: TripRepository) : BaseView
             PlanType.SHOPPING -> R.drawable.ic_shopping
             PlanType.CAMPING -> R.drawable.ic_location
             PlanType.RELIGION -> R.drawable.ic_religion
-            PlanType.NONE, PlanType.OTHER -> R.drawable.ic_globe
+            PlanType.NONE -> R.drawable.ic_globe
         }
     }
 

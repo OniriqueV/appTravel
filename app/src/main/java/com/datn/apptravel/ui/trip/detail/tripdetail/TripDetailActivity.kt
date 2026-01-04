@@ -63,13 +63,15 @@ class TripDetailActivity : AppCompatActivity() {
     private lateinit var scheduleDayAdapter: ScheduleDayAdapter
     private lateinit var memberAdapter: TripMemberSmallAdapter
 
+    private var isOwner = false // Track if current user is trip owner
+    private var isMember = false // Track if current user is trip member
     private var isReadOnly = false // Cho Discover
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityTripDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        
         // Hide UI initially until ownership is verified
         binding.root.visibility = View.GONE
 
@@ -77,7 +79,7 @@ class TripDetailActivity : AppCompatActivity() {
 
         // Get trip ID from intent
         tripId = intent.getStringExtra(TripsFragment.Companion.EXTRA_TRIP_ID)
-
+        
         Log.d("TripDetailActivity", "onCreate - tripId: $tripId, isReadOnly: $isReadOnly")
 
         setupUI()
@@ -176,7 +178,7 @@ class TripDetailActivity : AppCompatActivity() {
             adapter = scheduleDayAdapter
             layoutManager = LinearLayoutManager(this@TripDetailActivity)
         }
-
+        
         // Setup member RecyclerView
         memberAdapter = TripMemberSmallAdapter()
         binding.rvTripMembers.apply {
@@ -187,12 +189,13 @@ class TripDetailActivity : AppCompatActivity() {
 
     private fun setupObservers() {
         Log.d("TripDetailActivity", "setupObservers - Setting up observers")
-
+        
         // Observe trip details
         viewModel.tripDetails.observe(this) { trip ->
             Log.d("TripDetailActivity", "Observer triggered - trip: ${trip?.id}, userId: ${trip?.userId}")
+            Log.d("TripDetailActivity", "Full trip object: $trip")
             currentTrip = trip
-
+            
             // Check if current user is the trip owner
             if (trip != null) {
                 Log.d("TripDetailActivity", "Checking ownership - trip is not null")
@@ -200,26 +203,53 @@ class TripDetailActivity : AppCompatActivity() {
                     val user = authRepository.currentUser.first()
                     Log.d("TripDetailActivity", "Current user ID: ${user?.id}")
                     Log.d("TripDetailActivity", "Trip user ID: ${trip.userId}")
-                    Log.d("TripDetailActivity", "Is owner: ${user?.id == trip.userId}")
-                    Log.d("TripDetailActivity", "isReadOnly: $isReadOnly")
 
-                    if (user != null && user.id != trip.userId) {
-                        // User is not the owner, redirect to map view immediately
-                        Log.d("TripDetailActivity", "User is not owner, redirecting to map view immediately")
-                        val intent = Intent(this@TripDetailActivity, TripMapActivity::class.java)
-                        intent.putExtra("tripId", tripId)
-                        intent.putExtra("tripTitle", trip.title ?: "Trip")
-                        intent.putExtra("tripUserId", trip.userId)
-                        startActivity(intent)
-                        finish()
-                        return@launch
-                    } else {
-                        Log.d("TripDetailActivity", "User is owner, showing detail view")
-                        // User is the owner, show the UI
+                    if (user != null) {
+                        // Check if user is owner
+                        isOwner = user.id == trip.userId
+
+                        // Check if user is member
+                        Log.d("TripDetailActivity", "Trip members list: ${trip.members}")
+                        Log.d("TripDetailActivity", "Trip members count: ${trip.members?.size}")
+                        isMember = trip.members?.any { member ->
+                            Log.d("TripDetailActivity", "Checking member: ${member.id} vs user: ${user.id}")
+                            member.id == user.id
+                        } == true
+
+                        Log.d("TripDetailActivity", "Is owner: $isOwner")
+                        Log.d("TripDetailActivity", "Is member: $isMember")
+                        Log.d("TripDetailActivity", "isReadOnly: $isReadOnly")
+
+                        // If user is neither owner nor member and not in read-only mode
+                        // Redirect to TripMapActivity
+                        if (!isOwner && !isMember && !isReadOnly) {
+                            Log.d("TripDetailActivity", "User is neither owner nor member, redirecting to map view")
+                            val intent = Intent(this@TripDetailActivity, TripMapActivity::class.java)
+                            intent.putExtra("tripId", tripId)
+                            intent.putExtra("tripTitle", trip.title ?: "Trip")
+                            intent.putExtra("tripUserId", trip.userId)
+                            startActivity(intent)
+                            finish()
+                            return@launch
+                        }
+
+                        // Show the UI
                         binding.root.visibility = View.VISIBLE
-                    }
 
-                    updateUI(trip)
+                        // Update UI based on ownership/membership
+                        updateUIBasedOnPermissions()
+                        updateUI(trip)
+                    } else {
+                        // No user logged in, redirect to map
+                        if (!isReadOnly) {
+                            val intent = Intent(this@TripDetailActivity, TripMapActivity::class.java)
+                            intent.putExtra("tripId", tripId)
+                            intent.putExtra("tripTitle", trip.title ?: "Trip")
+                            intent.putExtra("tripUserId", trip.userId)
+                            startActivity(intent)
+                            finish()
+                        }
+                    }
                 }
             } else {
                 // Show UI if trip is null to display empty state
@@ -289,15 +319,51 @@ class TripDetailActivity : AppCompatActivity() {
         tvTripStartDate?.text = startDate
         tvTripEndDate?.text = endDate
 
-        // Display members
-        android.util.Log.d("TripDetailActivity", "Trip members: ${trip.members?.size ?: 0}")
-        if (!trip.members.isNullOrEmpty()) {
-            binding.layoutTravelBuddies.visibility = View.VISIBLE
-            memberAdapter.submitList(trip.members)
-            android.util.Log.d("TripDetailActivity", "Displaying ${trip.members.size} members")
-        } else {
-            binding.layoutTravelBuddies.visibility = View.GONE
-            android.util.Log.d("TripDetailActivity", "No members to display")
+        // Display members based on current user role
+        lifecycleScope.launch {
+            val currentUser = authRepository.currentUser.first()
+            val currentUserId = currentUser?.id
+
+            if (currentUserId != null && trip.userId != null) {
+                val displayList = mutableListOf<com.datn.apptravel.data.model.User>()
+
+                if (isOwner) {
+                    // Owner: Hiển thị tất cả members (không bao gồm bản thân)
+                    trip.members?.forEach { member ->
+                        if (member.id != currentUserId) {
+                            displayList.add(member)
+                        }
+                    }
+                    android.util.Log.d("TripDetailActivity", "Owner mode: Displaying ${displayList.size} members (excluding self)")
+                } else if (isMember) {
+                    // Member: Hiển thị owner đầu tiên, sau đó các members khác (không bao gồm bản thân)
+                    // Fetch owner info
+                    val ownerResult = tripRepository.getUserById(trip.userId)
+                    ownerResult.onSuccess { owner ->
+                        displayList.add(owner)
+                    }
+
+                    // Add other members (excluding self)
+                    trip.members?.forEach { member ->
+                        if (member.id != currentUserId) {
+                            displayList.add(member)
+                        }
+                    }
+                    android.util.Log.d("TripDetailActivity", "Member mode: Displaying owner + ${displayList.size - 1} other members (excluding self)")
+                }
+
+                // Update UI
+                if (displayList.isNotEmpty()) {
+                    binding.layoutTravelBuddies.visibility = View.VISIBLE
+                    memberAdapter.submitList(displayList)
+                    android.util.Log.d("TripDetailActivity", "Displaying ${displayList.size} users in travel buddies")
+                } else {
+                    binding.layoutTravelBuddies.visibility = View.GONE
+                    android.util.Log.d("TripDetailActivity", "No travel buddies to display")
+                }
+            } else {
+                binding.layoutTravelBuddies.visibility = View.GONE
+            }
         }
 
         // Load cover photo if available
@@ -317,6 +383,32 @@ class TripDetailActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Update UI visibility based on user permissions
+     */
+    private fun updateUIBasedOnPermissions() {
+        if (isOwner) {
+            // Owner has full access to everything
+            binding.btnShareTrip.visibility = View.VISIBLE
+            binding.btnMenu.visibility = View.VISIBLE
+            binding.btnAddNewPlan.visibility = View.VISIBLE
+            Log.d("TripDetailActivity", "Owner mode: Full access")
+        } else if (isMember) {
+            // Member can only add plans and view map
+            // Hide share button, edit and delete will be hidden in menu
+            binding.btnShareTrip.visibility = View.GONE
+            binding.btnMenu.visibility = View.VISIBLE
+            binding.btnAddNewPlan.visibility = View.VISIBLE
+            Log.d("TripDetailActivity", "Member mode: Limited access (add plan, view map only)")
+        } else if (isReadOnly) {
+            // Read-only mode (from Discover) - can only view
+            binding.btnAddNewPlan.visibility = View.GONE
+            binding.btnShareTrip.visibility = View.GONE
+            binding.btnMenu.visibility = View.VISIBLE
+            Log.d("TripDetailActivity", "Read-only mode: View only")
+        }
+    }
+
     private fun showTripMenu() {
         val popupMenu = PopupMenu(this, binding.btnMenu)
         popupMenu.menuInflater.inflate(R.menu.trip_detail_menu, popupMenu.menu)
@@ -324,8 +416,10 @@ class TripDetailActivity : AppCompatActivity() {
         // Hide "View Map" menu item if trip has ended
         val isTripEnded = isTripEnded()
         popupMenu.menu.findItem(R.id.action_view_map)?.isVisible = !isTripEnded
-        //Cho Discover_service
-        if (isReadOnly) {
+
+        // Only owner can edit and delete trip
+        // Members and read-only users cannot see these options
+        if (!isOwner) {
             popupMenu.menu.findItem(R.id.action_edit_trip)?.isVisible = false
             popupMenu.menu.findItem(R.id.action_delete_trip)?.isVisible = false
         }
@@ -413,7 +507,7 @@ class TripDetailActivity : AppCompatActivity() {
         var currentPrivacy = trip?.isPublic ?: "none"
         val existingTags = trip?.tags?.split(",")?.map { it.trim() } ?: emptyList()
         val existingContent = trip?.content ?: ""
-
+        
         // Track selected shared users
         val selectedSharedUserIds = mutableSetOf<String>()
         trip?.sharedWithUsers?.mapNotNull { it.id }?.let { selectedSharedUserIds.addAll(it) }
@@ -432,7 +526,7 @@ class TripDetailActivity : AppCompatActivity() {
             }
             dialogBinding.tvPrivacyValue.text = displayText
         }
-
+        
         // Update shared users section visibility
         fun updateSharedUsersVisibility() {
             if (currentPrivacy == "follower") {
@@ -465,10 +559,10 @@ class TripDetailActivity : AppCompatActivity() {
             }
             popupMenu.show()
         }
-
+        
         // Track selected shared users list
         val selectedSharedUsers = mutableListOf<com.datn.apptravel.data.model.User>()
-
+        
         // Setup shared users RecyclerView with member adapter
         lateinit var sharedUserAdapter: TripMemberAdapter
         sharedUserAdapter = TripMemberAdapter(
@@ -480,7 +574,7 @@ class TripDetailActivity : AppCompatActivity() {
                 Log.d("TripDetail", "Removed user, remaining: ${selectedSharedUsers.size}")
             }
         )
-
+        
         dialogBinding.rvSharedUsers.apply {
             adapter = sharedUserAdapter
             layoutManager = androidx.recyclerview.widget.LinearLayoutManager(
@@ -491,9 +585,9 @@ class TripDetailActivity : AppCompatActivity() {
             setHasFixedSize(false) // Allow height changes
             visibility = android.view.View.VISIBLE
         }
-
+        
         Log.d("TripDetail", "RecyclerView setup complete")
-
+        
         // Load existing shared users if available
         trip?.sharedWithUsers?.let { existingUsers ->
             selectedSharedUsers.addAll(existingUsers)
@@ -503,7 +597,7 @@ class TripDetailActivity : AppCompatActivity() {
                 Log.d("TripDetail", "Existing users loaded, adapter count: ${sharedUserAdapter.itemCount}")
             }
         }
-
+        
         // Handle select shared users button click
         dialogBinding.btnSelectSharedUsers.setOnClickListener {
             Log.d("TripDetail", "Select shared users button clicked")
@@ -520,7 +614,7 @@ class TripDetailActivity : AppCompatActivity() {
                         Log.d("TripDetail", "User already in list, skipping")
                     }
                 }
-
+                
                 // Update RecyclerView with new list
                 val newList = ArrayList(selectedSharedUsers)
                 Log.d("TripDetail", "Submitting list with ${newList.size} users to adapter")
@@ -747,7 +841,7 @@ class TripDetailActivity : AppCompatActivity() {
             navigateToPlanSelection()
         }
     }
-
+    
     /**
      * Show follower selection dialog for sharing with specific users
      */
@@ -755,10 +849,10 @@ class TripDetailActivity : AppCompatActivity() {
         val dialogBinding = DialogSelectFollowersBinding.inflate(layoutInflater)
         val dialog = BottomSheetDialog(this)
         dialog.setContentView(dialogBinding.root)
-
+        
         // Track selected users (single select mode for adding one at a time)
         val selectedUsers = mutableListOf<com.datn.apptravel.data.model.User>()
-
+        
         // Setup follower RecyclerView with single-select adapter
         val followerAdapter = FollowerSelectionAdapter(
             onAddMember = { user ->
@@ -768,18 +862,18 @@ class TripDetailActivity : AppCompatActivity() {
             },
             selectedMembers = emptyList() // No pre-selection needed
         )
-
+        
         dialogBinding.rvFollowers.apply {
             layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this@TripDetailActivity)
             adapter = followerAdapter
         }
-
+        
         // Load followers
         lifecycleScope.launch {
             try {
                 val currentUserId = auth.currentUser?.uid ?: return@launch
                 val result = tripRepository.getFollowers(currentUserId)
-
+                
                 result.onSuccess { followers ->
                     if (followers.isEmpty()) {
                         dialogBinding.rvFollowers.visibility = android.view.View.GONE
@@ -796,12 +890,12 @@ class TripDetailActivity : AppCompatActivity() {
                 Toast.makeText(this@TripDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
-
+        
         // Close button
         dialogBinding.ivClose.setOnClickListener {
             dialog.dismiss()
         }
-
+        
         dialog.show()
     }
 

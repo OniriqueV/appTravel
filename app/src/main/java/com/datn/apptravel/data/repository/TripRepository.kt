@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import com.datn.apptravel.data.api.TripApiService
 import com.datn.apptravel.data.model.Plan
+import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.model.request.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -54,6 +55,24 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
     
+    suspend fun getUserById(userId: String): Result<com.datn.apptravel.data.model.User> {
+        return try {
+            val response = tripApiService.getUserById(userId)
+            if (response.isSuccessful) {
+                val user = response.body()
+                if (user != null) {
+                    Result.success(user)
+                } else {
+                    Result.failure(Exception("User not found"))
+                }
+            } else {
+                Result.failure(Exception("Failed to get user"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun getTripsByUserId(userId: String): Result<List<Trip>> {
         return try {
             val response = tripApiService.getTripsByUserId(userId)
@@ -62,6 +81,20 @@ class TripRepository(private val tripApiService: TripApiService) {
                 Result.success(trips)
             } else {
                 Result.failure(Exception("Failed to get trips"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getTripsByMemberId(userId: String): Result<List<Trip>> {
+        return try {
+            val response = tripApiService.getTripsByMemberId(userId)
+            if (response.isSuccessful) {
+                val trips = response.body() ?: emptyList()
+                Result.success(trips)
+            } else {
+                Result.failure(Exception("Failed to get member trips"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -624,22 +657,22 @@ class TripRepository(private val tripApiService: TripApiService) {
 
     /**
      * Get restaurant plans (for backward compatibility)
-     */
-    suspend fun getRestaurantDetails(tripId: String): Result<List<Plan>> {
-        return try {
-            val response = tripApiService.getPlansByTripId(tripId)
-            if (response.isSuccessful) {
-                val plans = response.body()?.filter {
-                    it.type == PlanType.RESTAURANT
-                } ?: emptyList()
-                Result.success(plans)
-            } else {
-                Result.failure(Exception("Failed to get restaurant plans"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
+//     */
+//    suspend fun getRestaurantDetails(tripId: String): Result<List<Plan>> {
+//        return try {
+//            val response = tripApiService.getPlansByTripId(tripId)
+//            if (response.isSuccessful) {
+//                val plans = response.body()?.filter {
+//                    it.type == PlanType.RESTAURANT
+//                } ?: emptyList()
+//                Result.success(plans)
+//            } else {
+//                Result.failure(Exception("Failed to get restaurant plans"))
+//            }
+//        } catch (e: Exception) {
+//            Result.failure(e)
+//        }
+//    }
 
     /**
      * Get lodging plans

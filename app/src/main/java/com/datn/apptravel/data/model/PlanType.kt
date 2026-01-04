@@ -21,9 +21,7 @@ enum class PlanType(
     CAMPING("Camping", R.drawable.ic_location, "camping.camp_site"),
     THEATER("Theater", R.drawable.ic_theater, "entertainment.culture.theatre"),
     SHOPPING("Shopping", R.drawable.ic_shopping, "commercial.shopping_mall"),
-    ACTIVITY("Activity", R.drawable.ic_attraction, "leisure"),
-
-    OTHER("Other", R.drawable.ic_globe, "");
+    ACTIVITY("Activity", R.drawable.ic_attraction, "leisure");
 
     companion object {
 
@@ -32,18 +30,16 @@ enum class PlanType(
             return listOf(NONE, LODGING, FLIGHT)
         }
 
-        /** Parse từ AI / backend */
         fun fromString(type: String?): PlanType {
-            if (type.isNullOrBlank()) return OTHER
+            if (type.isNullOrBlank()) return NONE
 
             return values().firstOrNull {
                 it.name.equals(type, true) ||
                         it.displayName.equals(type, true)
-            } ?: OTHER
+            } ?: NONE
         }
     }
 
-    /** ✅ CHỈ THÊM HÀM NÀY */
     fun toDisplayName(): String {
         return when (this) {
             NONE -> "Khác"
@@ -59,7 +55,6 @@ enum class PlanType(
             THEATER -> "Rạp chiếu phim"
             SHOPPING -> "Mua sắm"
             ACTIVITY -> "Hoạt động"
-            OTHER -> "Khác"
         }
     }
 }

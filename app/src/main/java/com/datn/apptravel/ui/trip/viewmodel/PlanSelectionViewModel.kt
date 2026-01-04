@@ -105,6 +105,9 @@ class PlanSelectionViewModel(
         val currentPlanType = _selectedPlanType.value ?: PlanType.NONE
 
         if (currentPlanType == PlanType.NONE) {
+            // Just save the search location without showing any message
+            searchLatitude = null
+            searchLongitude = null
             _places.value = emptyList()
             setLoading(false)
             return
@@ -159,8 +162,7 @@ class PlanSelectionViewModel(
                                 }
                             }
                         } else {
-                            // No plan type selected - just save location and show message
-                            _errorMessage.value = "Location found: ${searchedPlace.name}. Now select a plan type to search."
+                            // No plan type selected - just save location without showing any message
                             _places.value = emptyList()
                             setLoading(false)
                         }

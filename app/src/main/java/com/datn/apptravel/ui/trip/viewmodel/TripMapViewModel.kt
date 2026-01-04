@@ -4,13 +4,16 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.datn.apptravel.BuildConfig
 import com.datn.apptravel.R
 import com.datn.apptravel.data.api.OSRMRetrofitClient
 import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.PlanType
+import com.datn.apptravel.data.model.User
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.ui.base.BaseViewModel
 import com.datn.apptravel.ui.trip.model.PlanLocation
+import com.datn.apptravel.ui.trip.model.ScheduleItem
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -21,6 +24,7 @@ import org.osmdroid.util.GeoPoint
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -33,6 +37,9 @@ class TripMapViewModel(
 
     private val _tripDates = MutableLiveData<Pair<String, String>>()
     val tripDates: LiveData<Pair<String, String>> = _tripDates
+    
+    private val _scheduleItems = MutableLiveData<List<ScheduleItem>>()
+    val scheduleItems: LiveData<List<ScheduleItem>> = _scheduleItems
 
     private val _routeSegments = MutableLiveData<List<List<GeoPoint>>>()
     val routeSegments: LiveData<List<List<GeoPoint>>> = _routeSegments
@@ -54,9 +61,11 @@ class TripMapViewModel(
             try {
                 setLoading(true)
 
-                // Load trip to get start/end dates
+                // Load trip to get start/end dates and members
+                var tripMembers: List<User>? = null
                 tripRepository.getTripById(tripId).onSuccess { trip ->
                     _tripDates.value = Pair(trip.startDate, trip.endDate)
+                    tripMembers = trip.members
                 }
 
                 // Load plans from API
@@ -68,9 +77,14 @@ class TripMapViewModel(
                         return@onSuccess
                     }
 
-                    // Filter plans based on ownership
-                    val filteredPlans = if (currentUserId != null && tripUserId != null && currentUserId != tripUserId) {
-                        // User is not owner - only show plans that have already occurred
+                    // Check if current user is owner or member
+                    val isOwner = currentUserId != null && tripUserId != null && currentUserId == tripUserId
+                    val isMember = currentUserId != null && tripMembers?.any { it.id == currentUserId } == true
+                    
+                    // Filter plans based on permissions
+                    val filteredPlans = if (!isOwner && !isMember) {
+                        // User is neither owner nor member - only show plans that have already occurred
+                        // Plan của hôm nay chỉ hiển thị vào ngày mai (planDate < today)
                         val today = java.time.LocalDate.now()
                         apiPlans.filter { plan ->
                             try {
@@ -79,15 +93,16 @@ class TripMapViewModel(
                                     DateTimeFormatter.ISO_DATE_TIME
                                 )
                                 val planDate = planDateTime.toLocalDate()
-                                // Show plans from today or before (planDate <= today)
-                                !planDate.isAfter(today)
+                                // Show only plans before today (planDate < today)
+                                // Plans của hôm nay (planDate == today) sẽ hiển thị vào ngày mai
+                                planDate.isBefore(today)
                             } catch (e: Exception) {
                                 Log.e("TripMapViewModel", "Error parsing date for plan: ${plan.title}", e)
                                 false // Don't show plans with invalid dates
                             }
                         }
                     } else {
-                        // User is owner or no user info - show all plans
+                        // User is owner or member - show all plans
                         apiPlans
                     }
 
@@ -101,6 +116,9 @@ class TripMapViewModel(
                             planLocations[0].longitude
                         )
                     }
+                    
+                    // Update schedule items after plans are loaded
+                    updateScheduleItems()
                 }.onFailure { error ->
                     setError("Failed to load plans: ${error.message}")
                     Log.e("TripMapViewModel", "Error loading plans", error)
@@ -180,7 +198,7 @@ class TripMapViewModel(
         return try {
             // Use Nominatim (OpenStreetMap) geocoding API
             val response = withContext(Dispatchers.IO) {
-                val baseUrl = com.datn.apptravel.BuildConfig.NOMINATIM_BASE_URL
+                val baseUrl = BuildConfig.NOMINATIM_BASE_URL
                 val url = "${baseUrl}search?q=${
                     URLEncoder.encode(address, "UTF-8")
                 }&format=json&limit=1"
@@ -225,7 +243,7 @@ class TripMapViewModel(
             PlanType.SHOPPING -> R.drawable.ic_shopping
             PlanType.CAMPING -> R.drawable.ic_location
             PlanType.RELIGION -> R.drawable.ic_religion
-            PlanType.NONE, PlanType.OTHER -> R.drawable.ic_globe
+            PlanType.NONE -> R.drawable.ic_globe
         }
     }
 
@@ -343,5 +361,63 @@ class TripMapViewModel(
             GeoPoint(fromPlan.latitude, fromPlan.longitude),
             GeoPoint(toPlan.latitude, toPlan.longitude)
         )
+    }
+    
+    private fun updateScheduleItems() {
+        val dates = _tripDates.value ?: return
+        val plans = _planLocations.value ?: emptyList()
+        val startDate = dates.first
+        val endDate = dates.second
+        
+        if (startDate.isEmpty() || endDate.isEmpty()) return
+
+        val items = mutableListOf<ScheduleItem>()
+
+        // Add Start date
+        items.add(
+            ScheduleItem.DateItem(
+                label = "Start",
+                date = formatDate(startDate)
+            )
+        )
+
+        // Add all plans with connectors between them
+        plans.forEachIndexed { index, plan ->
+            // Add connector before this plan (except for the first plan)
+            if (index > 0) {
+                items.add(
+                    ScheduleItem.ConnectorItem(
+                        fromPlanPosition = index - 1,
+                        toPlanPosition = index
+                    )
+                )
+            }
+
+            items.add(
+                ScheduleItem.PlanItem(
+                    plan = plan,
+                    position = index
+                )
+            )
+        }
+
+        // Add End date
+        items.add(
+            ScheduleItem.DateItem(
+                label = "End",
+                date = formatDate(endDate)
+            )
+        )
+
+        _scheduleItems.value = items
+    }
+    
+    private fun formatDate(dateString: String): String {
+        return try {
+            val date = LocalDate.parse(dateString)
+            date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        } catch (e: Exception) {
+            dateString
+        }
     }
 }
