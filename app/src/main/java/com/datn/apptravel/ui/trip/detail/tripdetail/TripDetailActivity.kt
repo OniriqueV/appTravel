@@ -38,9 +38,7 @@ import com.datn.apptravel.utils.ApiConfig
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.firebase.auth.FirebaseAuth
-import com.datn.apptravel.data.model.UserInsight
-import com.datn.apptravel.ui.trip.ai.AIInsightDialogFragment
-import com.datn.apptravel.ui.trip.ai.AISuggestionPreviewActivity
+import com.datn.apptravel.ui.trip.ai.AIDialogFragment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -130,45 +128,56 @@ class TripDetailActivity : AppCompatActivity() {
         }
 
         binding.btnAiSuggest.setOnClickListener {
-            showAIInsightDialog()
+            showAISimpleInputDialog()
         }
 
         //Cho Discover_service
         if (isReadOnly) {
             binding.btnAddNewPlan.visibility = View.GONE
             binding.btnShareTrip.visibility = View.GONE
+            binding.btnAiSuggest.visibility = View.GONE
         }
 
         // Setup schedule RecyclerView
         setupRecyclerView()
     }
 
-    private fun showAIInsightDialog() {
-        val dialog = AIInsightDialogFragment.newInstance()
+    private fun showAISimpleInputDialog() {
+        val dialog = AIDialogFragment.newInstance()
 
-        dialog.setOnResultListener { insight ->
-            // User đã chọn answer hoặc skip
-            navigateToAISuggestions(insight)
+        dialog.setOnResultListener { cities ->
+            // User đã nhập các thành phố và dates
+            generateAIPlansForCities(cities)
         }
 
-        dialog.show(supportFragmentManager, "AIInsightDialog")
+        dialog.show(supportFragmentManager, "AISimpleInputDialog")
     }
 
-//    Navigate to AI Suggestion Preview Activity
-
-    private fun navigateToAISuggestions(userInsight: UserInsight?) {
-        val trip = currentTrip ?: run {
-            Toast.makeText(this, "Không tìm thấy thông tin chuyến đi", Toast.LENGTH_SHORT).show()
+    private fun generateAIPlansForCities(cities: List<com.datn.apptravel.data.model.CityPlan>) {
+        if (cities.isEmpty()) {
+            Toast.makeText(this, "Vui lòng thêm ít nhất 1 thành phố", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val intent = Intent(this, AISuggestionPreviewActivity::class.java)
-        intent.putExtra("tripId", tripId)
-        intent.putExtra("startDate", trip.startDate)
-        intent.putExtra("endDate", trip.endDate)
-        intent.putExtra("userInsight", userInsight)
+        // Show loading
+        Toast.makeText(this, "Đang tạo lịch trình với AI...", Toast.LENGTH_LONG).show()
 
-        startActivity(intent)
+        // Call ViewModel to generate plans (without saving)
+        viewModel.generateAIPlansForCities(cities)
+    }
+
+    private fun showAIPlanPreviewDialog(plans: List<com.datn.apptravel.data.model.AISuggestedPlan>) {
+        val dialog = com.datn.apptravel.ui.trip.ai.AIPlanPreviewDialogFragment.newInstance()
+        
+        dialog.setPlans(plans)
+        dialog.setOnSaveListener { confirmedPlans ->
+            // User confirmed, now save to Firestore
+            val currentTripId = tripId ?: return@setOnSaveListener
+            Toast.makeText(this, "Đang lưu ${confirmedPlans.size} kế hoạch...", Toast.LENGTH_SHORT).show()
+            viewModel.saveAIPlans(this, currentTripId, confirmedPlans)
+        }
+        
+        dialog.show(supportFragmentManager, "AIPlanPreviewDialog")
     }
 
     private fun setupRecyclerView() {
@@ -272,6 +281,42 @@ class TripDetailActivity : AppCompatActivity() {
             } else {
                 binding.emptyPlansContainer.visibility = View.VISIBLE
                 binding.recyclerViewSchedule.visibility = View.GONE
+            }
+        }
+
+        // Observe AI generation status
+        viewModel.aiGenerationStatus.observe(this) { status ->
+            when (status) {
+                is TripDetailViewModel.AIGenerationStatus.Loading -> {
+                    // Show loading (Toast already shown in generateAIPlans)
+                }
+                is TripDetailViewModel.AIGenerationStatus.Success -> {
+                    Toast.makeText(
+                        this,
+                        "Đã tạo ${status.plansCreated} kế hoạch thành công!",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    viewModel.resetAIGenerationStatus()
+                }
+                is TripDetailViewModel.AIGenerationStatus.Error -> {
+                    Toast.makeText(
+                        this,
+                        "Lỗi: ${status.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    viewModel.resetAIGenerationStatus()
+                }
+                is TripDetailViewModel.AIGenerationStatus.Idle -> {
+                    // Do nothing
+                }
+            }
+        }
+
+        // Observe AI generated plans for preview
+        viewModel.aiGeneratedPlans.observe(this) { plans ->
+            if (plans != null && plans.isNotEmpty()) {
+                // Show preview dialog with generated plans
+                showAIPlanPreviewDialog(plans)
             }
         }
     }
@@ -383,9 +428,6 @@ class TripDetailActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Update UI visibility based on user permissions
-     */
     private fun updateUIBasedOnPermissions() {
         if (isOwner) {
             // Owner has full access to everything
@@ -805,9 +847,6 @@ class TripDetailActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    /**
-     * Check if the trip has ended
-     */
     private fun isTripEnded(): Boolean {
         val trip = currentTrip ?: return false
         return try {
@@ -820,9 +859,6 @@ class TripDetailActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Update plan button text and icon based on trip status
-     */
     private fun updatePlanButtonBasedOnTripStatus(trip: Trip) {
         if (isTripEnded()) {
             binding.btnAddNewPlan.text = "View Map"
@@ -831,9 +867,6 @@ class TripDetailActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Handle plan button click - navigate to different screen based on trip status
-     */
     private fun handlePlanButtonClick() {
         if (isTripEnded()) {
             navigateToMapView()
@@ -841,10 +874,7 @@ class TripDetailActivity : AppCompatActivity() {
             navigateToPlanSelection()
         }
     }
-    
-    /**
-     * Show follower selection dialog for sharing with specific users
-     */
+
     private fun showFollowerSelectionDialog(onUsersSelected: (List<com.datn.apptravel.data.model.User>) -> Unit) {
         val dialogBinding = DialogSelectFollowersBinding.inflate(layoutInflater)
         val dialog = BottomSheetDialog(this)

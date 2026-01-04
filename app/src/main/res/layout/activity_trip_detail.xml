@@ -192,9 +192,28 @@
             android:textColor="@color/black"
             android:textSize="16sp"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/btnShareTrip"
+            app:layout_constraintEnd_toStartOf="@+id/btnAiSuggest"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <!-- AI Suggest Button -->
+        <ImageButton
+            android:id="@+id/btnAiSuggest"
+            android:layout_width="70dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/bg_date_tab_unselected"
+            app:srcCompat="@drawable/ic_ai"
+            android:contentDescription="AI suggest"
+            android:scaleType="centerInside"
+            android:adjustViewBounds="true"
+            android:text="🤖"
+            android:textSize="24sp"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toEndOf="@id/btnAddNewPlan"
+            app:layout_constraintEnd_toStartOf="@id/btnShareTrip"
+            android:padding="0dp" />
 
         <!-- Share Button -->
         <ImageButton
@@ -209,93 +228,13 @@
             app:tint="@color/black"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toEndOf="@id/btnAddNewPlan"
+            app:layout_constraintStart_toEndOf="@id/btnAiSuggest"
             app:layout_constraintEnd_toEndOf="parent"
             android:padding="0dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- AI Suggest Button (NEW) -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/aiSuggestCard"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="16dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="3dp"
-        app:cardBackgroundColor="#FFFFFF"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/actionButtonsContainer">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/btnAiSuggest"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="?attr/selectableItemBackground"
-            android:padding="16dp"
-            android:clickable="true"
-            android:focusable="true">
-
-            <!-- AI Icon -->
-            <TextView
-                android:id="@+id/tvAiIcon"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:gravity="center"
-                android:text="🤖"
-                android:textSize="24sp"
-                android:background="@drawable/bg_ai_icon"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent" />
-
-            <!-- Text Content -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="8dp"
-                android:orientation="vertical"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/ivArrowRight"
-                app:layout_constraintStart_toEndOf="@id/tvAiIcon"
-                app:layout_constraintTop_toTopOf="parent">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="AI gợi ý kế hoạch"
-                    android:textColor="#111827"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Để AI tạo lịch trình cho bạn"
-                    android:textColor="#6B7280"
-                    android:textSize="13sp" />
-
-            </LinearLayout>
-
-            <!-- Arrow Icon -->
-            <ImageView
-                android:id="@+id/ivArrowRight"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_arrow_forward"
-                app:tint="#9CA3AF"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-    </androidx.cardview.widget.CardView>
 
     <!-- Schedule RecyclerView -->
     <androidx.core.widget.NestedScrollView
@@ -304,7 +243,7 @@
         android:layout_marginTop="16dp"
         android:fillViewport="true"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/aiSuggestCard">
+        app:layout_constraintTop_toBottomOf="@id/actionButtonsContainer">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewSchedule"
@@ -326,7 +265,7 @@
         android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/aiSuggestCard">
+        app:layout_constraintTop_toBottomOf="@id/actionButtonsContainer">
 
         <ImageView
             android:layout_width="240dp"

@@ -70,6 +70,9 @@ class TripMapViewModel(
 
                 // Load plans from API
                 tripRepository.getPlansByTripId(tripId).onSuccess { apiPlans ->
+                    Log.d("TripMapViewModel", "=== PLAN LOADING DEBUG ===")
+                    Log.d("TripMapViewModel", "Total plans from API: ${apiPlans.size}")
+                    
                     if (apiPlans.isEmpty()) {
 //                        setError("No plans found for this trip")
                         _planLocations.value = emptyList()
@@ -81,12 +84,14 @@ class TripMapViewModel(
                     val isOwner = currentUserId != null && tripUserId != null && currentUserId == tripUserId
                     val isMember = currentUserId != null && tripMembers?.any { it.id == currentUserId } == true
                     
+                    Log.d("TripMapViewModel", "User permissions - isOwner: $isOwner, isMember: $isMember")
+                    
                     // Filter plans based on permissions
                     val filteredPlans = if (!isOwner && !isMember) {
                         // User is neither owner nor member - only show plans that have already occurred
                         // Plan của hôm nay chỉ hiển thị vào ngày mai (planDate < today)
                         val today = java.time.LocalDate.now()
-                        apiPlans.filter { plan ->
+                        val filtered = apiPlans.filter { plan ->
                             try {
                                 val planDateTime = LocalDateTime.parse(
                                     plan.startTime,
@@ -101,13 +106,18 @@ class TripMapViewModel(
                                 false // Don't show plans with invalid dates
                             }
                         }
+                        Log.d("TripMapViewModel", "After date filtering (non-owner): ${filtered.size} plans")
+                        filtered
                     } else {
                         // User is owner or member - show all plans
+                        Log.d("TripMapViewModel", "Owner/member mode - showing all ${apiPlans.size} plans")
                         apiPlans
                     }
 
                     // Convert API plans to PlanLocation with geocoding
                     val planLocations = convertPlansToLocations(filteredPlans, packageName)
+                    Log.d("TripMapViewModel", "After coordinate conversion: ${planLocations.size} valid locations")
+                    Log.d("TripMapViewModel", "Plans lost in conversion: ${filteredPlans.size - planLocations.size}")
                     _planLocations.value = planLocations
 
                     if (planLocations.isNotEmpty()) {
@@ -138,7 +148,10 @@ class TripMapViewModel(
         packageName: String
     ): List<PlanLocation> {
         return withContext(Dispatchers.IO) {
-            apiPlans.mapNotNull { plan ->
+            var successCount = 0
+            var failedCount = 0
+            
+            val results = apiPlans.mapNotNull { plan ->
                 try {
                     // Parse time from ISO format
                     val time = try {
@@ -148,29 +161,50 @@ class TripMapViewModel(
                         )
                         String.format("%02d:%02d", dateTime.hour, dateTime.minute)
                     } catch (e: Exception) {
+                        Log.w("TripMapViewModel", "Time parse error for ${plan.title}: ${e.message}")
                         "00:00"
                     }
 
                     // Get coordinates from location field (format: "latitude,longitude")
                     val locationStr = plan.location
+                    Log.d("TripMapViewModel", "Plan: ${plan.title}, location field: '$locationStr', address: '${plan.address}'")
+                    
                     val coordinates = if (!locationStr.isNullOrBlank()) {
                         try {
                             val parts = locationStr.split(",")
                             if (parts.size == 2) {
-                                Pair(parts[0].trim().toDouble(), parts[1].trim().toDouble())
-                            } else null
+                                val lat = parts[0].trim().toDouble()
+                                val lon = parts[1].trim().toDouble()
+                                Log.d("TripMapViewModel", "✓ Parsed coordinates from location field: ($lat, $lon)")
+                                Pair(lat, lon)
+                            } else {
+                                Log.w("TripMapViewModel", "✗ Invalid location format (not 2 parts): $locationStr")
+                                null
+                            }
                         } catch (e: Exception) {
-                            Log.e("TripMapViewModel", "Error parsing location: $locationStr", e)
+                            Log.e("TripMapViewModel", "✗ Error parsing location '$locationStr': ${e.message}")
                             null
                         }
                     } else {
                         // Fallback: geocode from address if location is not available
-                        geocodeLocation(plan.address ?: plan.title, packageName)
+                        Log.d("TripMapViewModel", "Location field empty, trying geocode for: ${plan.address ?: plan.title}")
+                        val geocoded = geocodeLocation(plan.address ?: plan.title, packageName)
+                        if (geocoded != null) {
+                            Log.d("TripMapViewModel", "✓ Geocoded: ${geocoded.first}, ${geocoded.second}")
+                        } else {
+                            Log.w("TripMapViewModel", "✗ Geocoding failed for: ${plan.address ?: plan.title}")
+                        }
+                        geocoded
                     }
 
                     if (coordinates != null) {
+                        successCount++
                         PlanLocation(
-                            planId = plan.id ?: return@mapNotNull null,
+                            planId = plan.id ?: run {
+                                Log.e("TripMapViewModel", "✗ Plan has no ID: ${plan.title}")
+                                failedCount++
+                                return@mapNotNull null
+                            },
                             name = plan.title,
                             time = time,
                             detail = plan.address ?: "",
@@ -180,14 +214,19 @@ class TripMapViewModel(
                             photoUrl = plan.photoUrl
                         )
                     } else {
-                        Log.w("TripMapViewModel", "Could not get coordinates for: ${plan.title}")
+                        failedCount++
+                        Log.w("TripMapViewModel", "✗ Could not get coordinates for: ${plan.title}")
                         null
                     }
                 } catch (e: Exception) {
-                    Log.e("TripMapViewModel", "Error converting plan: ${plan.title}", e)
+                    failedCount++
+                    Log.e("TripMapViewModel", "✗ Error converting plan: ${plan.title}", e)
                     null
                 }
             }
+            
+            Log.d("TripMapViewModel", "Conversion summary: $successCount success, $failedCount failed out of ${apiPlans.size} plans")
+            results
         }
     }
 

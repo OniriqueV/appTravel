@@ -138,14 +138,6 @@
             android:theme="@style/Theme.AppTravel.PostDetail"
             android:exported="false" />
 
-        <!-- ===== AI Suggestion Activities ===== -->
-        <activity
-            android:name=".ui.trip.ai.AISuggestionPreviewActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain"
-            android:windowSoftInputMode="adjustResize" />
-
             android:name=".ui.discover.PlanMap.PlanMapDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBar" />

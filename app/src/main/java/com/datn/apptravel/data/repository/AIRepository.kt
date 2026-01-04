@@ -12,167 +12,15 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class AIRepository(
-    private val geoapifyService: GeoapifyService,
-    private val googleImageService: GoogleImageService,
-    private val groqService: GroqService
+    private val groqService: GroqService,
+    private val imageSearchRepository: ImageSearchRepository
 ) {
     private val TAG = "AIRepository"
 
     // API Keys
-    private val GEOAPIFY_KEY = BuildConfig.GEOAPIFY_API_KEY
-    private val GOOGLE_API_KEY = BuildConfig.api
-    private val GOOGLE_CX = BuildConfig.cx
     private val GROQ_API_KEY = BuildConfig.GROQ_API_KEY
 
-    /**
-     * Main function: Generate AI suggestions
-     */
-    suspend fun generateAISuggestions(
-        tripId: String,
-        startDate: String,
-        endDate: String,
-        existingPlans: List<Plan>,
-        userInsight: UserInsight?
-    ): Result<List<AISuggestedPlan>> = withContext(Dispatchers.IO) {
-        try {
-            Log.d(TAG, "Generating AI suggestions for trip: $tripId")
 
-            // Step 1: Phân tích existing plans
-            val analyzedPlans = analyzeExistingPlans(existingPlans)
-            Log.d(TAG, "Analyzed ${analyzedPlans.size} existing plans")
-
-            // Step 2: Tìm địa điểm gần existing plans qua Geoapify
-            val nearbyPlaces = if (analyzedPlans.isNotEmpty()) {
-                findNearbyPlaces(analyzedPlans)
-            } else {
-                emptyList()
-            }
-            Log.d(TAG, "Found ${nearbyPlaces.size} nearby places")
-
-            // Step 3: Build AI prompt
-            val prompt = AIPromptBuilder.buildPrompt(
-                startDate = startDate,
-                endDate = endDate,
-                existingPlans = analyzedPlans,
-                nearbyPlaces = nearbyPlaces,
-                userInsight = userInsight
-            )
-
-            // Step 4: Call Groq AI API (FAST!)
-            val aiResponse = callGroqAPI(prompt)
-
-            // Step 5: Parse AI response to AISuggestedPlan
-            val suggestions = parseAIResponse(aiResponse, startDate, endDate)
-
-            // Step 6: Enrich với Google Images (optional, có thể bỏ qua nếu lỗi)
-            val enrichedSuggestions = try {
-                enrichWithImages(suggestions)
-            } catch (e: Exception) {
-                Log.w(TAG, "Failed to enrich with images, using suggestions without images", e)
-                suggestions
-            }
-
-            Log.d(TAG, "Generated ${enrichedSuggestions.size} suggestions")
-            Result.success(enrichedSuggestions)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Error generating suggestions", e)
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Phân tích existing plans để lấy thông tin location
-     */
-    private fun analyzeExistingPlans(plans: List<Plan>): List<AnalyzedPlan> {
-        val analyzed = mutableListOf<AnalyzedPlan>()
-
-        plans.forEach { plan ->
-            try {
-                val locationStr = plan.location
-                if (!locationStr.isNullOrBlank()) {
-                    val parts = locationStr.split(",")
-                    if (parts.size == 2) {
-                        val lat = parts[0].trim().toDoubleOrNull()
-                        val lng = parts[1].trim().toDoubleOrNull()
-
-                        if (lat != null && lng != null) {
-                            analyzed.add(
-                                AnalyzedPlan(
-                                    name = plan.title ?: "Unknown",
-                                    lat = lat,
-                                    lng = lng,
-                                    type = plan.type?.name ?: "OTHER"
-                                )
-                            )
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error analyzing plan: ${plan.title}", e)
-            }
-        }
-
-        return analyzed
-    }
-
-    /**
-     * Tìm nearby places qua Geoapify
-     */
-    private suspend fun findNearbyPlaces(existingPlans: List<AnalyzedPlan>): List<GeoapifyPlace> {
-        if (existingPlans.isEmpty()) return emptyList()
-
-        // Lấy center point từ existing plans
-        val centerLat = existingPlans.map { it.lat }.average()
-        val centerLng = existingPlans.map { it.lng }.average()
-
-        val places = mutableListOf<GeoapifyPlace>()
-
-        try {
-            // Search different categories
-            val categories = listOf(
-                "accommodation",
-                "catering.restaurant",
-                "tourism.attraction",
-                "entertainment"
-            )
-
-            categories.forEach { category ->
-                try {
-                    val response = geoapifyService.searchPlaces(
-                        categories = category,
-                        filter = "circle:$centerLng,$centerLat,5000", // 5km radius
-                        bias = "proximity:$centerLng,$centerLat",
-                        limit = 10,
-                        apiKey = GEOAPIFY_KEY
-                    )
-
-                    if (response.isSuccessful) {
-                        response.body()?.features?.forEach { feature ->
-                            places.add(GeoapifyPlace(
-                                name = feature.properties.name ?: "Unknown",
-                                address = feature.properties.address_line1 ?: "",
-                                lat = feature.geometry.coordinates[1],
-                                lon = feature.geometry.coordinates[0],
-                                categories = feature.properties.categories ?: emptyList(),
-                                distance = feature.properties.distance
-                            ))
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error searching category: $category", e)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error finding nearby places", e)
-        }
-
-        return places.take(20) // Limit to 20 places
-    }
-
-    /**
-     * Call Groq AI API - EXTREMELY FAST!
-     */
     private suspend fun callGroqAPI(prompt: String): String {
         return withContext(Dispatchers.IO) {
             try {
@@ -217,9 +65,6 @@ class AIRepository(
         }
     }
 
-    /**
-     * Parse AI response to AISuggestedPlan list
-     */
     private fun parseAIResponse(response: String, startDate: String, endDate: String): List<AISuggestedPlan> {
         val suggestions = mutableListOf<AISuggestedPlan>()
 
@@ -285,32 +130,212 @@ class AIRepository(
         return suggestions
     }
 
-    /**
-     * Enrich suggestions with Google Images (optional)
-     */
     private suspend fun enrichWithImages(suggestions: List<AISuggestedPlan>): List<AISuggestedPlan> {
         return withContext(Dispatchers.IO) {
+            Log.d(TAG, "Starting to enrich ${suggestions.size} plans with images")
             suggestions.map { plan ->
                 async {
                     try {
-                        val response = googleImageService.searchImages(
+                        Log.d(TAG, "Fetching image for: ${plan.title}")
+                        // Use ImageSearchRepository to fetch the first image
+                        val imageUrls = imageSearchRepository.searchImages(
                             query = "${plan.title} ${plan.address}",
-                            apiKey = GOOGLE_API_KEY,
-                            searchEngineId = GOOGLE_CX
+                            count = 1
                         )
 
-                        if (response.isSuccessful) {
-                            val imageUrl = response.body()?.items?.firstOrNull()?.link
-                            plan.copy(photoUrl = imageUrl)
+                        if (imageUrls.isNotEmpty()) {
+                            Log.d(TAG, "✓ Found image for ${plan.title}: ${imageUrls[0]}")
+                            plan.copy(photoUrl = imageUrls[0])
                         } else {
+                            Log.w(TAG, "✗ No image found for ${plan.title}")
                             plan
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "Error fetching image for ${plan.title}", e)
+                        Log.e(TAG, "✗ Error fetching image for ${plan.title}: ${e.message}", e)
                         plan
                     }
                 }
             }.map { it.await() }
         }
+    }
+
+    suspend fun generatePlansForMultipleCities(
+        cities: List<CityPlan>
+    ): Result<List<AISuggestedPlan>> = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Generating AI plans for ${cities.size} cities")
+
+            // Build multi-city prompt with transportation
+            val prompt = buildMultiCityPrompt(cities)
+
+            // Call Groq AI API
+            val aiResponse = callGroqAPI(prompt)
+
+            // Parse AI response
+            val suggestions = parseAIResponse(aiResponse, cities.first().startDate, cities.last().endDate)
+            Log.d(TAG, "Parsed ${suggestions.size} suggestions from AI")
+
+            // Enrich with images (optional)
+            val enrichedSuggestions = try {
+                Log.d(TAG, "Starting image enrichment...")
+                val result = enrichWithImages(suggestions)
+                Log.d(TAG, "Image enrichment completed. Plans with images: ${result.count { !it.photoUrl.isNullOrEmpty() }}")
+                result
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to enrich with images: ${e.message}", e)
+                suggestions
+            }
+
+            Log.d(TAG, "Generated ${enrichedSuggestions.size} plans for multiple cities")
+            Result.success(enrichedSuggestions)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating plans for multiple cities", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Build AI prompt for multiple cities with transportation
+     */
+    private fun buildMultiCityPrompt(cities: List<CityPlan>): String {
+        // Check if any city has budget or numberOfPlans constraints
+        val hasBudgetConstraints = cities.any { it.budget != null }
+        val hasPlansConstraints = cities.any { it.numberOfPlans != null }
+        
+        val citiesDescription = cities.mapIndexed { index, city ->
+            val budgetInfo = if (city.budget != null) {
+                "\n   ⚠️ STRICT BUDGET LIMIT: ${city.budget} VND - TOTAL expenses MUST be LESS than this"
+            } else if (hasBudgetConstraints) {
+                "\n   💰 Budget: Flexible (use mid-range prices ~2-3M VND total)"
+            } else ""
+            
+            val plansInfo = if (city.numberOfPlans != null) {
+                "\n   ⚠️ EXACT COUNT REQUIRED: ${city.numberOfPlans} plans - NO MORE, NO LESS"
+            } else if (hasPlansConstraints) {
+                "\n   📋 Plans count: Flexible (8-12 plans)"
+            } else ""
+            
+            "${index + 1}. ${city.cityName}: ${city.startDate} to ${city.endDate}$budgetInfo$plansInfo"
+        }.joinToString("\n\n")
+
+        return """
+You are a travel AI. Generate itinerary for multi-city trip.
+
+═══════════════════════════════════════
+CITIES WITH CONSTRAINTS (STRICT RULES):
+═══════════════════════════════════════
+$citiesDescription
+
+═══════════════════════════════════════
+⚠️ MANDATORY RULES - FAILURE = REJECTED:
+═══════════════════════════════════════
+
+${if (hasBudgetConstraints) """
+🔴 BUDGET RULE (NON-NEGOTIABLE):
+For cities with budget specified:
+1. SUM ALL expenses: lodging + all restaurants + all activities + tours
+2. TOTAL MUST BE < specified budget (leave 15% safety margin)
+3. Example: Budget 5,000,000 VND
+   ✓ CORRECT: Hotel 1,500,000 + Meals 1,800,000 + Activities 1,200,000 = 4,500,000 ✓
+   ✗ WRONG: Hotel 2,500,000 + Meals 2,000,000 + Activities 1,500,000 = 6,000,000 ✗
+4. Price guidelines:
+   - Budget <3M: Hotel 500-800k/night, meals 50-150k each, free activities
+   - Budget 3-7M: Hotel 800k-1.5M/night, meals 150-300k each, paid activities
+   - Budget >7M: Luxury options OK
+
+For cities WITHOUT budget: Use reasonable mid-range prices (total ~2-3M)
+
+""" else ""}
+${if (hasPlansConstraints) """
+🔴 PLANS COUNT RULE (NON-NEGOTIABLE):
+For cities with numberOfPlans specified:
+1. Generate EXACTLY that number - count every plan you create
+2. Example: numberOfPlans=10 → count: 1 hotel + 6 restaurants + 3 activities = 10 ✓
+3. DO NOT round up or down - EXACT number only
+4. Include: 1 hotel + meals (breakfast/lunch/dinner) + activities/tours
+
+For cities WITHOUT numberOfPlans: Generate 8-12 plans based on duration
+
+""" else ""}
+🟡 PLAN TYPES per city:
+- LODGING: 1 hotel (entire stay)
+- RESTAURANT: 2-3 meals/day (breakfast 50-150k, lunch 100-250k, dinner 150-400k)
+- ACTIVITY: Attractions, museums (0-500k each)
+- TOUR: Optional guided tours (200k-1M each)
+
+🟡 TRANSPORTATION between cities (separate from city budgets):
+- FLIGHT: >300km or islands
+- TRAIN: 100-300km
+- CAR_RENTAL: Road trips
+- BOAT: Coastal areas
+
+🟡 TIME FORMAT: "yyyy-MM-ddTHH:mm:ss"
+- Morning: 08:00-12:00
+- Afternoon: 13:00-17:00  
+- Evening: 18:00-22:00
+
+═══════════════════════════════════════
+✅ PRE-SUBMISSION CHECKLIST (MANDATORY):
+═══════════════════════════════════════
+${if (hasPlansConstraints) """
+1. Count plans for each city → Verify = numberOfPlans EXACTLY
+""" else ""}
+${if (hasBudgetConstraints) """
+${if (hasPlansConstraints) "2" else "1"}. Calculate SUM of expenses per city → Verify < budget
+""" else ""}
+${if (hasPlansConstraints || hasBudgetConstraints) 
+    "${if (hasPlansConstraints && hasBudgetConstraints) "3" else "2"}." else "1."} All fields complete (type, title, address, lat, lng, startTime, expense, description)
+${if (hasPlansConstraints || hasBudgetConstraints) 
+    "${if (hasPlansConstraints && hasBudgetConstraints) "4" else "3"}." else "2."} Valid JSON array format
+
+═══════════════════════════════════════
+RESPONSE FORMAT (ONLY JSON, NO TEXT):
+═══════════════════════════════════════
+[
+  {
+    "type": "LODGING",
+    "title": "Hotel name",
+    "address": "Street, Ward, District, City",
+    "lat": 10.123456,
+    "lng": 106.123456,
+    "startTime": "2026-01-16T14:00:00",
+    "expense": 1200000,
+    "description": "3-star hotel with breakfast"
+  },
+  {
+    "type": "RESTAURANT",
+    "title": "Restaurant name",
+    "address": "Full address",
+    "lat": 10.123456,
+    "lng": 106.123456,
+    "startTime": "2026-01-16T18:00:00",
+    "expense": 250000,
+    "description": "Vietnamese cuisine"
+  }
+]
+
+Valid types: LODGING, RESTAURANT, ACTIVITY, TOUR, FLIGHT, TRAIN, BOAT, CAR_RENTAL, THEATER, SHOPPING, CAMPING, RELIGION
+
+⚠️ VERIFY BUDGET + PLANS COUNT BEFORE RETURNING
+Return ONLY JSON array - NO explanations, NO markdown, NO extra text.
+    "description": "What to do"
+  },
+  {
+    "type": "FLIGHT",
+    "title": "Flight from City 1 to City 2",
+    "address": "Departure airport to Arrival airport",
+    "lat": departure_lat,
+    "lng": departure_lng,
+    "startTime": "yyyy-MM-ddTHH:mm:ss",
+    "expense": price_in_VND,
+    "description": "Flight details"
+  }
+]
+
+Valid types: LODGING, RESTAURANT, ACTIVITY, TOUR, FLIGHT, BOAT, TRAIN, CAR_RENTAL, CAMPING, THEATER, SHOPPING, RELIGION
+
+Generate comprehensive plans covering all cities with appropriate transportation. Return ONLY the JSON array.
+""".trimIndent()
     }
 }

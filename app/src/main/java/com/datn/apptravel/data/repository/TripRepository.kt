@@ -9,6 +9,8 @@ import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.model.request.*
 import com.datn.apptravel.ui.discover.model.CommentDto
 import com.datn.apptravel.ui.discover.model.PlanCommentDto
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -592,57 +594,57 @@ class TripRepository(private val tripApiService: TripApiService) {
             Result.failure(e)
         }
     }
-    
-    /**
-     * Download image from URL and upload to server
-     * @param context Application context
-     * @param imageUrl URL of the image to download
-     * @return Result with filename on success
-     */
+
     suspend fun downloadAndUploadImage(context: Context, imageUrl: String): Result<String> {
-        return try {
-            // Download image from URL
-            val url = URL(imageUrl)
-            val connection = url.openConnection()
-            connection.connect()
-            
-            val inputStream = connection.getInputStream()
-            val file = File(context.cacheDir, "downloaded_${System.currentTimeMillis()}.jpg")
-            val outputStream = FileOutputStream(file)
-            inputStream.copyTo(outputStream)
-            inputStream.close()
-            outputStream.close()
-            
-            // Upload to server
-            val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
-            val multipartBody = MultipartBody.Part.createFormData("file", file.name, requestBody)
-            
-            val response = tripApiService.uploadImage(multipartBody)
-            
-            // Clean up temp file
-            file.delete()
-            
-            if (response.isSuccessful && response.body()?.success == true) {
-                val fileName = response.body()?.fileName
-                if (fileName != null) {
-                    Result.success(fileName)
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("TripRepository", "Starting download from: $imageUrl")
+                
+                // Download image from URL
+                val url = URL(imageUrl)
+                val connection = url.openConnection()
+                connection.connect()
+                
+                val inputStream = connection.getInputStream()
+                val file = File(context.cacheDir, "downloaded_${System.currentTimeMillis()}.jpg")
+                val outputStream = FileOutputStream(file)
+                inputStream.copyTo(outputStream)
+                inputStream.close()
+                outputStream.close()
+                
+                android.util.Log.d("TripRepository", "Downloaded image to: ${file.absolutePath}, size: ${file.length()} bytes")
+                
+                // Upload to server
+                val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
+                val multipartBody = MultipartBody.Part.createFormData("file", file.name, requestBody)
+                
+                android.util.Log.d("TripRepository", "Uploading to server...")
+                val response = tripApiService.uploadImage(multipartBody)
+                
+                // Clean up temp file
+                file.delete()
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val fileName = response.body()?.fileName
+                    if (fileName != null) {
+                        android.util.Log.d("TripRepository", "✓ Upload successful! Filename: $fileName")
+                        Result.success(fileName)
+                    } else {
+                        android.util.Log.e("TripRepository", "✗ File name is null in response")
+                        Result.failure(Exception("File name is null"))
+                    }
                 } else {
-                    Result.failure(Exception("File name is null"))
+                    val errorMessage = response.body()?.message ?: "Failed to upload image"
+                    android.util.Log.e("TripRepository", "✗ Upload failed: $errorMessage")
+                    Result.failure(Exception(errorMessage))
                 }
-            } else {
-                val errorMessage = response.body()?.message ?: "Failed to upload image"
-                Result.failure(Exception(errorMessage))
+            } catch (e: Exception) {
+                android.util.Log.e("TripRepository", "✗ Error downloading and uploading image: ${e.message}", e)
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            android.util.Log.e("TripRepository", "Error downloading and uploading image: ${e.message}", e)
-            Result.failure(e)
         }
     }
 
-    /**
-     * Get all plans for a trip (for AI analysis)
-     * Returns all plans regardless of type
-     */
     suspend fun getAllPlansForTrip(tripId: String): Result<List<Plan>> {
         return try {
             val response = tripApiService.getPlansByTripId(tripId)
@@ -657,9 +659,6 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
 
-    /**
-     * Get restaurant plans (for backward compatibility)
-//     */
 //    suspend fun getRestaurantDetails(tripId: String): Result<List<Plan>> {
 //        return try {
 //            val response = tripApiService.getPlansByTripId(tripId)
@@ -676,9 +675,6 @@ class TripRepository(private val tripApiService: TripApiService) {
 //        }
 //    }
 
-    /**
-     * Get lodging plans
-     */
     suspend fun getLodgingDetails(tripId: String): Result<List<Plan>> {
         return try {
             val response = tripApiService.getPlansByTripId(tripId)
@@ -695,9 +691,6 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
 
-    /**
-     * Get activity plans
-     */
     suspend fun getActivityDetails(tripId: String): Result<List<Plan>> {
         return try {
             val response = tripApiService.getPlansByTripId(tripId)
@@ -716,9 +709,6 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
 
-    /**
-     * Get flight plans
-     */
     suspend fun getFlightDetails(tripId: String): Result<List<Plan>> {
         return try {
             val response = tripApiService.getPlansByTripId(tripId)
@@ -735,9 +725,6 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
 
-    /**
-     * Get boat plans
-     */
     suspend fun getBoatDetails(tripId: String): Result<List<Plan>> {
         return try {
             val response = tripApiService.getPlansByTripId(tripId)

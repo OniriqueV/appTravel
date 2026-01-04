@@ -256,40 +256,50 @@ class CreateTripViewModel(
     ): Boolean {
         try {
             val userId = sessionManager.getUserId() ?: return false
-            val result = tripRepository.getTripsByUserId(userId)
             
-            result.onSuccess { trips ->
-                val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                val newStartDate = LocalDate.parse(startDate, dateFormatter)
-                val newEndDate = LocalDate.parse(endDate, dateFormatter)
+            // Fetch both owned trips and member trips
+            val ownTripsResult = tripRepository.getTripsByUserId(userId)
+            val memberTripsResult = tripRepository.getTripsByMemberId(userId)
+            
+            val ownTrips = ownTripsResult.getOrNull() ?: emptyList()
+            val memberTrips = memberTripsResult.getOrNull() ?: emptyList()
+            
+            // Merge both lists to check conflicts against all trips
+            val allTrips = (ownTrips + memberTrips).distinctBy { it.id }
+            
+            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val newStartDate = LocalDate.parse(startDate, dateFormatter)
+            val newEndDate = LocalDate.parse(endDate, dateFormatter)
+            
+            val conflictingTrips = allTrips.filter { trip ->
+                // Exclude the current trip when updating
+                if (excludeTripId != null && trip.id == excludeTripId) {
+                    return@filter false
+                }
                 
-                val conflictingTrips = trips.filter { trip ->
-                    // Exclude the current trip when updating
-                    if (excludeTripId != null && trip.id == excludeTripId) {
-                        return@filter false
-                    }
+                try {
+                    val existingStartDate = LocalDate.parse(trip.startDate, dateFormatter)
+                    val existingEndDate = LocalDate.parse(trip.endDate, dateFormatter)
                     
-                    try {
-                        val existingStartDate = LocalDate.parse(trip.startDate, dateFormatter)
-                        val existingEndDate = LocalDate.parse(trip.endDate, dateFormatter)
-                        
-                        // Check if date ranges overlap
-                        // Two date ranges overlap if:
-                        // new start <= existing end AND new end >= existing start
-                        !(newEndDate.isBefore(existingStartDate) || newStartDate.isAfter(existingEndDate))
-                    } catch (e: Exception) {
-                        false
-                    }
+                    // Check if date ranges overlap
+                    // Two date ranges overlap if:
+                    // new start <= existing end AND new end >= existing start
+                    !(newEndDate.isBefore(existingStartDate) || newStartDate.isAfter(existingEndDate))
+                } catch (e: Exception) {
+                    false
                 }
-                
-                if (conflictingTrips.isNotEmpty()) {
-                    _dateConflictTrips.value = conflictingTrips
-                    val tripTitles = conflictingTrips.joinToString(", ") { "\"${it.title}\"" }
-                    _errorMessage.value = "Thời gian bị trùng với chuyến đi: $tripTitles"
-                    return true
-                }
-            }.onFailure { exception ->
-                _errorMessage.value = "Không thể kiểm tra trùng lặp: ${exception.message}"
+            }
+            
+            if (conflictingTrips.isNotEmpty()) {
+                _dateConflictTrips.value = conflictingTrips
+                val tripTitles = conflictingTrips.joinToString(", ") { "\"${it.title}\"" }
+                _errorMessage.value = "Thời gian bị trùng với chuyến đi: $tripTitles"
+                return true
+            }
+            
+            // Check for failures in API calls
+            if (ownTripsResult.isFailure) {
+                _errorMessage.value = "Không thể kiểm tra trùng lặp: ${ownTripsResult.exceptionOrNull()?.message}"
                 return true
             }
             
