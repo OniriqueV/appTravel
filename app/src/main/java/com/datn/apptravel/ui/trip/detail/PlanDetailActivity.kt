@@ -18,9 +18,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.datn.apptravel.R
+import com.datn.apptravel.data.local.SessionManager
 import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityPlanDetailBinding
+import com.datn.apptravel.ui.discover.model.CommentDto
+import com.datn.apptravel.ui.trip.adapter.CommentAdapter
 import com.datn.apptravel.ui.trip.adapter.PhotoCollectionAdapter
 import com.datn.apptravel.ui.trip.viewmodel.PlanDetailViewModel
 import com.google.android.material.button.MaterialButton
@@ -38,9 +41,12 @@ class PlanDetailActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlanDetailBinding
     private val viewModel: PlanDetailViewModel by viewModel()
     private val tripRepository: TripRepository by inject()
+    private val sessionManager: SessionManager by inject()
     private var planId: String? = null
     private var tripId: String? = null
     private lateinit var photoAdapter: PhotoCollectionAdapter
+    private lateinit var commentAdapter: CommentAdapter
+    private var commentDialog: AlertDialog? = null
 
     // Activity result launcher for edit plan
     private val editPlanLauncher = registerForActivityResult(
@@ -83,9 +89,21 @@ class PlanDetailActivity : AppCompatActivity() {
         binding = ActivityPlanDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Set user ID for API calls
+        sessionManager.getUserId()?.let { userId ->
+            viewModel.setUserId(userId)
+        }
+
         setupUI()
         observeViewModel()
         loadPlanData()
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // Dismiss dialog to prevent WindowLeaked error
+        commentDialog?.dismiss()
+        commentDialog = null
     }
 
     private fun observeViewModel() {
@@ -101,26 +119,38 @@ class PlanDetailActivity : AppCompatActivity() {
             photoAdapter.updatePhotos(photos)
         }
 
-        // Observe likes count
-        viewModel.likesCount.observe(this) { count ->
-            binding.tvLikesCount.text = count.toString()
-        }
+        // Likes feature disabled for this UI
+        // viewModel.likesCount.observe(this) { count ->
+        //     binding.tvLikesCount.text = count.toString()
+        // }
 
-        // Observe comments count
+        // Observe comments count - but don't show card yet
         viewModel.commentsCount.observe(this) { count ->
             binding.tvCommentsCount.text = count.toString()
-            binding.cardComments.visibility = if (count > 0) View.VISIBLE else View.GONE
+            // Card visibility will be controlled by comments list observer
+        }
+        
+        // Observe comments list - show card only after comments are loaded
+        viewModel.comments.observe(this) { comments ->
+            if (comments.isNotEmpty()) {
+                // Update adapter with comments
+                commentAdapter.updateComments(comments)
+                // Now show the card after comments are ready
+                binding.cardComments.visibility = View.VISIBLE
+            } else {
+                binding.cardComments.visibility = View.GONE
+            }
         }
 
-        // Observe like status
-        viewModel.isLiked.observe(this) { isLiked ->
-            if (isLiked) {
-                binding.ivLike.setImageResource(R.drawable.ic_heart_filled)
-            } else {
-                binding.ivLike.setImageResource(R.drawable.ic_heart_outline)
-            }
-            binding.ivLike.tag = isLiked
-        }
+        // Likes feature disabled for this UI
+        // viewModel.isLiked.observe(this) { isLiked ->
+        //     if (isLiked) {
+        //         binding.ivLike.setImageResource(R.drawable.ic_heart_filled)
+        //     } else {
+        //         binding.ivLike.setImageResource(R.drawable.ic_heart_outline)
+        //     }
+        //     binding.ivLike.tag = isLiked
+        // }
 
         // Observe upload success
         viewModel.uploadSuccess.observe(this) { success ->
@@ -177,16 +207,28 @@ class PlanDetailActivity : AppCompatActivity() {
                 LinearLayoutManager(this@PlanDetailActivity, LinearLayoutManager.HORIZONTAL, false)
             adapter = photoAdapter
         }
+        
+        // Setup comments RecyclerView
+        commentAdapter = CommentAdapter(
+            onReplyClick = { comment ->
+                // TODO: Handle reply to comment
+                showCommentDialog(replyTo = comment)
+            }
+        )
+        binding.rvComments.apply {
+            layoutManager = LinearLayoutManager(this@PlanDetailActivity)
+            adapter = commentAdapter
+        }
 
         binding.bottomWriteComment.setOnClickListener {
             // Open comment input dialog
             showCommentDialog()
         }
 
-        binding.ivLike.setOnClickListener {
-            // Toggle like through ViewModel
-            viewModel.toggleLike()
-        }
+        // Like feature disabled for this UI
+        // binding.ivLike.setOnClickListener {
+        //     viewModel.toggleLike()
+        // }
     }
 
     private fun loadPlanData() {
@@ -204,7 +246,7 @@ class PlanDetailActivity : AppCompatActivity() {
         val commentsCount = intent.getIntExtra(EXTRA_COMMENTS_COUNT, 0)
 
         // Set initial counts in ViewModel
-        viewModel.setInitialCounts(likesCount, commentsCount)
+        viewModel.setInitialCounts(commentsCount)
 
         val planType = try {
             PlanType.valueOf(planTypeStr)
@@ -235,9 +277,10 @@ class PlanDetailActivity : AppCompatActivity() {
         }
         binding.tvExpense.visibility = View.VISIBLE
 
-        // Load photos from API if planId and tripId are available
+        // Load photos and comments from API if planId and tripId are available
         if (planId != null && tripId != null) {
             viewModel.loadPlanPhotos(tripId!!, planId!!)
+            viewModel.loadComments()
         }
     }
 
@@ -522,55 +565,98 @@ class PlanDetailActivity : AppCompatActivity() {
         }
     }
 
-    private fun showCommentDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_comment, null)
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
-
-        // Make dialog background transparent to show custom rounded corners
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        val etComment = dialogView.findViewById<EditText>(R.id.etComment)
-        val tvCharCount = dialogView.findViewById<TextView>(R.id.tvCharCount)
-        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancel)
-        val btnPost = dialogView.findViewById<MaterialButton>(R.id.btnPost)
-
-        // Character counter
-        etComment.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                val length = s?.length ?: 0
-                tvCharCount.text = "$length/500"
-                btnPost.isEnabled = length > 0
-            }
-        })
-
-        // Initial state
-        btnPost.isEnabled = false
-
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
+    private fun showCommentDialog(replyTo: CommentDto? = null) {
+        Log.d("PlanDetailActivity", "showCommentDialog called, replyTo: ${replyTo?.userName}")
+        
+        // Check if Activity is still valid
+        if (isFinishing || isDestroyed) {
+            Log.d("PlanDetailActivity", "Activity is finishing or destroyed, cannot show dialog")
+            return
         }
-
-        btnPost.setOnClickListener {
-            val comment = etComment.text.toString().trim()
-            if (comment.isNotEmpty()) {
-                // Post comment through ViewModel
-                viewModel.postComment(comment)
-                Toast.makeText(this, "Comment posted!", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
+        
+        // Dismiss existing dialog if any
+        commentDialog?.let {
+            if (it.isShowing) {
+                it.dismiss()
             }
         }
+        
+        try {
+            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_comment, null)
+            commentDialog = AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(true)
+                .create()
 
-        dialog.show()
+            // Make dialog background transparent to show custom rounded corners
+            commentDialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        // Auto focus on EditText and show keyboard
-        etComment.requestFocus()
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(etComment, InputMethodManager.SHOW_IMPLICIT)
+            val etComment = dialogView.findViewById<EditText>(R.id.etComment)
+            val tvCharCount = dialogView.findViewById<TextView>(R.id.tvCharCount)
+            val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancel)
+            val btnPost = dialogView.findViewById<MaterialButton>(R.id.btnPost)
+
+            // If replying to a comment, show who we're replying to
+            if (replyTo != null) {
+                etComment.hint = "Reply to ${replyTo.userName}..."
+            }
+
+            // Character counter
+            etComment.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    val length = s?.length ?: 0
+                    tvCharCount.text = "$length/500"
+                    btnPost.isEnabled = length > 0
+                }
+            })
+
+            // Initial state
+            btnPost.isEnabled = false
+
+            btnCancel.setOnClickListener {
+                commentDialog?.dismiss()
+            }
+
+            btnPost.setOnClickListener {
+                val comment = etComment.text.toString().trim()
+                if (comment.isNotEmpty()) {
+                    // Disable button to prevent double posting
+                    btnPost.isEnabled = false
+                    
+                    // Post comment with parentId if replying
+                    val parentId = replyTo?.id?.toString()
+                    viewModel.postComment(comment, parentId)
+                    
+                    // Dismiss dialog immediately after posting
+                    commentDialog?.dismiss()
+                    
+                    // Show confirmation toast
+                    val message = if (replyTo != null) {
+                        "Reply posted!"
+                    } else {
+                        "Comment posted!"
+                    }
+                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            commentDialog?.show()
+            Log.d("PlanDetailActivity", "Dialog shown successfully")
+
+            // Auto focus on EditText and show keyboard after dialog is shown
+            etComment.postDelayed({
+                if (commentDialog?.isShowing == true) {
+                    etComment.requestFocus()
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.showSoftInput(etComment, InputMethodManager.SHOW_IMPLICIT)
+                }
+            }, 100)
+        } catch (e: Exception) {
+            Log.e("PlanDetailActivity", "Error showing comment dialog", e)
+            Toast.makeText(this, "Error showing comment dialog: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun uploadPhotos(uris: List<Uri>) {

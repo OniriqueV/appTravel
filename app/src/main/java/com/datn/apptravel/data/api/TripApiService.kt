@@ -7,6 +7,8 @@ import com.datn.apptravel.data.model.User
 import com.datn.apptravel.data.model.request.*
 import com.datn.apptravel.data.model.response.FileUploadResponse
 import com.datn.apptravel.data.model.response.TripResponse
+import com.datn.apptravel.ui.discover.model.CommentDto
+import com.datn.apptravel.ui.discover.model.PlanCommentDto
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -161,4 +163,17 @@ interface TripApiService {
     suspend fun getFollowers(
         @Path("userId") userId: String
     ): Response<List<User>>
+    
+    // Plan comments endpoints
+    @GET("api/plans/{planId}/comments")
+    suspend fun getComments(
+        @Path("planId") planId: String
+    ): Response<List<CommentDto>>
+
+    @POST("api/plans/{planId}/comments")
+    suspend fun postComment(
+        @Path("planId") planId: String,
+        @Header("X-USER-ID") userId: String,
+        @Body content: Map<String, String>
+    ): Response<Void>
 }

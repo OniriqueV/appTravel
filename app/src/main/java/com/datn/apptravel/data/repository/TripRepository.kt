@@ -7,6 +7,8 @@ import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.model.request.*
+import com.datn.apptravel.ui.discover.model.CommentDto
+import com.datn.apptravel.ui.discover.model.PlanCommentDto
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
@@ -800,6 +802,38 @@ class TripRepository(private val tripApiService: TripApiService) {
                 Result.success(followers)
             } else {
                 Result.failure(Exception("Failed to get followers"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    // Plan comments methods
+    suspend fun getComments(planId: String): Result<List<CommentDto>> {
+        return try {
+            val response = tripApiService.getComments(planId)
+            if (response.isSuccessful) {
+                val comments = response.body() ?: emptyList()
+                Result.success(comments)
+            } else {
+                Result.failure(Exception("Failed to get comments"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun postComment(planId: String, userId: String, content: String, parentId: String? = null): Result<Unit> {
+        return try {
+            val body = mutableMapOf("content" to content)
+            if (parentId != null) {
+                body["parentId"] = parentId
+            }
+            val response = tripApiService.postComment(planId, userId, body)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to post comment"))
             }
         } catch (e: Exception) {
             Result.failure(e)
