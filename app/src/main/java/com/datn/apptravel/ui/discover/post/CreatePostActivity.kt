@@ -5,23 +5,15 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.ImageView
-import android.widget.ProgressBar
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.children
-import androidx.core.view.isVisible
+import androidx.core.view.*
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.datn.apptravel.R
+import com.datn.apptravel.ui.discover.model.User
 import com.datn.apptravel.ui.discover.model.ShareTripRequest
 import com.datn.apptravel.ui.discover.network.DiscoverRepository
 import com.datn.apptravel.ui.discover.util.ImageUrlUtil
@@ -30,7 +22,6 @@ import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
-
 
 class CreatePostActivity : AppCompatActivity() {
 
@@ -43,6 +34,7 @@ class CreatePostActivity : AppCompatActivity() {
 
     private lateinit var btnVisibility: View
     private lateinit var tvVisibility: TextView
+    private lateinit var btnAddFollower: ImageButton   // ✅ BỔ SUNG
 
     private lateinit var edtContent: EditText
     private lateinit var chipGroupTopic: ChipGroup
@@ -55,6 +47,9 @@ class CreatePostActivity : AppCompatActivity() {
     private var selectedTripImage: String? = null
 
     private var selectedVisibility: String = VIS_PUBLIC
+
+    // ✅ GIỮ – DÙNG CHO FOLLOWER CUSTOM
+    private val selectedUsers = mutableListOf<String>()
 
     private val selectTripLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -107,6 +102,25 @@ class CreatePostActivity : AppCompatActivity() {
             selectTripLauncher.launch(i)
         }
 
+        // ✅ CLICK ➕ CHỌN FOLLOWER
+        btnAddFollower.setOnClickListener {
+            val userId = intent.getStringExtra(EXTRA_USER_ID).orEmpty()
+
+            AddFollowerBottomSheet(
+                userId = userId,
+                onUserSelected = { userId ->
+                    selectedUsers.add(userId)
+                    Toast.makeText(
+                        this,
+                        "Đã chọn ${selectedUsers.size} người",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            ).show(supportFragmentManager, "AddFollower")
+
+        }
+
+
         btnPublish.setOnClickListener { submitPost() }
     }
 
@@ -118,6 +132,7 @@ class CreatePostActivity : AppCompatActivity() {
 
         btnVisibility = findViewById(R.id.btnVisibility)
         tvVisibility = findViewById(R.id.tvVisibility)
+        btnAddFollower = findViewById(R.id.btnAddFollower) // ✅ BIND
 
         edtContent = findViewById(R.id.edtContent)
         chipGroupTopic = findViewById(R.id.chipGroupTopic)
@@ -126,6 +141,7 @@ class CreatePostActivity : AppCompatActivity() {
         btnPublish = findViewById(R.id.btnPublish)
 
         tvVisibility.text = selectedVisibility
+        btnAddFollower.isVisible = false
     }
 
     private fun setupVisibilityMenu() {
@@ -138,6 +154,14 @@ class CreatePostActivity : AppCompatActivity() {
             menu.setOnMenuItemClickListener { item ->
                 selectedVisibility = item.title.toString()
                 tvVisibility.text = selectedVisibility
+
+                // ✅ CHỈ FOLLOWER MỚI HIỆN ➕
+                if (selectedVisibility == VIS_FOLLOWER) {
+                    btnAddFollower.isVisible = true
+                } else {
+                    btnAddFollower.isVisible = false
+                    selectedUsers.clear()
+                }
                 true
             }
             menu.show()
@@ -159,28 +183,14 @@ class CreatePostActivity : AppCompatActivity() {
     }
 
     private fun submitPost() {
-        val userId = intent.getStringExtra(EXTRA_USER_ID).orEmpty()
-        if (userId.isBlank()) {
-            Toast.makeText(this, "Missing userId", Toast.LENGTH_SHORT).show()
-            return
-        }
-
         val content = edtContent.text.toString().trim()
-        if (content.isBlank()) {
-            Toast.makeText(this, "Content cannot be empty", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        val tripId = selectedTripId
-        if (tripId.isNullOrBlank()) {
-            Toast.makeText(this, "Please select a trip", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val tripId = selectedTripId ?: return
 
         val isPublicValue = when (selectedVisibility) {
             VIS_PUBLIC -> "public"
             VIS_FOLLOWER -> "follower"
-            else -> "none"
+            VIS_PRIVATE -> "private"
+            else -> "public"
         }
 
         progress.isVisible = true
@@ -188,23 +198,17 @@ class CreatePostActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                // ✅ CHỈ ĐỔI ĐOẠN NÀY
                 val req = ShareTripRequest(
                     tripId = tripId,
                     content = content,
                     tags = getSelectedTags(),
-                    isPublic = isPublicValue
+                    isPublic = if (selectedUsers.isNotEmpty()) "follower" else isPublicValue,
+                    sharedWithUsers = selectedUsers.toList()
                 )
 
-                // ✅ KHÔNG GỌI TRIP API NỮA
                 val result = discoverRepository.shareTrip(req)
 
                 if (result.isSuccess) {
-                    Toast.makeText(
-                        this@CreatePostActivity,
-                        "Chia sẻ chuyến đi thành công",
-                        Toast.LENGTH_SHORT
-                    ).show()
                     setResult(Activity.RESULT_OK)
                     finish()
                 } else {
@@ -214,12 +218,6 @@ class CreatePostActivity : AppCompatActivity() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-            } catch (e: Exception) {
-                Toast.makeText(
-                    this@CreatePostActivity,
-                    "Lỗi: ${e.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
             } finally {
                 progress.isVisible = false
                 btnPublish.isEnabled = true
@@ -227,10 +225,8 @@ class CreatePostActivity : AppCompatActivity() {
         }
     }
 
-
     companion object {
         const val EXTRA_USER_ID = "userId"
-
         private const val VIS_PRIVATE = "Private"
         private const val VIS_PUBLIC = "Public"
         private const val VIS_FOLLOWER = "Follower"

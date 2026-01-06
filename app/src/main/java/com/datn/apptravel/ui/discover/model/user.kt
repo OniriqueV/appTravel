@@ -3,14 +3,37 @@ package com.datn.apptravel.ui.discover.model
 import com.google.gson.annotations.SerializedName
 
 data class User(
+
+    // ID user (BE có thể trả id hoặc userId)
+    @SerializedName(value = "userId", alternate = ["id"])
     val userId: String? = null,
 
-    @SerializedName(value = "userName", alternate = ["username", "name"])
+    // Tên hiển thị
+    // BE có thể là: userName | username | name | firstName | fullName
+    @SerializedName(
+        value = "userName",
+        alternate = [
+            "username",
+            "name",
+            "firstName",
+            "fullName"
+        ]
+    )
     val userName: String? = null,
 
-    @SerializedName(value = "avatarUrl", alternate = ["avatar", "userAvatarUrl", "photoUrl"])
+    // Avatar
+    // BE có thể là: avatar | profilePicture | photoUrl | userAvatarUrl
+    @SerializedName(
+        value = "avatarUrl",
+        alternate = [
+            "avatar",
+            "profilePicture",
+            "photoUrl",
+            "userAvatarUrl"
+        ]
+    )
     val avatarUrl: String? = null,
 
-    // để sau này làm follow/unfollow vẫn dùng được
+    // Dùng cho follow/unfollow (không ảnh hưởng màn này)
     val following: List<String> = emptyList()
 )

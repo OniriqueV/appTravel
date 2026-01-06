@@ -43,7 +43,7 @@
                 android:id="@+id/tvUserName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="minh hieu"
+                android:text=""
                 android:textSize="15sp"
                 android:textStyle="bold"
                 android:textColor="#2B2B2B"/>
@@ -52,7 +52,8 @@
                 android:id="@+id/tvTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="2 người theo dõi"
+                android:text=""
+                android:visibility="invisible"
                 android:textSize="12sp"
                 android:textColor="#8A8A8A"/>
         </LinearLayout>

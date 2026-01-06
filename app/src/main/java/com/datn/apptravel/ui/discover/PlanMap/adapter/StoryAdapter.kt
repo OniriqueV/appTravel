@@ -19,30 +19,27 @@ class StoryAdapter : RecyclerView.Adapter<StoryAdapter.VH>() {
         notifyDataSetChanged()
     }
 
-    override fun onCreateViewHolder(p: ViewGroup, v: Int): VH =
-        VH(
-            LayoutInflater.from(p.context)
-                .inflate(R.layout.item_story_image, p, false)
-        )
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_story_image, parent, false)
+        return VH(view)
+    }
 
-    override fun getItemCount() = images.size
+    override fun getItemCount(): Int = images.size
 
-    override fun onBindViewHolder(h: VH, i: Int) {
-        val url = ImageUrlUtil.toFullUrl(images[i])
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        val url = ImageUrlUtil.toFullUrl(images[position])
 
-        // Background
-        h.bg.load(url) {
+        holder.bg.load(url) {
             crossfade(true)
         }
 
-        // Main image
-        h.image.load(url) {
+        holder.image.load(url) {
             crossfade(true)
             placeholder(R.drawable.ic_image_placeholder)
             error(R.drawable.ic_image_placeholder)
         }
     }
-
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
         val image: ImageView = view.findViewById(R.id.ivStory)

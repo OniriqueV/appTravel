@@ -6,29 +6,52 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <!-- STORY PROGRESS (INSTAGRAM STYLE) -->
+    <!-- =========================
+         STORY PROGRESS (LUÔN NỔI)
+         ========================= -->
     <LinearLayout
         android:id="@+id/layoutStoryProgress"
         android:layout_width="0dp"
-        android:layout_height="4dp"
+        android:layout_height="6dp"
         android:layout_marginTop="12dp"
         android:orientation="horizontal"
         android:paddingHorizontal="8dp"
+        android:background="#33000000"
+        android:elevation="20dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- STORY IMAGES -->
+    <!-- =========================
+         STORY IMAGES (NẰM DƯỚI PROGRESS)
+         ========================= -->
     <androidx.viewpager2.widget.ViewPager2
         android:id="@+id/vpStory"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/layoutStoryProgress"
+        app:layout_constraintBottom_toTopOf="@id/layoutInfo"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <!-- BACK BUTTON -->
+    <!-- =========================
+         GESTURE LAYER (CHỈ CHE STORY)
+         ========================= -->
+    <View
+        android:id="@+id/gestureLayer"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="@android:color/transparent"
+        android:clickable="true"
+        android:focusable="true"
+        app:layout_constraintTop_toTopOf="@id/vpStory"
+        app:layout_constraintBottom_toBottomOf="@id/vpStory"
+        app:layout_constraintStart_toStartOf="@id/vpStory"
+        app:layout_constraintEnd_toEndOf="@id/vpStory"/>
+
+    <!-- =========================
+         BACK BUTTON (KHÔNG BỊ CHE)
+         ========================= -->
     <ImageView
         android:id="@+id/btnBack"
         android:layout_width="40dp"
@@ -36,10 +59,13 @@
         android:layout_margin="12dp"
         android:src="@drawable/ic_back"
         app:tint="@android:color/white"
+        android:elevation="30dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
-    <!-- BOTTOM OVERLAY -->
+    <!-- =========================
+         INFO OVERLAY
+         ========================= -->
     <LinearLayout
         android:id="@+id/layoutInfo"
         android:layout_width="0dp"
@@ -47,6 +73,7 @@
         android:orientation="vertical"
         android:padding="12dp"
         android:background="#66000000"
+        android:elevation="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -102,7 +129,6 @@
                 android:layout_marginStart="6dp"
                 android:textColor="@android:color/white"/>
         </LinearLayout>
-
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,4 +1,5 @@
 package com.datn.apptravel.ui.discover.network
+import com.datn.apptravel.ui.discover.model.User
 
 class FollowRepository(
     private val api: FollowApi
@@ -17,5 +18,9 @@ class FollowRepository(
         followingId: String
     ): Boolean {
         return api.isFollowing(followerId, followingId)
+    }
+
+    suspend fun getFollowersRaw(userId: String): List<User> {
+        return api.getFollowersRaw(userId)
     }
 }
