@@ -11,36 +11,44 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:color/transparent"
-        app:navigationIcon="@drawable/ic_back"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:title="Profile"
-        app:titleTextColor="#333333" />
-
-    <!-- AI Suggest Icon - Góc trên bên phải -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/btnAISuggest"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_marginEnd="16dp"
-        app:cardCornerRadius="24dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="#FF6B35"
-        android:clickable="true"
-        android:focusable="true"
-        android:foreground="?android:attr/selectableItemBackground"
-        app:layout_constraintTop_toTopOf="@id/toolbar"
-        app:layout_constraintBottom_toBottomOf="@id/toolbar"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <ImageView
-            android:layout_width="28dp"
-            android:layout_height="28dp"
+        <TextView
+            android:id="@+id/tvToolbarTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:src="@drawable/ic_ai_sparkle"
-            app:tint="@android:color/white" />
-    </com.google.android.material.card.MaterialCardView>
+            android:text="Profile"
+            android:textColor="#333333"
+            android:textSize="18sp"
+            android:textStyle="bold"/>
+    </androidx.appcompat.widget.Toolbar>
+
+    <!-- AI Suggest Icon - Góc trên bên phải -->
+<!--    <com.google.android.material.card.MaterialCardView-->
+<!--        android:id="@+id/btnAISuggest"-->
+<!--        android:layout_width="48dp"-->
+<!--        android:layout_height="48dp"-->
+<!--        android:layout_marginEnd="16dp"-->
+<!--        app:cardCornerRadius="24dp"-->
+<!--        app:cardElevation="4dp"-->
+<!--        app:cardBackgroundColor="#FF6B35"-->
+<!--        android:clickable="true"-->
+<!--        android:focusable="true"-->
+<!--        android:foreground="?android:attr/selectableItemBackground"-->
+<!--        app:layout_constraintTop_toTopOf="@id/toolbar"-->
+<!--        app:layout_constraintBottom_toBottomOf="@id/toolbar"-->
+<!--        app:layout_constraintEnd_toEndOf="parent">-->
+
+<!--        <ImageView-->
+<!--            android:layout_width="28dp"-->
+<!--            android:layout_height="28dp"-->
+<!--            android:layout_gravity="center"-->
+<!--            android:src="@drawable/ic_ai_sparkle"-->
+<!--            app:tint="@android:color/white" />-->
+<!--    </com.google.android.material.card.MaterialCardView>-->
 
     <ScrollView
         android:layout_width="match_parent"

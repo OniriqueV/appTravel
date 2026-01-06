@@ -114,8 +114,7 @@ class CreateTripActivity : AppCompatActivity() {
                 binding.etEndDate.setText(date)
             }
         }
-        
-        // Upload image (TODO: implement image picker)
+
         binding.layoutUploadImage.setOnClickListener {
             imagePickerLauncher.launch("image/*")
         }

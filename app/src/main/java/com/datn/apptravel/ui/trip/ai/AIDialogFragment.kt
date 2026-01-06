@@ -25,8 +25,13 @@ class AIDialogFragment : DialogFragment() {
     private val cityPlans = mutableListOf<CityPlanItem>()
     private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private val apiDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+    private val tripDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     private var onResultListener: ((cities: List<CityPlan>) -> Unit)? = null
+    
+    // Trip date range for validation
+    private var tripStartDate: Calendar? = null
+    private var tripEndDate: Calendar? = null
 
     data class CityPlanItem(
         val view: View,
@@ -207,15 +212,6 @@ class AIDialogFragment : DialogFragment() {
                 if (isStartDate) {
                     item.startDate = selectedCalendar
                     textView.text = dateFormat.format(selectedCalendar.time)
-                    
-                    // Auto set end date if not set
-                    if (item.endDate == null) {
-                        val autoEndDate = selectedCalendar.clone() as Calendar
-                        autoEndDate.add(Calendar.DAY_OF_MONTH, 2)
-                        item.endDate = autoEndDate
-                        item.view.findViewById<TextView>(R.id.tvEndDate).text = 
-                            dateFormat.format(autoEndDate.time)
-                    }
                 } else {
                     // Validate end date is after start date
                     if (item.startDate != null && selectedCalendar.before(item.startDate)) {
@@ -230,9 +226,11 @@ class AIDialogFragment : DialogFragment() {
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         ).apply {
+            // Only set minDate for end date picker based on start date
             if (!isStartDate && item.startDate != null) {
                 datePicker.minDate = item.startDate!!.timeInMillis
             }
+            // Allow selecting any date in calendar - validation happens on generate
         }.show()
     }
 
@@ -260,6 +258,17 @@ class AIDialogFragment : DialogFragment() {
                 Toast.makeText(requireContext(), "Vui lòng chọn ngày về cho ${item.cityName}", Toast.LENGTH_SHORT).show()
                 return false
             }
+            
+            // Final validation: ensure dates are within trip range
+            if (tripStartDate != null && item.startDate!!.before(tripStartDate)) {
+                Toast.makeText(requireContext(), "Ngoài thời gian chuyến đi. Người dùng phải nhập đúng trong thời gian chuyến đi", Toast.LENGTH_LONG).show()
+                return false
+            }
+            
+            if (tripEndDate != null && item.endDate!!.after(tripEndDate)) {
+                Toast.makeText(requireContext(), "Ngoài thời gian chuyến đi. Người dùng phải nhập đúng trong thời gian chuyến đi", Toast.LENGTH_LONG).show()
+                return false
+            }
         }
 
         return true
@@ -267,6 +276,27 @@ class AIDialogFragment : DialogFragment() {
 
     fun setOnResultListener(listener: (cities: List<CityPlan>) -> Unit) {
         onResultListener = listener
+    }
+    
+    fun setTripDateRange(startDate: String, endDate: String) {
+        try {
+            tripStartDate = Calendar.getInstance().apply {
+                time = tripDateFormat.parse(startDate) ?: Date()
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            tripEndDate = Calendar.getInstance().apply {
+                time = tripDateFormat.parse(endDate) ?: Date()
+                set(Calendar.HOUR_OF_DAY, 23)
+                set(Calendar.MINUTE, 59)
+                set(Calendar.SECOND, 59)
+                set(Calendar.MILLISECOND, 999)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     override fun onDestroyView() {
@@ -277,6 +307,12 @@ class AIDialogFragment : DialogFragment() {
     companion object {
         fun newInstance(): AIDialogFragment {
             return AIDialogFragment()
+        }
+        
+        fun newInstance(tripStartDate: String, tripEndDate: String): AIDialogFragment {
+            return AIDialogFragment().apply {
+                setTripDateRange(tripStartDate, tripEndDate)
+            }
         }
     }
 }

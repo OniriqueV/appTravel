@@ -19,9 +19,6 @@ import com.datn.apptravel.R
 import com.datn.apptravel.data.model.TopicSelection
 import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.model.TripTopic
-import com.datn.apptravel.data.model.request.CreateTripRequest
-import com.datn.apptravel.data.repository.AuthRepository
-import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityTripDetailBinding
 import com.datn.apptravel.databinding.DialogShareTripBinding
 import com.datn.apptravel.databinding.DialogSelectFollowersBinding
@@ -36,12 +33,16 @@ import com.datn.apptravel.ui.trip.map.TripMapActivity
 import com.datn.apptravel.ui.trip.viewmodel.TripDetailViewModel
 import com.datn.apptravel.utils.ApiConfig
 import androidx.lifecycle.lifecycleScope
+import com.datn.apptravel.data.model.AISuggestedPlan
+import com.datn.apptravel.data.model.CityPlan
+import com.datn.apptravel.data.model.User
+import com.datn.apptravel.ui.trip.CreateTripActivity
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.firebase.auth.FirebaseAuth
 import com.datn.apptravel.ui.trip.ai.AIDialogFragment
+import com.datn.apptravel.ui.trip.ai.AIPlanPreviewDialogFragment
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
@@ -52,8 +53,6 @@ import java.time.format.DateTimeFormatter
 class TripDetailActivity : AppCompatActivity() {
 
     private val viewModel: TripDetailViewModel by viewModel()
-    private val tripRepository: TripRepository by inject()
-    private val authRepository: AuthRepository by inject()
     private val auth: FirebaseAuth by inject()
     private var tripId: String? = null
     private var currentTrip: Trip? = null
@@ -61,8 +60,6 @@ class TripDetailActivity : AppCompatActivity() {
     private lateinit var scheduleDayAdapter: ScheduleDayAdapter
     private lateinit var memberAdapter: TripMemberSmallAdapter
 
-    private var isOwner = false // Track if current user is trip owner
-    private var isMember = false // Track if current user is trip member
     private var isReadOnly = false // Cho Discover
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -143,7 +140,13 @@ class TripDetailActivity : AppCompatActivity() {
     }
 
     private fun showAISimpleInputDialog() {
-        val dialog = AIDialogFragment.newInstance()
+        val trip = currentTrip
+        if (trip == null) {
+            Toast.makeText(this, "Không tìm thấy thông tin chuyến đi", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val dialog = AIDialogFragment.newInstance(trip.startDate, trip.endDate)
 
         dialog.setOnResultListener { cities ->
             // User đã nhập các thành phố và dates
@@ -153,7 +156,7 @@ class TripDetailActivity : AppCompatActivity() {
         dialog.show(supportFragmentManager, "AISimpleInputDialog")
     }
 
-    private fun generateAIPlansForCities(cities: List<com.datn.apptravel.data.model.CityPlan>) {
+    private fun generateAIPlansForCities(cities: List<CityPlan>) {
         if (cities.isEmpty()) {
             Toast.makeText(this, "Vui lòng thêm ít nhất 1 thành phố", Toast.LENGTH_SHORT).show()
             return
@@ -166,8 +169,8 @@ class TripDetailActivity : AppCompatActivity() {
         viewModel.generateAIPlansForCities(cities)
     }
 
-    private fun showAIPlanPreviewDialog(plans: List<com.datn.apptravel.data.model.AISuggestedPlan>) {
-        val dialog = com.datn.apptravel.ui.trip.ai.AIPlanPreviewDialogFragment.newInstance()
+    private fun showAIPlanPreviewDialog(plans: List<AISuggestedPlan>) {
+        val dialog = AIPlanPreviewDialogFragment.newInstance()
         
         dialog.setPlans(plans)
         dialog.setOnSaveListener { confirmedPlans ->
@@ -199,72 +202,50 @@ class TripDetailActivity : AppCompatActivity() {
     private fun setupObservers() {
         Log.d("TripDetailActivity", "setupObservers - Setting up observers")
         
+        // Set current user in ViewModel
+        auth.currentUser?.uid?.let { userId ->
+            viewModel.setCurrentUser(userId)
+        }
+        
+        // Observe ownership/membership status from ViewModel
+        viewModel.isOwner.observe(this) { isOwner ->
+            // Check if user should be redirected to map view
+            val isMember = viewModel.isMember.value ?: false
+            if (!isOwner && !isMember && !isReadOnly && currentTrip != null) {
+                Log.d("TripDetailActivity", "User is neither owner nor member, redirecting to map view")
+                val intent = Intent(this, TripMapActivity::class.java)
+                intent.putExtra("tripId", tripId)
+                intent.putExtra("tripTitle", currentTrip?.title ?: "Trip")
+                intent.putExtra("tripUserId", currentTrip?.userId)
+                startActivity(intent)
+                finish()
+                return@observe
+            }
+            updateUIBasedOnPermissions()
+        }
+        
+        viewModel.isMember.observe(this) { isMember ->
+            // Check if user should be redirected to map view
+            val isOwner = viewModel.isOwner.value ?: false
+            if (!isOwner && !isMember && !isReadOnly && currentTrip != null) {
+                Log.d("TripDetailActivity", "User is neither owner nor member, redirecting to map view")
+                val intent = Intent(this, TripMapActivity::class.java)
+                intent.putExtra("tripId", tripId)
+                intent.putExtra("tripTitle", currentTrip?.title ?: "Trip")
+                intent.putExtra("tripUserId", currentTrip?.userId)
+                startActivity(intent)
+                finish()
+                return@observe
+            }
+            updateUIBasedOnPermissions()
+        }
+        
         // Observe trip details
         viewModel.tripDetails.observe(this) { trip ->
-            Log.d("TripDetailActivity", "Observer triggered - trip: ${trip?.id}, userId: ${trip?.userId}")
-            Log.d("TripDetailActivity", "Full trip object: $trip")
+            Log.d("TripDetailActivity", "Observer triggered - trip: ${trip?.id}")
             currentTrip = trip
-            
-            // Check if current user is the trip owner
-            if (trip != null) {
-                Log.d("TripDetailActivity", "Checking ownership - trip is not null")
-                lifecycleScope.launch {
-                    val user = authRepository.currentUser.first()
-                    Log.d("TripDetailActivity", "Current user ID: ${user?.id}")
-                    Log.d("TripDetailActivity", "Trip user ID: ${trip.userId}")
-
-                    if (user != null) {
-                        // Check if user is owner
-                        isOwner = user.id == trip.userId
-
-                        // Check if user is member
-                        Log.d("TripDetailActivity", "Trip members list: ${trip.members}")
-                        Log.d("TripDetailActivity", "Trip members count: ${trip.members?.size}")
-                        isMember = trip.members?.any { member ->
-                            Log.d("TripDetailActivity", "Checking member: ${member.id} vs user: ${user.id}")
-                            member.id == user.id
-                        } == true
-
-                        Log.d("TripDetailActivity", "Is owner: $isOwner")
-                        Log.d("TripDetailActivity", "Is member: $isMember")
-                        Log.d("TripDetailActivity", "isReadOnly: $isReadOnly")
-
-                        // If user is neither owner nor member and not in read-only mode
-                        // Redirect to TripMapActivity
-                        if (!isOwner && !isMember && !isReadOnly) {
-                            Log.d("TripDetailActivity", "User is neither owner nor member, redirecting to map view")
-                            val intent = Intent(this@TripDetailActivity, TripMapActivity::class.java)
-                            intent.putExtra("tripId", tripId)
-                            intent.putExtra("tripTitle", trip.title ?: "Trip")
-                            intent.putExtra("tripUserId", trip.userId)
-                            startActivity(intent)
-                            finish()
-                            return@launch
-                        }
-
-                        // Show the UI
-                        binding.root.visibility = View.VISIBLE
-
-                        // Update UI based on ownership/membership
-                        updateUIBasedOnPermissions()
-                        updateUI(trip)
-                    } else {
-                        // No user logged in, redirect to map
-                        if (!isReadOnly) {
-                            val intent = Intent(this@TripDetailActivity, TripMapActivity::class.java)
-                            intent.putExtra("tripId", tripId)
-                            intent.putExtra("tripTitle", trip.title ?: "Trip")
-                            intent.putExtra("tripUserId", trip.userId)
-                            startActivity(intent)
-                            finish()
-                        }
-                    }
-                }
-            } else {
-                // Show UI if trip is null to display empty state
-                binding.root.visibility = View.VISIBLE
-                updateUI(trip)
-            }
+            binding.root.visibility = View.VISIBLE
+            updateUI(trip)
         }
 
         // Observe error messages
@@ -319,6 +300,57 @@ class TripDetailActivity : AppCompatActivity() {
                 showAIPlanPreviewDialog(plans)
             }
         }
+        
+        // Observe display members
+        viewModel.displayMembers.observe(this) { members ->
+            if (members.isNotEmpty()) {
+                binding.layoutTravelBuddies.visibility = View.VISIBLE
+                memberAdapter.submitList(members)
+                Log.d("TripDetailActivity", "Displaying ${members.size} users in travel buddies")
+            } else {
+                binding.layoutTravelBuddies.visibility = View.GONE
+            }
+        }
+        
+        // Observe plan button text
+        viewModel.planButtonText.observe(this) { text ->
+            binding.btnAddNewPlan.text = text
+        }
+        
+        // Observe trip ended status
+        viewModel.isTripEnded.observe(this) { ended ->
+            // Update menu visibility if needed
+        }
+        
+        // Observe can view map
+        viewModel.canViewMap.observe(this) { canView ->
+            // Will be used in menu
+        }
+        
+        // Observe show share button
+        viewModel.showShareButton.observe(this) { show ->
+            binding.btnShareTrip.visibility = if (show) View.VISIBLE else View.GONE
+        }
+        
+        // Observe delete success
+        viewModel.deleteSuccess.observe(this) { success ->
+            if (success) {
+                Toast.makeText(this, "Trip deleted successfully", Toast.LENGTH_SHORT).show()
+                finish()
+            }
+        }
+        
+        // Observe share success
+        viewModel.shareSuccess.observe(this) { success ->
+            if (success) {
+                Toast.makeText(this, "Trip shared successfully", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
+        // Observe followers
+        viewModel.followers.observe(this) { followers ->
+            // Followers list will be used in dialog
+        }
     }
 
     private fun updateUI(trip: Trip?) {
@@ -334,9 +366,6 @@ class TripDetailActivity : AppCompatActivity() {
             tvTripEndDate?.text = ""
             return
         }
-
-        // Update button text based on trip status
-        updatePlanButtonBasedOnTripStatus(trip)
 
         // Set trip details from API
         tvTripName?.text = trip.title ?: "Untitled Trip"
@@ -364,53 +393,6 @@ class TripDetailActivity : AppCompatActivity() {
         tvTripStartDate?.text = startDate
         tvTripEndDate?.text = endDate
 
-        // Display members based on current user role
-        lifecycleScope.launch {
-            val currentUser = authRepository.currentUser.first()
-            val currentUserId = currentUser?.id
-
-            if (currentUserId != null && trip.userId != null) {
-                val displayList = mutableListOf<com.datn.apptravel.data.model.User>()
-
-                if (isOwner) {
-                    // Owner: Hiển thị tất cả members (không bao gồm bản thân)
-                    trip.members?.forEach { member ->
-                        if (member.id != currentUserId) {
-                            displayList.add(member)
-                        }
-                    }
-                    android.util.Log.d("TripDetailActivity", "Owner mode: Displaying ${displayList.size} members (excluding self)")
-                } else if (isMember) {
-                    // Member: Hiển thị owner đầu tiên, sau đó các members khác (không bao gồm bản thân)
-                    // Fetch owner info
-                    val ownerResult = tripRepository.getUserById(trip.userId)
-                    ownerResult.onSuccess { owner ->
-                        displayList.add(owner)
-                    }
-
-                    // Add other members (excluding self)
-                    trip.members?.forEach { member ->
-                        if (member.id != currentUserId) {
-                            displayList.add(member)
-                        }
-                    }
-                    android.util.Log.d("TripDetailActivity", "Member mode: Displaying owner + ${displayList.size - 1} other members (excluding self)")
-                }
-
-                // Update UI
-                if (displayList.isNotEmpty()) {
-                    binding.layoutTravelBuddies.visibility = View.VISIBLE
-                    memberAdapter.submitList(displayList)
-                    android.util.Log.d("TripDetailActivity", "Displaying ${displayList.size} users in travel buddies")
-                } else {
-                    binding.layoutTravelBuddies.visibility = View.GONE
-                    android.util.Log.d("TripDetailActivity", "No travel buddies to display")
-                }
-            } else {
-                binding.layoutTravelBuddies.visibility = View.GONE
-            }
-        }
-
         // Load cover photo if available
         val imageUrl = ApiConfig.getImageUrl(trip.coverPhoto)
         if (imageUrl != null) {
@@ -429,6 +411,9 @@ class TripDetailActivity : AppCompatActivity() {
     }
 
     private fun updateUIBasedOnPermissions() {
+        val isOwner = viewModel.isOwner.value ?: false
+        val isMember = viewModel.isMember.value ?: false
+        
         if (isOwner) {
             // Owner has full access to everything
             binding.btnShareTrip.visibility = View.VISIBLE
@@ -456,11 +441,12 @@ class TripDetailActivity : AppCompatActivity() {
         popupMenu.menuInflater.inflate(R.menu.trip_detail_menu, popupMenu.menu)
 
         // Hide "View Map" menu item if trip has ended
-        val isTripEnded = isTripEnded()
-        popupMenu.menu.findItem(R.id.action_view_map)?.isVisible = !isTripEnded
+        val canViewMap = viewModel.canViewMap.value ?: true
+        popupMenu.menu.findItem(R.id.action_view_map)?.isVisible = canViewMap
 
         // Only owner can edit and delete trip
         // Members and read-only users cannot see these options
+        val isOwner = viewModel.isOwner.value ?: false
         if (!isOwner) {
             popupMenu.menu.findItem(R.id.action_edit_trip)?.isVisible = false
             popupMenu.menu.findItem(R.id.action_delete_trip)?.isVisible = false
@@ -476,12 +462,12 @@ class TripDetailActivity : AppCompatActivity() {
                 R.id.action_edit_trip -> {
                     // Open trip edit
                     currentTrip?.let { trip ->
-                        val intent = Intent(this, com.datn.apptravel.ui.trip.CreateTripActivity::class.java)
-                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_TRIP_ID, trip.id.toString())
-                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_TRIP_TITLE, trip.title)
-                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_START_DATE, trip.startDate)
-                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_END_DATE, trip.endDate)
-                        intent.putExtra(com.datn.apptravel.ui.trip.CreateTripActivity.EXTRA_COVER_PHOTO, trip.coverPhoto)
+                        val intent = Intent(this, CreateTripActivity::class.java)
+                        intent.putExtra(CreateTripActivity.EXTRA_TRIP_ID, trip.id.toString())
+                        intent.putExtra(CreateTripActivity.EXTRA_TRIP_TITLE, trip.title)
+                        intent.putExtra(CreateTripActivity.EXTRA_START_DATE, trip.startDate)
+                        intent.putExtra(CreateTripActivity.EXTRA_END_DATE, trip.endDate)
+                        intent.putExtra(CreateTripActivity.EXTRA_COVER_PHOTO, trip.coverPhoto)
                         startActivity(intent)
                     } ?: run {
                         Toast.makeText(this, "Trip data not available", Toast.LENGTH_SHORT).show()
@@ -513,24 +499,7 @@ class TripDetailActivity : AppCompatActivity() {
 
     private fun deleteTrip() {
         val tripIdToDelete = tripId ?: return
-
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = tripRepository.deleteTrip(tripIdToDelete)
-
-            withContext(Dispatchers.Main) {
-                if (result.isSuccess) {
-                    Toast.makeText(this@TripDetailActivity, "Trip deleted successfully!", Toast.LENGTH_SHORT).show()
-                    setResult(RESULT_OK) // Notify previous screen to refresh
-                    finish()
-                } else {
-                    Toast.makeText(
-                        this@TripDetailActivity,
-                        "Failed to delete trip: ${result.exceptionOrNull()?.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+        viewModel.deleteTrip(tripIdToDelete)
     }
 
     private fun showShareDialog() {
@@ -603,7 +572,7 @@ class TripDetailActivity : AppCompatActivity() {
         }
         
         // Track selected shared users list
-        val selectedSharedUsers = mutableListOf<com.datn.apptravel.data.model.User>()
+        val selectedSharedUsers = mutableListOf<User>()
         
         // Setup shared users RecyclerView with member adapter
         lateinit var sharedUserAdapter: TripMemberAdapter
@@ -766,69 +735,37 @@ class TripDetailActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun shareTrip(content: String, tags: String, isPublic: String, sharedAt: String?, sharedWithUsers: List<com.datn.apptravel.data.model.User>?, dialog: Dialog) {
+    private fun shareTrip(content: String, tags: String, isPublic: String, sharedAt: String?, sharedWithUsers: List<User>?, dialog: Dialog) {
         currentTrip?.let { trip ->
-            val updateRequest = CreateTripRequest(
-                userId = trip.userId,
-                title = trip.title,
-                startDate = trip.startDate,
-                endDate = trip.endDate,
-                isPublic = isPublic,
-                coverPhoto = trip.coverPhoto,
-                content = content,
-                tags = tags,
-                members = trip.members,
-                sharedWithUsers = sharedWithUsers,
-                sharedAt = sharedAt
-            )
-
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val result = tripRepository.updateTrip(trip.id ?: "", updateRequest)
-
-                    withContext(Dispatchers.Main) {
-                        if (result.isSuccess) {
-                            var message=""
-                            if(dialog.findViewById<TextView>(R.id.tvShareTitle)?.text?.toString().equals("Edit Post")){
-                                message = when (isPublic) {
-                                    "public" -> "Post updated successfully"
-                                    "follower" -> "Post updated successfully"
-                                    else -> "Post updated successfully"
-                                }
-                            }else{
-                                message = when (isPublic) {
-                                    "public" -> "Shared successfully"
-                                    "follower" -> "Shared successfully"
-                                    else -> "Post saved (not public)"
-                                }
-                            }
-
-                            Toast.makeText(
-                                this@TripDetailActivity,
-                                message,
-                                Toast.LENGTH_LONG
-                            ).show()
-                            dialog.dismiss()
-
-                            // Reload trip data
-                            loadTripData()
-                        } else {
-                            Toast.makeText(
-                                this@TripDetailActivity,
-                                "Error: ${result.exceptionOrNull()?.message}",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    }
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@TripDetailActivity,
-                            "Connection error: ${e.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
+            tripId?.let { id ->
+                viewModel.shareTrip(
+                    tripId = id,
+                    userId = trip.userId,
+                    title = trip.title,
+                    startDate = trip.startDate,
+                    endDate = trip.endDate,
+                    coverPhoto = trip.coverPhoto,
+                    content = content,
+                    tags = tags,
+                    isPublic = isPublic,
+                    sharedAt = sharedAt,
+                    members = trip.members,
+                    sharedWithUsers = sharedWithUsers
+                )
+                
+                // Show appropriate message
+                val hasBeenShared = trip.sharedAt != null
+                val message = if (hasBeenShared) {
+                    "Post updated successfully"
+                } else {
+                    when (isPublic) {
+                        "public" -> "Shared successfully"
+                        "follower" -> "Shared successfully"
+                        else -> "Post saved (not public)"
                     }
                 }
+                Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                dialog.dismiss()
             }
         }
     }
@@ -847,41 +784,22 @@ class TripDetailActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun isTripEnded(): Boolean {
-        val trip = currentTrip ?: return false
-        return try {
-            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val endDate = LocalDate.parse(trip.endDate, dateFormatter)
-            val today = LocalDate.now()
-            endDate.isBefore(today)
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    private fun updatePlanButtonBasedOnTripStatus(trip: Trip) {
-        if (isTripEnded()) {
-            binding.btnAddNewPlan.text = "View Map"
-        } else {
-            binding.btnAddNewPlan.text = "Add new plan"
-        }
-    }
-
     private fun handlePlanButtonClick() {
-        if (isTripEnded()) {
+        val isTripEnded = viewModel.isTripEnded.value ?: false
+        if (isTripEnded) {
             navigateToMapView()
         } else {
             navigateToPlanSelection()
         }
     }
 
-    private fun showFollowerSelectionDialog(onUsersSelected: (List<com.datn.apptravel.data.model.User>) -> Unit) {
+    private fun showFollowerSelectionDialog(onUsersSelected: (List<User>) -> Unit) {
         val dialogBinding = DialogSelectFollowersBinding.inflate(layoutInflater)
         val dialog = BottomSheetDialog(this)
         dialog.setContentView(dialogBinding.root)
         
         // Track selected users (single select mode for adding one at a time)
-        val selectedUsers = mutableListOf<com.datn.apptravel.data.model.User>()
+        val selectedUsers = mutableListOf<User>()
         
         // Setup follower RecyclerView with single-select adapter
         val followerAdapter = FollowerSelectionAdapter(
@@ -898,26 +816,21 @@ class TripDetailActivity : AppCompatActivity() {
             adapter = followerAdapter
         }
         
-        // Load followers
-        lifecycleScope.launch {
-            try {
-                val currentUserId = auth.currentUser?.uid ?: return@launch
-                val result = tripRepository.getFollowers(currentUserId)
-                
-                result.onSuccess { followers ->
-                    if (followers.isEmpty()) {
-                        dialogBinding.rvFollowers.visibility = android.view.View.GONE
-                        dialogBinding.layoutEmpty.visibility = android.view.View.VISIBLE
-                    } else {
-                        dialogBinding.rvFollowers.visibility = android.view.View.VISIBLE
-                        dialogBinding.layoutEmpty.visibility = android.view.View.GONE
-                        followerAdapter.submitList(followers)
-                    }
-                }.onFailure {
-                    Toast.makeText(this@TripDetailActivity, "Error loading followers", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@TripDetailActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        // Load followers from ViewModel
+        val currentUserId = auth.currentUser?.uid
+        if (currentUserId != null) {
+            viewModel.loadFollowers(currentUserId)
+        }
+        
+        // Observe followers and update adapter
+        viewModel.followers.observe(this) { followers ->
+            if (followers.isEmpty()) {
+                dialogBinding.rvFollowers.visibility = android.view.View.GONE
+                dialogBinding.layoutEmpty.visibility = android.view.View.VISIBLE
+            } else {
+                dialogBinding.rvFollowers.visibility = android.view.View.VISIBLE
+                dialogBinding.layoutEmpty.visibility = android.view.View.GONE
+                followerAdapter.submitList(followers)
             }
         }
         

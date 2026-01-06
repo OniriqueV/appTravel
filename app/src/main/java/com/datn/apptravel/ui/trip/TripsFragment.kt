@@ -15,13 +15,24 @@ import com.bumptech.glide.Glide
 import com.datn.apptravel.R
 import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.repository.AuthRepository
+import com.datn.apptravel.data.repository.TripRepository
+import com.datn.apptravel.data.local.SessionManager
+import com.datn.apptravel.data.local.CachedDiscoverTripDetail
 import com.datn.apptravel.databinding.FragmentTripsBinding
 import com.datn.apptravel.ui.base.BaseFragment
+import com.datn.apptravel.ui.discover.model.DiscoverItem
 import com.datn.apptravel.ui.trip.adapter.TripAdapter
+import com.datn.apptravel.ui.trip.adapter.DiscoverTripAdapter
 import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 import com.datn.apptravel.ui.trip.viewmodel.TripsViewModel
 import com.datn.apptravel.utils.ApiConfig
+import com.datn.apptravel.ui.discover.network.DiscoverRepository
+import com.datn.apptravel.ui.trip.map.TripMapActivity
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.time.LocalDate
@@ -33,9 +44,21 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
 
     override val viewModel: TripsViewModel by viewModel()
     private val authRepository: AuthRepository by inject()
+    private val discoverRepository: DiscoverRepository by inject()
+    private val tripRepository: TripRepository by inject()
+    private val sessionManager: SessionManager by inject()
 
     // Track currently selected tab
     private var currentTab = TAB_ONGOING
+    
+    // Track adventure section state
+    private enum class AdventureSectionState {
+        UPCOMING_TRIPS,  // Đang hiển thị upcoming trips của user
+        DISCOVER_TRIPS   // Đang hiển thị discover trips từ community
+    }
+    private var currentAdventureState: AdventureSectionState? = null
+
+    private var isInitialLoadComplete = false
 
     companion object {
         private const val TAB_ONGOING = 0
@@ -64,33 +87,63 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
         loadTrips()
     }
 
-    /**
-     * Load and display user name
-     */
+
     private fun loadUserName() {
         lifecycleScope.launch {
-            authRepository.currentUser.collect { user ->
-                user?.let {
-                    val displayName = if (it.lastName.isNotEmpty()) {
-                        it.lastName
-                    } else if (it.firstName.isNotEmpty()) {
-                        it.firstName
-                    } else {
-                        "User"
-                    }
-                    binding.tvUserName.text = displayName
+            try {
+                android.util.Log.d("TripsFragment", "loadUserName: Starting to collect currentUser")
+                
+                // Observe currentUser Flow để luôn cập nhật khi user data thay đổi
+                authRepository.currentUser.collect { user ->
+                    android.util.Log.d("TripsFragment", "loadUserName: Received user data - id: ${user?.id}, firstName: ${user?.firstName}, lastName: ${user?.lastName}")
                     
-                    // Load profile picture
-                    if (!it.profilePicture.isNullOrEmpty()) {
-                        Glide.with(this@TripsFragment)
-                            .load(it.profilePicture)
-                            .placeholder(R.drawable.ic_user)
-                            .error(R.drawable.ic_user)
-                            .into(binding.ivProfile)
+                    // Check if fragment is still attached
+                    if (!isAdded || context == null) {
+                        android.util.Log.w("TripsFragment", "loadUserName: Fragment detached, stopping")
+                        return@collect
+                    }
+                    
+                    if (user != null) {
+                        val displayName = when {
+                            user.lastName.isNotEmpty() -> {
+                                android.util.Log.d("TripsFragment", "loadUserName: Using lastName: ${user.lastName}")
+                                user.lastName
+                            }
+                            user.firstName.isNotEmpty() -> {
+                                android.util.Log.d("TripsFragment", "loadUserName: Using firstName: ${user.firstName}")
+                                user.firstName
+                            }
+                            else -> {
+                                android.util.Log.w("TripsFragment", "loadUserName: No name available, using default 'User'")
+                                "User"
+                            }
+                        }
+                        binding.tvUserName.text = displayName
+                        
+                        // Load profile picture
+                        if (!user.profilePicture.isNullOrEmpty()) {
+                            android.util.Log.d("TripsFragment", "loadUserName: Loading profile picture: ${user.profilePicture}")
+                            Glide.with(this@TripsFragment)
+                                .load(user.profilePicture)
+                                .placeholder(R.drawable.ic_user)
+                                .error(R.drawable.ic_user)
+                                .into(binding.ivProfile)
+                        } else {
+                            android.util.Log.d("TripsFragment", "loadUserName: No profile picture, using default icon")
+                            binding.ivProfile.setImageResource(R.drawable.ic_user)
+                        }
                     } else {
-                        // Set default icon if no profile picture
+                        android.util.Log.w("TripsFragment", "loadUserName: User is null")
+                        binding.tvUserName.text = "User"
                         binding.ivProfile.setImageResource(R.drawable.ic_user)
                     }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("TripsFragment", "Error loading user name", e)
+                // Set default values on error
+                if (isAdded && context != null) {
+                    binding.tvUserName.text = "User"
+                    binding.ivProfile.setImageResource(R.drawable.ic_user)
                 }
             }
         }
@@ -108,25 +161,17 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
 //        }
     }
 
-    /**
-     * Load trips data based on current tab
-     */
     private fun loadTrips() {
-        viewModel.getTrips()
+
+            viewModel.getTrips()
+
     }
 
-    /**
-     * Refresh trips data
-     */
     fun refreshTrips() {
         viewModel.getTrips()
     }
 
-    /**
-     * Setup RecyclerViews for Adventure and Past Trips
-     */
     private fun setupRecyclerViews() {
-        // Setup Adventure RecyclerView (horizontal) for upcoming trips
         val adventureAdapter = TripAdapter(
             emptyList()
         ) { trip ->
@@ -153,7 +198,14 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
 
     private fun navigateToTripDetail(trip: Trip) {
         lifecycleScope.launch {
-            authRepository.currentUser.collect { user ->
+            try {
+                val user = authRepository.currentUser.firstOrNull()
+                
+                // Check if fragment is still attached
+                if (!isAdded || context == null) {
+                    return@launch
+                }
+                
                 if (user != null) {
                     val isOwner = user.id == trip.userId
                     val isMember = trip.members?.any { it.id == user.id } == true
@@ -175,27 +227,32 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
                         startActivity(intent)
                     }
                 }
-                // Chỉ cần collect một lần
-                return@collect
+            } catch (e: Exception) {
+                android.util.Log.e("TripsFragment", "Error navigating to trip detail", e)
             }
         }
     }
 
     private fun observeTrips() {
-        // Observe ongoing trips to show current trip
-        viewModel.ongoingTrips.observe(viewLifecycleOwner) { ongoingTrips ->
-            val upcomingTrips = viewModel.upcomingTrips.value ?: emptyList()
+        val combinedTripsObserver =
+            androidx.lifecycle.MediatorLiveData<Pair<List<Trip>, List<Trip>>>()
+
+        combinedTripsObserver.addSource(viewModel.ongoingTrips) { ongoing ->
+            val upcoming = viewModel.upcomingTrips.value ?: emptyList()
+            combinedTripsObserver.value = Pair(ongoing, upcoming)
+        }
+
+        combinedTripsObserver.addSource(viewModel.upcomingTrips) { upcoming ->
+            val ongoing = viewModel.ongoingTrips.value ?: emptyList()
+            combinedTripsObserver.value = Pair(ongoing, upcoming)
+        }
+
+        // Observe combined data to ensure consistency
+        combinedTripsObserver.observe(viewLifecycleOwner) { (ongoingTrips, upcomingTrips) ->
             updateCurrentTripCard(ongoingTrips, upcomingTrips)
             updateUpcomingsSection(ongoingTrips, upcomingTrips)
         }
-        
-        // Observe upcoming trips (startDate > today) for adventure section
-        viewModel.upcomingTrips.observe(viewLifecycleOwner) { upcomingTrips ->
-            val ongoingTrips = viewModel.ongoingTrips.value ?: emptyList()
-            updateCurrentTripCard(ongoingTrips, upcomingTrips)
-            updateUpcomingsSection(ongoingTrips, upcomingTrips)
-        }
-        
+
         // Observe past trips (endDate < today)
         viewModel.pastTrips.observe(viewLifecycleOwner) { trips ->
             if (trips.isNotEmpty()) {
@@ -205,8 +262,15 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
                 binding.rvPastTrips.visibility = View.GONE
             }
         }
+
+        viewModel.filteredDiscoverTrips.observe(viewLifecycleOwner) { discoverItems ->
+            // Only render if we're in DISCOVER_TRIPS state
+            if (currentAdventureState == AdventureSectionState.DISCOVER_TRIPS) {
+                renderDiscoverTrips(discoverItems)
+            }
+        }
     }
-    
+
     private fun updateCurrentTripCard(ongoingTrips: List<Trip>, upcomingTrips: List<Trip>) {
         // Priority: ongoing trip first, then nearest upcoming trip
         val currentTrip = ongoingTrips.firstOrNull() ?: upcomingTrips.firstOrNull()
@@ -230,24 +294,106 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
     }
     
     private fun updateUpcomingsSection(ongoingTrips: List<Trip>, upcomingTrips: List<Trip>) {
-        // Exclude the trip shown in current trip card from Upcomings list
-        val tripsForUpcomingsSection = if (ongoingTrips.isEmpty() && upcomingTrips.isNotEmpty()) {
-            // If no ongoing trips, exclude the first upcoming (shown in current trip card)
-            upcomingTrips.drop(1)
-        } else {
-            // If there's an ongoing trip, show all upcoming trips
-            upcomingTrips
+        android.util.Log.d("TripsFragment", "updateUpcomingsSection - ongoing: ${ongoingTrips.size}, upcoming: ${upcomingTrips.size}")
+
+        val userUpcomingTrips = when {
+            ongoingTrips.isNotEmpty() -> upcomingTrips // Có ongoing -> show all upcoming
+            upcomingTrips.isNotEmpty() -> upcomingTrips.drop(1) // Không có ongoing -> skip first upcoming
+            else -> emptyList()
         }
         
-        if (tripsForUpcomingsSection.isNotEmpty()) {
-            binding.tvUpcomingsTitle.text = "Upcomings"
-            val adventureAdapter = binding.rvAdventure.adapter as? TripAdapter
-            adventureAdapter?.updateTrips(tripsForUpcomingsSection)
-            binding.rvAdventure.visibility = View.VISIBLE
+        android.util.Log.d("TripsFragment", "User upcoming trips to show: ${userUpcomingTrips.size}")
+
+        // Quyết định hiển thị gì
+        if (userUpcomingTrips.isNotEmpty()) {
+            renderUpcomingTripsSection(userUpcomingTrips)
         } else {
-            binding.tvUpcomingsTitle.text = "Adventure"
-            binding.rvAdventure.visibility = View.GONE
+            renderDiscoverTripsSection()
         }
+    }
+
+    private fun renderUpcomingTripsSection(trips: List<Trip>) {
+        android.util.Log.d("TripsFragment", "renderUpcomingTripsSection with ${trips.size} trips")
+        
+        // Set state
+        currentAdventureState = AdventureSectionState.UPCOMING_TRIPS
+        
+        // Set title
+        binding.tvUpcomingsTitle.text = "Upcomings"
+        
+        // Remove padding for Upcomings
+        binding.rvAdventure.setPadding(0, 0, 0, 0)
+        
+        // Create and set adapter
+        val adapter = TripAdapter(trips) { trip ->
+            navigateToTripDetail(trip)
+        }
+        binding.rvAdventure.adapter = adapter
+        binding.rvAdventure.visibility = View.VISIBLE
+    }
+
+    private fun renderDiscoverTripsSection() {
+        android.util.Log.d("TripsFragment", "renderDiscoverTripsSection")
+        
+        // Set state
+        currentAdventureState = AdventureSectionState.DISCOVER_TRIPS
+
+        binding.tvUpcomingsTitle.text = "Adventure"
+        
+
+        binding.rvAdventure.visibility = View.GONE
+
+        val cachedDiscoverItems = viewModel.filteredDiscoverTrips.value
+        if (cachedDiscoverItems != null && cachedDiscoverItems.isNotEmpty()) {
+            renderDiscoverTrips(cachedDiscoverItems)
+        } else {
+            android.util.Log.d("TripsFragment", "No cached discover data yet, waiting for observer")
+        }
+    }
+
+    private fun renderDiscoverTrips(discoverItems: List<DiscoverItem>) {
+        // Check fragment still attached
+        if (!isAdded || context == null) {
+            android.util.Log.w("TripsFragment", "Fragment detached, skip rendering")
+            return
+        }
+
+        if (currentAdventureState != AdventureSectionState.DISCOVER_TRIPS) {
+            android.util.Log.w("TripsFragment", "State changed, skip rendering discover trips")
+            return
+        }
+
+        android.util.Log.d("TripsFragment", "Rendering ${discoverItems.size} discover items")
+
+        if (discoverItems.isNotEmpty()) {
+            // Add padding for Adventure section (peek effect)
+            val paddingInDp = 40
+            val paddingInPx = (paddingInDp * resources.displayMetrics.density).toInt()
+            binding.rvAdventure.setPadding(paddingInPx, 0, paddingInPx, 0)
+            
+            val adapter = DiscoverTripAdapter(discoverItems, tripRepository, sessionManager) { item ->
+                handleDiscoverTripClick(item)
+            }
+            binding.rvAdventure.adapter = adapter
+            binding.rvAdventure.visibility = View.VISIBLE
+            android.util.Log.d("TripsFragment", "Rendered ${discoverItems.size} discover trips")
+        } else {
+            binding.rvAdventure.visibility = View.GONE
+            android.util.Log.d("TripsFragment", "No discover trips, hiding recycler view")
+        }
+    }
+    
+    private fun handleDiscoverTripClick(item: DiscoverItem) {
+        if (!isAdded || context == null) return
+        
+        // Get trip details from cache for map navigation
+        val cachedDetail = sessionManager.getCachedDiscoverTripDetail(item.tripId)
+        val intent = Intent(requireContext(), TripMapActivity::class.java).apply {
+            putExtra("tripId", item.tripId)
+            putExtra("tripTitle", cachedDetail?.trip?.content ?: "Adventure Trip")
+            putExtra("tripUserId", cachedDetail?.trip?.userId)
+        }
+        startActivity(intent)
     }
     
     private fun displayCurrentTrip(trip: Trip, isOngoing: Boolean) {

@@ -35,6 +35,12 @@ class PlanDetailViewModel(
     private val _commentPosted = MutableLiveData<Boolean>()
     val commentPosted: LiveData<Boolean> = _commentPosted
     
+    private val _deletePlanSuccess = MutableLiveData<Boolean>()
+    val deletePlanSuccess: LiveData<Boolean> = _deletePlanSuccess
+    
+    private val _deletePhotoSuccess = MutableLiveData<Int>() // photoIndex
+    val deletePhotoSuccess: LiveData<Int> = _deletePhotoSuccess
+    
     // Store current planId and userId for API calls
     private var currentPlanId: String? = null
     private var currentUserId: String? = null
@@ -197,5 +203,63 @@ class PlanDetailViewModel(
 
     fun resetCommentPosted() {
         _commentPosted.value = false
+    }
+    
+    fun deletePlan(tripId: String, planId: String) {
+        viewModelScope.launch {
+            try {
+                setLoading(true)
+                Log.d("PlanDetailViewModel", "Deleting plan: $planId")
+                
+                val result = tripRepository.deletePlan(tripId, planId)
+                
+                result.onSuccess {
+                    Log.d("PlanDetailViewModel", "Plan deleted successfully")
+                    _deletePlanSuccess.postValue(true)
+                }.onFailure { exception ->
+                    Log.e("PlanDetailViewModel", "Failed to delete plan", exception)
+                    setError("Failed to delete plan: ${exception.message}")
+                    _deletePlanSuccess.postValue(false)
+                }
+            } catch (e: Exception) {
+                Log.e("PlanDetailViewModel", "Error deleting plan", e)
+                setError("Error: ${e.message}")
+                _deletePlanSuccess.postValue(false)
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+    
+    fun deletePhoto(tripId: String, planId: String, photoFileName: String, photoIndex: Int) {
+        viewModelScope.launch {
+            try {
+                setLoading(true)
+                Log.d("PlanDetailViewModel", "Deleting photo: $photoFileName")
+                
+                val result = tripRepository.deletePhotoFromPlan(tripId, planId, photoFileName)
+                
+                result.onSuccess {
+                    Log.d("PlanDetailViewModel", "Photo deleted successfully")
+                    // Remove from local list
+                    val currentPhotos = _photos.value?.toMutableList() ?: mutableListOf()
+                    if (photoIndex < currentPhotos.size) {
+                        currentPhotos.removeAt(photoIndex)
+                        _photos.postValue(currentPhotos)
+                    }
+                    _deletePhotoSuccess.postValue(photoIndex)
+                }.onFailure { exception ->
+                    Log.e("PlanDetailViewModel", "Failed to delete photo", exception)
+                    setError("Failed to delete photo: ${exception.message}")
+                    _deletePhotoSuccess.postValue(-1)
+                }
+            } catch (e: Exception) {
+                Log.e("PlanDetailViewModel", "Error deleting photo", e)
+                setError("Error: ${e.message}")
+                _deletePhotoSuccess.postValue(-1)
+            } finally {
+                setLoading(false)
+            }
+        }
     }
 }

@@ -12,6 +12,7 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateFlightPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityFlightDetailBinding
+import com.datn.apptravel.utils.ExpenseFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -98,6 +99,9 @@ class FlightDetailActivity : AppCompatActivity() {
         
         // Setup date/time pickers
         setupDateTimePickers()
+        
+        // Setup expense formatter
+        ExpenseFormatter.addExpenseFormatter(binding.etExpense)
     }
     
     private fun setupDateTimePickers() {
@@ -221,7 +225,7 @@ class FlightDetailActivity : AppCompatActivity() {
                         } else null,
                         startTime = startTimeISO,
                         endTime = endTimeISO,
-                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        expense = ExpenseFormatter.parseExpense(binding.etExpense.text.toString()),
                         photoUrl = uploadedFilename,
                         type = PlanType.FLIGHT.name,
                         arrivalLocation = null,  // Not available in layout
@@ -332,7 +336,7 @@ class FlightDetailActivity : AppCompatActivity() {
         }
         
         if (expense > 0) {
-            binding.etExpense.setText(expense.toString())
+            binding.etExpense.setText(ExpenseFormatter.formatExpense(expense))
         }
     }
     

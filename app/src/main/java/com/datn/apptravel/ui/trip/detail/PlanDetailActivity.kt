@@ -19,13 +19,21 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.datn.apptravel.R
 import com.datn.apptravel.data.local.SessionManager
+import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityPlanDetailBinding
 import com.datn.apptravel.ui.discover.model.CommentDto
 import com.datn.apptravel.ui.trip.adapter.CommentAdapter
 import com.datn.apptravel.ui.trip.adapter.PhotoCollectionAdapter
+import com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.LodgingDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity
 import com.datn.apptravel.ui.trip.viewmodel.PlanDetailViewModel
+import com.datn.apptravel.utils.ExpenseFormatter
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +48,6 @@ class PlanDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPlanDetailBinding
     private val viewModel: PlanDetailViewModel by viewModel()
-    private val tripRepository: TripRepository by inject()
     private val sessionManager: SessionManager by inject()
     private var planId: String? = null
     private var tripId: String? = null
@@ -177,6 +184,23 @@ class PlanDetailActivity : AppCompatActivity() {
             error?.let {
                 Toast.makeText(this, it, Toast.LENGTH_LONG).show()
                 viewModel.clearError()
+            }
+        }
+        
+        // Observe delete plan success
+        viewModel.deletePlanSuccess.observe(this) { success ->
+            if (success) {
+                Toast.makeText(this, "Plan deleted successfully!", Toast.LENGTH_SHORT).show()
+                setResult(RESULT_OK)
+                finish()
+            }
+        }
+        
+        // Observe delete photo success
+        viewModel.deletePhotoSuccess.observe(this) { photoIndex ->
+            if (photoIndex >= 0) {
+                photoAdapter.removePhoto(photoIndex)
+                Toast.makeText(this, "Photo deleted successfully!", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -348,7 +372,7 @@ class PlanDetailActivity : AppCompatActivity() {
     }
 
     private fun formatExpense(expense: Double): String {
-        return String.Companion.format(Locale.US, "%.0fđ", expense)
+        return ExpenseFormatter.formatExpenseWithCurrency(expense)
     }
 
     private fun loadPlanDataFromViewModel() {
@@ -358,7 +382,7 @@ class PlanDetailActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateUIWithPlanData(plan: com.datn.apptravel.data.model.Plan) {
+    private fun updateUIWithPlanData(plan: Plan) {
         // Update UI with plan data
         binding.tvPlanTitle.text = getPlanTypeDisplayName(plan.type)
         binding.tvPlanName.text = plan.title
@@ -395,14 +419,14 @@ class PlanDetailActivity : AppCompatActivity() {
                         }
                         
                         val intent = when (planType) {
-                            PlanType.RESTAURANT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity::class.java)
-                            PlanType.LODGING -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.LodgingDetailActivity::class.java)
-                            PlanType.FLIGHT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity::class.java)
-                            PlanType.BOAT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity::class.java)
-                            PlanType.CAR_RENTAL -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity::class.java)
-                            PlanType.TRAIN -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity::class.java)
+                            PlanType.RESTAURANT -> Intent(this, RestaurantDetailActivity::class.java)
+                            PlanType.LODGING -> Intent(this, LodgingDetailActivity::class.java)
+                            PlanType.FLIGHT -> Intent(this, FlightDetailActivity::class.java)
+                            PlanType.BOAT -> Intent(this, BoatDetailActivity::class.java)
+                            PlanType.CAR_RENTAL -> Intent(this, CarRentalDetailActivity::class.java)
+                            PlanType.TRAIN -> Intent(this, CarRentalDetailActivity::class.java)
                             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
-                            PlanType.CAMPING, PlanType.RELIGION -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity::class.java)
+                            PlanType.CAMPING, PlanType.RELIGION -> Intent(this, ActivityDetailActivity::class.java)
                             PlanType.NONE -> {
                                 Toast.makeText(this, "Cannot edit this plan type", Toast.LENGTH_SHORT).show()
                                 return@setOnMenuItemClickListener false
@@ -411,10 +435,10 @@ class PlanDetailActivity : AppCompatActivity() {
                         
                         // Pass plan data to edit activity
                         intent.putExtra("tripId", tripId)
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLAN_ID, planId)
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLAN_TITLE, plan.title)
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLACE_ADDRESS, plan.address)
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_START_TIME, plan.startTime)
+                        intent.putExtra(RestaurantDetailActivity.EXTRA_PLAN_ID, planId)
+                        intent.putExtra(RestaurantDetailActivity.EXTRA_PLAN_TITLE, plan.title)
+                        intent.putExtra(RestaurantDetailActivity.EXTRA_PLACE_ADDRESS, plan.address)
+                        intent.putExtra(RestaurantDetailActivity.EXTRA_START_TIME, plan.startTime)
 
                         // Pass plan type-specific fields
                         when (planType) {
@@ -430,7 +454,7 @@ class PlanDetailActivity : AppCompatActivity() {
                                 // LodgingPlan: has checkInDate, checkOutDate
                                 val checkInDate = plan.checkInDate ?: this@PlanDetailActivity.intent.getStringExtra("checkInDate")
                                 val checkOutDate = plan.checkOutDate ?: this@PlanDetailActivity.intent.getStringExtra("checkOutDate")
-                                checkInDate?.let { intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_START_TIME, it) }
+                                checkInDate?.let { intent.putExtra(RestaurantDetailActivity.EXTRA_START_TIME, it) }
                                 checkOutDate?.let { intent.putExtra("end_time", it) }
                                 plan.phone?.let { intent.putExtra("phone", it) }
                             }
@@ -511,24 +535,7 @@ class PlanDetailActivity : AppCompatActivity() {
     private fun deletePlan() {
         val currentTripId = tripId ?: return
         val currentPlanId = planId ?: return
-        
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = tripRepository.deletePlan(currentTripId, currentPlanId)
-            
-            withContext(Dispatchers.Main) {
-                if (result.isSuccess) {
-                    Toast.makeText(this@PlanDetailActivity, "Plan deleted successfully!", Toast.LENGTH_SHORT).show()
-                    setResult(RESULT_OK) // Notify previous screen to refresh
-                    finish()
-                } else {
-                    Toast.makeText(
-                        this@PlanDetailActivity,
-                        "Failed to delete plan: ${result.exceptionOrNull()?.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+        viewModel.deletePlan(currentTripId, currentPlanId)
     }
     
     private fun showDeletePhotoConfirmation(photoFileName: String, photoIndex: Int) {
@@ -545,24 +552,7 @@ class PlanDetailActivity : AppCompatActivity() {
     private fun deletePhotoFromPlan(photoFileName: String, photoIndex: Int) {
         val currentTripId = tripId ?: return
         val currentPlanId = planId ?: return
-        
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = tripRepository.deletePhotoFromPlan(currentTripId, currentPlanId, photoFileName)
-            
-            withContext(Dispatchers.Main) {
-                if (result.isSuccess) {
-                    // Remove photo from adapter
-                    photoAdapter.removePhoto(photoIndex)
-                    Toast.makeText(this@PlanDetailActivity, "Photo deleted successfully!", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(
-                        this@PlanDetailActivity,
-                        "Failed to delete photo: ${result.exceptionOrNull()?.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+        viewModel.deletePhoto(currentTripId, currentPlanId, photoFileName, photoIndex)
     }
 
     private fun showCommentDialog(replyTo: CommentDto? = null) {

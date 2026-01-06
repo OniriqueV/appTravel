@@ -19,6 +19,7 @@ import com.bumptech.glide.Glide
 import com.datn.apptravel.R
 import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.response.MapPlace
+import com.datn.apptravel.data.repository.ImageSearchRepository
 import com.datn.apptravel.databinding.ActivityPlanSelectionBinding
 import com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity
 import com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity
@@ -46,7 +47,7 @@ import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 class PlanSelectionActivity : AppCompatActivity() {
 
     private val viewModel: PlanSelectionViewModel by viewModel()
-    private val imageSearchRepository: com.datn.apptravel.data.repository.ImageSearchRepository by inject()
+    private val imageSearchRepository: ImageSearchRepository by inject()
     private var tripId: String? = null
     private lateinit var binding: ActivityPlanSelectionBinding
 
@@ -80,9 +81,7 @@ class PlanSelectionActivity : AppCompatActivity() {
         checkLocationPermission()
     }
 
-    /**
-     * Setup the map
-     */
+
     private fun setupMap() {
         binding.mapView.apply {
             setTileSource(TileSourceFactory.MAPNIK)
@@ -99,9 +98,6 @@ class PlanSelectionActivity : AppCompatActivity() {
         binding.mapView.overlays.add(myLocationOverlay)
     }
 
-    /**
-     * Set up the UI elements and click listeners
-     */
     private fun setupUI() {
         // Set up back button
         binding.btnBack.setOnClickListener {

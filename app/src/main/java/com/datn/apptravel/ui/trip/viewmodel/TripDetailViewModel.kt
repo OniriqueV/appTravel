@@ -12,12 +12,14 @@ import com.datn.apptravel.data.model.CityPlan
 import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.Trip
+import com.datn.apptravel.data.model.User
 import com.datn.apptravel.data.model.request.CreateActivityPlanRequest
 import com.datn.apptravel.data.model.request.CreateBoatPlanRequest
 import com.datn.apptravel.data.model.request.CreateCarRentalPlanRequest
 import com.datn.apptravel.data.model.request.CreateFlightPlanRequest
 import com.datn.apptravel.data.model.request.CreateLodgingPlanRequest
 import com.datn.apptravel.data.model.request.CreateRestaurantPlanRequest
+import com.datn.apptravel.data.model.request.CreateTripRequest
 import com.datn.apptravel.data.repository.AIRepository
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.ui.trip.model.ScheduleActivity
@@ -45,6 +47,66 @@ class TripDetailViewModel(
     
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
+    
+    // Processed data for UI
+    private val _displayMembers = MutableLiveData<List<User>>()
+    val displayMembers: LiveData<List<User>> = _displayMembers
+    
+    private val _planButtonText = MutableLiveData<String>()
+    val planButtonText: LiveData<String> = _planButtonText
+    
+    private val _isTripEnded = MutableLiveData<Boolean>()
+    val isTripEnded: LiveData<Boolean> = _isTripEnded
+    
+    private val _canViewMap = MutableLiveData<Boolean>()
+    val canViewMap: LiveData<Boolean> = _canViewMap
+    
+    private val _showShareButton = MutableLiveData<Boolean>()
+    val showShareButton: LiveData<Boolean> = _showShareButton
+    
+    private val _deleteSuccess = MutableLiveData<Boolean>()
+    val deleteSuccess: LiveData<Boolean> = _deleteSuccess
+    
+    private val _shareSuccess = MutableLiveData<Boolean>()
+    val shareSuccess: LiveData<Boolean> = _shareSuccess
+    
+    private val _followers = MutableLiveData<List<User>>()
+    val followers: LiveData<List<User>> = _followers
+    
+    // Ownership/membership status exposed to UI
+    private val _isOwner = MutableLiveData<Boolean>()
+    val isOwner: LiveData<Boolean> = _isOwner
+    
+    private val _isMember = MutableLiveData<Boolean>()
+    val isMember: LiveData<Boolean> = _isMember
+    
+    // Current user info
+    private var currentUserId: String? = null
+    
+    fun setCurrentUser(userId: String) {
+        currentUserId = userId
+        // Recalculate permissions if trip is already loaded
+        _tripDetails.value?.let { trip ->
+            calculatePermissions(trip)
+        }
+    }
+    
+    private fun calculatePermissions(trip: Trip) {
+        val userId = currentUserId ?: return
+        
+        val owner = trip.userId == userId
+        val member = trip.members?.any { it.id == userId } == true
+        
+        _isOwner.value = owner
+        _isMember.value = member
+        
+        // Update UI states based on permissions
+        _showShareButton.value = owner
+        updateTripEndedStatus(trip)
+        updateDisplayMembers(trip)
+        
+        Log.d("TripDetailViewModel", "Permissions - isOwner: $owner, isMember: $member")
+    }
 
     fun getTripDetails(tripId: String) {
         setLoading(true)
@@ -61,6 +123,7 @@ class TripDetailViewModel(
                 val tripResult = tripRepository.getTripById(tripId)
                 tripResult.onSuccess { trip ->
                     _tripDetails.value = trip
+                    calculatePermissions(trip)
                 }.onFailure { exception ->
                     _errorMessage.value = exception.message ?: "Failed to load trip"
                     _tripDetails.value = null
@@ -249,7 +312,7 @@ class TripDetailViewModel(
         }
     }
 
-    fun saveAIPlans(context: Context, tripId: String, plans: List<com.datn.apptravel.data.model.AISuggestedPlan>) {
+    fun saveAIPlans(context: Context, tripId: String, plans: List<AISuggestedPlan>) {
         viewModelScope.launch {
             try {
                 _aiGenerationStatus.value = AIGenerationStatus.Loading
@@ -281,10 +344,7 @@ class TripDetailViewModel(
         }
     }
 
-    /**
-     * Create a plan from AI suggestion based on its type
-     * Downloads and uploads image if photoUrl is provided
-     */
+
     private suspend fun createPlanFromSuggestion(context: Context, tripId: String, suggestion: AISuggestedPlan): Result<Plan> {
         // Download and upload image if photoUrl is provided
         var uploadedFilename: String? = null
@@ -434,9 +494,6 @@ class TripDetailViewModel(
         }
     }
 
-    /**
-     * Calculate end time by adding hours to start time
-     */
     private fun calculateEndTime(startTime: String, hoursToAdd: Int): String {
         return try {
             val dateTime = LocalDateTime.parse(startTime, DateTimeFormatter.ISO_DATE_TIME)
@@ -449,5 +506,148 @@ class TripDetailViewModel(
 
     fun resetAIGenerationStatus() {
         _aiGenerationStatus.value = AIGenerationStatus.Idle
+    }
+    
+    private fun updateTripEndedStatus(trip: Trip) {
+        val ended = try {
+            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val endDate = LocalDate.parse(trip.endDate, dateFormatter)
+            val today = LocalDate.now()
+            endDate.isBefore(today)
+        } catch (e: Exception) {
+            false
+        }
+        
+        _isTripEnded.value = ended
+        _canViewMap.value = !ended
+        _planButtonText.value = if (ended) "View Map" else "Add new plan"
+    }
+    
+    private fun updateDisplayMembers(trip: Trip) {
+        viewModelScope.launch {
+            try {
+                val userId = currentUserId ?: return@launch
+                val owner = _isOwner.value ?: false
+                val member = _isMember.value ?: false
+                val displayList = mutableListOf<User>()
+                
+                if (owner) {
+                    // Owner: Show all members except self
+                    trip.members?.forEach { m ->
+                        if (m.id != userId) {
+                            displayList.add(m)
+                        }
+                    }
+                } else if (member) {
+                    // Member: Show owner first, then other members except self
+                    val ownerResult = tripRepository.getUserById(trip.userId)
+                    ownerResult.onSuccess { owner ->
+                        displayList.add(owner)
+                    }
+                    
+                    trip.members?.forEach { m ->
+                        if (m.id != userId) {
+                            displayList.add(m)
+                        }
+                    }
+                }
+                
+                _displayMembers.postValue(displayList)
+                Log.d("TripDetailViewModel", "Display members: ${displayList.size}")
+            } catch (e: Exception) {
+                Log.e("TripDetailViewModel", "Error updating display members", e)
+                _displayMembers.postValue(emptyList())
+            }
+        }
+    }
+    
+    fun deleteTrip(tripId: String) {
+        viewModelScope.launch {
+            try {
+                setLoading(true)
+                val result = tripRepository.deleteTrip(tripId)
+                
+                result.onSuccess {
+                    _deleteSuccess.postValue(true)
+                    Log.d("TripDetailViewModel", "Trip deleted successfully")
+                }.onFailure { exception ->
+                    _errorMessage.postValue(exception.message ?: "Failed to delete trip")
+                    _deleteSuccess.postValue(false)
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue(e.message ?: "Error deleting trip")
+                _deleteSuccess.postValue(false)
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+    
+    fun shareTrip(
+        tripId: String,
+        userId: String,
+        title: String,
+        startDate: String,
+        endDate: String,
+        coverPhoto: String?,
+        content: String,
+        tags: String,
+        isPublic: String,
+        sharedAt: String?,
+        members: List<User>?,
+        sharedWithUsers: List<User>?
+    ) {
+        viewModelScope.launch {
+            try {
+                setLoading(true)
+                val updateRequest = CreateTripRequest(
+                    userId = userId,
+                    title = title,
+                    startDate = startDate,
+                    endDate = endDate,
+                    isPublic = isPublic,
+                    coverPhoto = coverPhoto,
+                    content = content,
+                    tags = tags,
+                    members = members,
+                    sharedWithUsers = sharedWithUsers,
+                    sharedAt = sharedAt
+                )
+                
+                val result = tripRepository.updateTrip(tripId, updateRequest)
+                
+                result.onSuccess {
+                    _shareSuccess.postValue(true)
+                    // Reload trip to get updated data
+                    getTripDetails(tripId)
+                }.onFailure { exception ->
+                    _errorMessage.postValue(exception.message ?: "Failed to share trip")
+                    _shareSuccess.postValue(false)
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue(e.message ?: "Error sharing trip")
+                _shareSuccess.postValue(false)
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+    
+    fun loadFollowers(userId: String) {
+        viewModelScope.launch {
+            try {
+                val result = tripRepository.getFollowers(userId)
+                
+                result.onSuccess { followersList ->
+                    _followers.postValue(followersList)
+                }.onFailure { exception ->
+                    _errorMessage.postValue(exception.message ?: "Failed to load followers")
+                    _followers.postValue(emptyList())
+                }
+            } catch (e: Exception) {
+                _errorMessage.postValue(e.message ?: "Error loading followers")
+                _followers.postValue(emptyList())
+            }
+        }
     }
 }

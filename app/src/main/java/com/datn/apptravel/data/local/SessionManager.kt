@@ -7,11 +7,26 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.datn.apptravel.data.model.Trip
+import com.datn.apptravel.data.model.User
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+
+// Cache data for discover trips
+data class CachedDiscoverTripDetail(
+    val trip: Trip,
+    val user: User,
+    val duration: Int,
+    val startDateText: String,
+    val durationText: String
+)
+
 class SessionManager(private val context: Context) {
+    
+    // In-memory cache for discover trips
+    private val discoverTripCache = mutableMapOf<String, CachedDiscoverTripDetail>()
     
     companion object {
         private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "session_prefs")
@@ -65,5 +80,19 @@ class SessionManager(private val context: Context) {
         context.dataStore.edit { preferences ->
             preferences.clear()
         }
+        discoverTripCache.clear()
+    }
+    
+    // Discover trip cache methods
+    fun cacheDiscoverTripDetail(tripId: String, detail: CachedDiscoverTripDetail) {
+        discoverTripCache[tripId] = detail
+    }
+    
+    fun getCachedDiscoverTripDetail(tripId: String): CachedDiscoverTripDetail? {
+        return discoverTripCache[tripId]
+    }
+    
+    fun clearDiscoverTripCache() {
+        discoverTripCache.clear()
     }
 }

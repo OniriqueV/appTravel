@@ -3,7 +3,7 @@ package com.datn.apptravel.ui.trip.model
 sealed class ScheduleItem {
     data class DateItem(
         val label: String,  // "Start" or "End"
-        val date: String    // formatted date
+        val date: String
     ) : ScheduleItem()
 
     data class PlanItem(

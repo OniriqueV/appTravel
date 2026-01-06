@@ -11,6 +11,7 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateRestaurantPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityRestaurantDetailBinding
+import com.datn.apptravel.utils.ExpenseFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -102,6 +103,9 @@ class RestaurantDetailActivity : AppCompatActivity() {
         binding.etTime.setOnClickListener {
             showTimePicker()
         }
+        
+        // Setup expense formatter
+        ExpenseFormatter.addExpenseFormatter(binding.etExpense)
     }
     
     private fun showDatePicker() {
@@ -179,7 +183,7 @@ class RestaurantDetailActivity : AppCompatActivity() {
                         } else null,
                         startTime = startTimeISO,
                         endTime = endTimeISO,
-                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        expense = ExpenseFormatter.parseExpense(binding.etExpense.text.toString()),
                         photoUrl = uploadedFilename,
                         type = PlanType.RESTAURANT.name,
                         reservationDate = startTimeISO,
@@ -287,7 +291,7 @@ class RestaurantDetailActivity : AppCompatActivity() {
         }
         
         if (expense > 0) {
-            binding.etExpense.setText(expense.toString())
+            binding.etExpense.setText(ExpenseFormatter.formatExpense(expense))
         }
     }
 }
