@@ -4,14 +4,20 @@ import android.content.Context
 import android.net.Uri
 import com.datn.apptravel.data.api.TripApiService
 import com.datn.apptravel.data.model.Plan
+import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.Trip
 import com.datn.apptravel.data.model.request.*
+import com.datn.apptravel.ui.discover.model.CommentDto
+import com.datn.apptravel.ui.discover.model.PlanCommentDto
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
+import java.util.Locale
 
 class TripRepository(private val tripApiService: TripApiService) {
     
@@ -53,6 +59,24 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
     
+    suspend fun getUserById(userId: String): Result<com.datn.apptravel.data.model.User> {
+        return try {
+            val response = tripApiService.getUserById(userId)
+            if (response.isSuccessful) {
+                val user = response.body()
+                if (user != null) {
+                    Result.success(user)
+                } else {
+                    Result.failure(Exception("User not found"))
+                }
+            } else {
+                Result.failure(Exception("Failed to get user"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun getTripsByUserId(userId: String): Result<List<Trip>> {
         return try {
             val response = tripApiService.getTripsByUserId(userId)
@@ -61,6 +85,20 @@ class TripRepository(private val tripApiService: TripApiService) {
                 Result.success(trips)
             } else {
                 Result.failure(Exception("Failed to get trips"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getTripsByMemberId(userId: String): Result<List<Trip>> {
+        return try {
+            val response = tripApiService.getTripsByMemberId(userId)
+            if (response.isSuccessful) {
+                val trips = response.body() ?: emptyList()
+                Result.success(trips)
+            } else {
+                Result.failure(Exception("Failed to get member trips"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -556,49 +594,235 @@ class TripRepository(private val tripApiService: TripApiService) {
             Result.failure(e)
         }
     }
-    
-    /**
-     * Download image from URL and upload to server
-     * @param context Application context
-     * @param imageUrl URL of the image to download
-     * @return Result with filename on success
-     */
+
     suspend fun downloadAndUploadImage(context: Context, imageUrl: String): Result<String> {
-        return try {
-            // Download image from URL
-            val url = URL(imageUrl)
-            val connection = url.openConnection()
-            connection.connect()
-            
-            val inputStream = connection.getInputStream()
-            val file = File(context.cacheDir, "downloaded_${System.currentTimeMillis()}.jpg")
-            val outputStream = FileOutputStream(file)
-            inputStream.copyTo(outputStream)
-            inputStream.close()
-            outputStream.close()
-            
-            // Upload to server
-            val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
-            val multipartBody = MultipartBody.Part.createFormData("file", file.name, requestBody)
-            
-            val response = tripApiService.uploadImage(multipartBody)
-            
-            // Clean up temp file
-            file.delete()
-            
-            if (response.isSuccessful && response.body()?.success == true) {
-                val fileName = response.body()?.fileName
-                if (fileName != null) {
-                    Result.success(fileName)
+        return withContext(Dispatchers.IO) {
+            try {
+                android.util.Log.d("TripRepository", "Starting download from: $imageUrl")
+                
+                // Download image from URL
+                val url = URL(imageUrl)
+                val connection = url.openConnection()
+                connection.connect()
+                
+                val inputStream = connection.getInputStream()
+                val file = File(context.cacheDir, "downloaded_${System.currentTimeMillis()}.jpg")
+                val outputStream = FileOutputStream(file)
+                inputStream.copyTo(outputStream)
+                inputStream.close()
+                outputStream.close()
+                
+                android.util.Log.d("TripRepository", "Downloaded image to: ${file.absolutePath}, size: ${file.length()} bytes")
+                
+                // Upload to server
+                val requestBody = file.asRequestBody("image/*".toMediaTypeOrNull())
+                val multipartBody = MultipartBody.Part.createFormData("file", file.name, requestBody)
+                
+                android.util.Log.d("TripRepository", "Uploading to server...")
+                val response = tripApiService.uploadImage(multipartBody)
+                
+                // Clean up temp file
+                file.delete()
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    val fileName = response.body()?.fileName
+                    if (fileName != null) {
+                        android.util.Log.d("TripRepository", "✓ Upload successful! Filename: $fileName")
+                        Result.success(fileName)
+                    } else {
+                        android.util.Log.e("TripRepository", "✗ File name is null in response")
+                        Result.failure(Exception("File name is null"))
+                    }
                 } else {
-                    Result.failure(Exception("File name is null"))
+                    val errorMessage = response.body()?.message ?: "Failed to upload image"
+                    android.util.Log.e("TripRepository", "✗ Upload failed: $errorMessage")
+                    Result.failure(Exception(errorMessage))
                 }
+            } catch (e: Exception) {
+                android.util.Log.e("TripRepository", "✗ Error downloading and uploading image: ${e.message}", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun getAllPlansForTrip(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body() ?: emptyList()
+                Result.success(plans)
             } else {
-                val errorMessage = response.body()?.message ?: "Failed to upload image"
-                Result.failure(Exception(errorMessage))
+                Result.failure(Exception("Failed to get plans"))
             }
         } catch (e: Exception) {
-            android.util.Log.e("TripRepository", "Error downloading and uploading image: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+//    suspend fun getRestaurantDetails(tripId: String): Result<List<Plan>> {
+//        return try {
+//            val response = tripApiService.getPlansByTripId(tripId)
+//            if (response.isSuccessful) {
+//                val plans = response.body()?.filter {
+//                    it.type == PlanType.RESTAURANT
+//                } ?: emptyList()
+//                Result.success(plans)
+//            } else {
+//                Result.failure(Exception("Failed to get restaurant plans"))
+//            }
+//        } catch (e: Exception) {
+//            Result.failure(e)
+//        }
+//    }
+
+    suspend fun getLodgingDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    it.type == PlanType.LODGING
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get lodging plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getActivityDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    val type = it.type
+                    type == PlanType.ACTIVITY || type == PlanType.TOUR || type == PlanType.THEATER ||
+                            type == PlanType.SHOPPING || type == PlanType.CAMPING || type == PlanType.RELIGION
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get activity plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getFlightDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    it.type == PlanType.FLIGHT
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get flight plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getBoatDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    it.type== PlanType.BOAT
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get boat plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get car rental plans
+     */
+    suspend fun getCarRentalDetails(tripId: String): Result<List<Plan>> {
+        return try {
+            val response = tripApiService.getPlansByTripId(tripId)
+            if (response.isSuccessful) {
+                val plans = response.body()?.filter {
+                    val type = it.type
+                    type == PlanType.CAR_RENTAL || type == PlanType.TRAIN
+                } ?: emptyList()
+                Result.success(plans)
+            } else {
+                Result.failure(Exception("Failed to get car rental plans"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // Sharing management methods
+    suspend fun updateSharedUsers(tripId: String, sharedUserIds: List<String>, currentUserId: String): Result<Trip> {
+        return try {
+            val request = UpdateSharedUsersRequest(sharedWithUserIds = sharedUserIds)
+            val response = tripApiService.updateSharedUsers(tripId, request, currentUserId)
+            if (response.isSuccessful) {
+                val trip = response.body()
+                if (trip != null) {
+                    Result.success(trip)
+                } else {
+                    Result.failure(Exception("Trip data is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to update shared users"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getFollowers(userId: String): Result<List<com.datn.apptravel.data.model.User>> {
+        return try {
+            val response = tripApiService.getFollowers(userId)
+            if (response.isSuccessful) {
+                val followers = response.body() ?: emptyList()
+                Result.success(followers)
+            } else {
+                Result.failure(Exception("Failed to get followers"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    // Plan comments methods
+    suspend fun getComments(planId: String): Result<List<CommentDto>> {
+        return try {
+            val response = tripApiService.getComments(planId)
+            if (response.isSuccessful) {
+                val comments = response.body() ?: emptyList()
+                Result.success(comments)
+            } else {
+                Result.failure(Exception("Failed to get comments"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun postComment(planId: String, userId: String, content: String, parentId: String? = null): Result<Unit> {
+        return try {
+            val body = mutableMapOf("content" to content)
+            if (parentId != null) {
+                body["parentId"] = parentId
+            }
+            val response = tripApiService.postComment(planId, userId, body)
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Failed to post comment"))
+            }
+        } catch (e: Exception) {
             Result.failure(e)
         }
     }

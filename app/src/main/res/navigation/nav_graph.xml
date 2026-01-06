@@ -3,13 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
-    app:startDestination="@id/tripsFragment">
-
-    <fragment
-        android:id="@+id/tripsFragment"
-        android:name="com.datn.apptravel.ui.trip.list.TripsFragment"
-        android:label="Trips"
-        tools:layout="@layout/fragment_trips" />
+    app:startDestination="@id/discoverFragment">
 
     <fragment
         android:id="@+id/discoverFragment"
@@ -20,11 +14,15 @@
         <action
             android:id="@+id/action_discoverFragment_to_searchExploreFragment"
             app:destination="@id/searchExploreFragment" />
+
+        <action
+            android:id="@+id/action_discoverFragment_to_userProfileFragment"
+            app:destination="@id/userProfileFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/searchExploreFragment"
-        android:name="com.datn.apptravel.ui.discover.search.SearchExploreFragment"
+        android:name="com.datn.apptravel.ui.search.SearchExploreFragment"
         android:label="Search Explore"
         tools:layout="@layout/fragment_search_explore">
 
@@ -33,4 +31,17 @@
             app:argType="string"
             android:defaultValue="" />
     </fragment>
+
+    <fragment
+        android:id="@+id/userProfileFragment"
+        android:name="com.datn.apptravel.ui.discover.profileFollow.UserProfileFragment"
+        android:label="User Profile"
+        tools:layout="@layout/fragment_user_profile">
+
+        <argument
+            android:name="userId"
+            app:argType="string"
+            app:nullable="false" />
+    </fragment>
+
 </navigation>

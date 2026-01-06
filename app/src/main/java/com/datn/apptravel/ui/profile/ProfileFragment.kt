@@ -57,10 +57,10 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding, ProfileViewModel>()
 
     private fun setupClickListeners() {
         // AI Suggest - Nút mới thêm vào
-        binding.btnAISuggest.setOnClickListener {
-            val intent = Intent(requireContext(), ExtendedAISuggestActivity::class.java)
-            startActivity(intent)
-        }
+//        binding.btnAISuggest.setOnClickListener {
+//            val intent = Intent(requireContext(), ExtendedAISuggestActivity::class.java)
+//            startActivity(intent)
+//        }
 
         // Edit profile
         binding.cardProfile.setOnClickListener {

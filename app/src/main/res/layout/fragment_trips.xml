@@ -83,7 +83,7 @@
             android:id="@+id/tvUpcomingsTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="4dp"
             android:text="Upcomings"
             android:textColor="#111827"
             android:textSize="28sp"
@@ -95,8 +95,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="100dp"
-            android:layout_marginBottom="12dp"
+            android:layout_marginBottom="4dp"
             android:orientation="horizontal"
+            android:clipToPadding="false"
+            android:clipChildren="false"
             android:visibility="gone" />
 
         <!-- Current Trip Title (Live Trip or Next Trip) -->
@@ -210,17 +212,17 @@
                 android:textSize="24sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvViewAll"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="View all"
-                android:textColor="#C9A877"
-                android:textSize="16sp"
-                android:clickable="true"
-                android:focusable="true"
-                android:padding="8dp"
-                android:background="?attr/selectableItemBackground" />
+<!--            <TextView-->
+<!--                android:id="@+id/tvViewAll"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:text="View all"-->
+<!--                android:textColor="#C9A877"-->
+<!--                android:textSize="16sp"-->
+<!--                android:clickable="true"-->
+<!--                android:focusable="true"-->
+<!--                android:padding="8dp"-->
+<!--                android:background="?attr/selectableItemBackground" />-->
 
         </LinearLayout>
 

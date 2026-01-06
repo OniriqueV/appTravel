@@ -14,11 +14,9 @@ class PlanSelectionViewModel(
     private val placesRepository: PlacesRepository
 ) : BaseViewModel() {
 
-    // Current selected plan type (default to NONE - no filter)
     private val _selectedPlanType = MutableLiveData<PlanType>(PlanType.NONE)
     val selectedPlanType: LiveData<PlanType> = _selectedPlanType
 
-    // Places to display on map
     private val _places = MutableLiveData<List<MapPlace>>()
     val places: LiveData<List<MapPlace>> = _places
 
@@ -26,10 +24,8 @@ class PlanSelectionViewModel(
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
-    // Current search query
     private var currentSearchQuery: String? = null
 
-    // Search location coordinates (if user searched for a location)
     private var searchLatitude: Double? = null
     private var searchLongitude: Double? = null
 
@@ -105,6 +101,9 @@ class PlanSelectionViewModel(
         val currentPlanType = _selectedPlanType.value ?: PlanType.NONE
 
         if (currentPlanType == PlanType.NONE) {
+            // Just save the search location without showing any message
+            searchLatitude = null
+            searchLongitude = null
             _places.value = emptyList()
             setLoading(false)
             return
@@ -159,8 +158,7 @@ class PlanSelectionViewModel(
                                 }
                             }
                         } else {
-                            // No plan type selected - just save location and show message
-                            _errorMessage.value = "Location found: ${searchedPlace.name}. Now select a plan type to search."
+                            // No plan type selected - just save location without showing any message
                             _places.value = emptyList()
                             setLoading(false)
                         }
@@ -202,10 +200,6 @@ class PlanSelectionViewModel(
         fetchPlaces(currentPlanType, currentLatitude, currentLongitude)
     }
 
-    /**
-     * Search for a location and then immediately search for plan type at that location
-     * This is used when user selects plan type with text already in search box
-     */
     fun searchPlacesWithPlanType(
         query: String,
         planType: PlanType,

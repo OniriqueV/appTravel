@@ -13,12 +13,12 @@ data class ScheduleActivity(
     val expense: Double? = null,
     val photoUrl: String? = null,
     val iconResId: Int? = null,
-    val fullStartTime: String? = null,  // Full ISO datetime from Plan.startTime
-    val endTime: String? = null,  // End time for activities
-    val checkInDate: String? = null,  // For lodging
-    val checkOutDate: String? = null,  // For lodging
-    val arrivalDate: String? = null,  // For flight
-    val arrivalTime: String? = null,  // For boat
-    val reservationDate: String? = null,  // For restaurant
-    val reservationTime: String? = null  // For restaurant
+    val fullStartTime: String? = null,
+    val endTime: String? = null,
+    val checkInDate: String? = null,
+    val checkOutDate: String? = null,
+    val arrivalDate: String? = null,
+    val arrivalTime: String? = null,
+    val reservationDate: String? = null,
+    val reservationTime: String? = null
 )

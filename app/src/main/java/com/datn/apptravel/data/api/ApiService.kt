@@ -16,14 +16,6 @@ interface ApiService {
         @Query("apiKey") apiKey: String
     ): Response<GeoapifyResponse>
 
-    @GET("v2/places")
-    suspend fun searchPlaces(
-        @Query("text") text: String,
-        @Query("filter") filter: String,
-        @Query("limit") limit: Int = 20,
-        @Query("apiKey") apiKey: String
-    ): Response<GeoapifyResponse>
-
     @GET("v1/geocode/search")
     suspend fun geocodeSearch(
         @Query("text") text: String,

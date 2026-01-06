@@ -11,14 +11,21 @@ import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.model.TripItem
 import com.datn.apptravel.ui.discover.network.TripApiClient
+import com.datn.apptravel.ui.discover.post.adapter.TripSelectAdapter
 import kotlinx.coroutines.launch
 
 class SelectTripForPostActivity : AppCompatActivity() {
 
     private lateinit var recyclerTrips: RecyclerView
     private lateinit var adapter: TripSelectAdapter
-
     private val list = mutableListOf<TripItem>()
+
+    companion object {
+        const val EXTRA_TRIP_ID = "tripId"
+        const val EXTRA_TRIP_TITLE = "tripTitle"
+        const val EXTRA_TRIP_IMAGE = "tripImage"
+        const val EXTRA_USER_ID = "userId"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,21 +33,22 @@ class SelectTripForPostActivity : AppCompatActivity() {
 
         recyclerTrips = findViewById(R.id.recyclerTrips)
 
-        adapter = TripSelectAdapter(list) { tripItem ->
+        adapter = TripSelectAdapter(list) { trip ->
             val data = Intent().apply {
-                putExtra("tripId", tripItem.id)
-                putExtra("tripTitle", tripItem.title)
+                putExtra(EXTRA_TRIP_ID, trip.id)
+                putExtra(EXTRA_TRIP_TITLE, trip.title ?: "")
+                putExtra(EXTRA_TRIP_IMAGE, trip.coverPhoto ?: "")
             }
-            setResult(Activity.RESULT_OK, data)
+            setResult(RESULT_OK, data)
             finish()
         }
 
         recyclerTrips.layoutManager = LinearLayoutManager(this)
         recyclerTrips.adapter = adapter
 
-        val userId = intent.getStringExtra("userId").orEmpty()
+        val userId = intent.getStringExtra(EXTRA_USER_ID).orEmpty()
         if (userId.isBlank()) {
-            Toast.makeText(this, "Thiếu userId để load trips", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Missing userId", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
@@ -56,10 +64,10 @@ class SelectTripForPostActivity : AppCompatActivity() {
                     val trips = res.body().orEmpty()
 
                     val items = trips.mapNotNull { t ->
-                        val id = t.id ?: return@mapNotNull null   // ✅ fix lỗi String?
+                        val id = t.id ?: return@mapNotNull null
                         TripItem(
                             id = id,
-                            title = t.title,                        // title là String (non-null)
+                            title = t.title ?: "",
                             coverPhoto = t.coverPhoto ?: ""
                         )
                     }
@@ -70,7 +78,7 @@ class SelectTripForPostActivity : AppCompatActivity() {
                 } else {
                     Toast.makeText(
                         this@SelectTripForPostActivity,
-                        "Load trips fail: ${res.code()}",
+                        "Failed to load trips: ${res.code()}",
                         Toast.LENGTH_SHORT
                     ).show()
                 }

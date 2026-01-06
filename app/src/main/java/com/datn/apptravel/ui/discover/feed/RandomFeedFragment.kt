@@ -12,79 +12,102 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.datn.apptravel.R
+import com.datn.apptravel.ui.activity.MainActivity
 import com.datn.apptravel.ui.discover.DiscoverViewModel
 import com.datn.apptravel.ui.discover.Refreshable
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.detail.PostDetailActivity
-import org.koin.androidx.viewmodel.ext.android.viewModel
-import com.datn.apptravel.ui.discover.adapter.DiscoverFeedAdapter
+import com.datn.apptravel.ui.discover.feed.adapter.DiscoverFeedAdapter
+import com.datn.apptravel.ui.discover.network.FollowRepository
+import com.datn.apptravel.ui.trip.map.TripMapActivity
+import com.google.firebase.auth.FirebaseAuth
+import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 
 class RandomFeedFragment : Fragment(), Refreshable {
 
-    private val viewModel: DiscoverViewModel by viewModel()
+    private val viewModel: DiscoverViewModel by sharedViewModel()
+    private val followRepository: FollowRepository by inject()
+
+    // 🔥 Shared VM nhận signal like/unlike từ Story
 
     private lateinit var recycler: RecyclerView
     private lateinit var adapter: DiscoverFeedAdapter
     private lateinit var progressBar: ProgressBar
     private lateinit var swipeRefresh: SwipeRefreshLayout
 
-    override fun onRefresh() {
-        viewModel.loadDiscover()
-    }
+    private var currentUserId: String? = null
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        val v = inflater.inflate(R.layout.fragment_random_feed, container, false)
-
-        recycler = v.findViewById(R.id.recyclerDiscover)
-        progressBar = v.findViewById(R.id.progressDiscover)
-        swipeRefresh = v.findViewById(R.id.swipeRefreshDiscover)
-
-        return v
+    ): View {
+        val view = inflater.inflate(R.layout.fragment_random_feed, container, false)
+        recycler = view.findViewById(R.id.recyclerDiscover)
+        progressBar = view.findViewById(R.id.progressDiscover)
+        swipeRefresh = view.findViewById(R.id.swipeRefreshDiscover)
+        return view
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = DiscoverFeedAdapter { post ->
-            // 👉 mở PostDetail
-            val intent = Intent(requireContext(), PostDetailActivity::class.java)
-            intent.putExtra("postId", post.postId)
-            startActivity(intent)
-        }
+        currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+        adapter = DiscoverFeedAdapter(
+            currentUserId = currentUserId,
+            items = mutableListOf(),
+            followRepository = followRepository,
+            lifecycleOwner = viewLifecycleOwner,
+            onTripClick = { tripId ->
+                val intent = Intent(requireContext(), TripMapActivity::class.java)
+                intent.putExtra("tripId", tripId)
+                startActivity(intent)
+            },
+            onUserClick = { userId ->
+                (activity as? MainActivity)?.openUserProfile(userId)
+            },
+            onFollowChanged = { _, _ -> }
+        )
 
         recycler.layoutManager = LinearLayoutManager(requireContext())
         recycler.adapter = adapter
 
+        swipeRefresh.setOnRefreshListener { onRefresh() }
+
         observeViewModel()
-        viewModel.loadDiscover()
+        //observeTripLikeChange()
+        onRefresh()
     }
+
     private fun observeViewModel() {
-        viewModel.discoverList.observe(viewLifecycleOwner) { list ->
+        viewModel.discoverList.observe(viewLifecycleOwner) {
             swipeRefresh.isRefreshing = false
             progressBar.visibility = View.GONE
-            adapter.submitList(list)
+            adapter.submitList(it)
         }
 
         viewModel.errorMessage.observe(viewLifecycleOwner) {
             swipeRefresh.isRefreshing = false
-            if (!it.isNullOrEmpty()) {
+            if (!it.isNullOrBlank()) {
                 Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    private fun loadData() {
-        progressBar.visibility = View.VISIBLE
-        viewModel.loadDiscover(0, 20, "newest")
+    // 🔥 NHẬN LIKE / UNLIKE TỪ STORY
+//    private fun observeTripLikeChange() {
+//        sharedVM.tripLikeDelta.observe(viewLifecycleOwner) { (tripId, delta) ->
+//            adapter.updateTripLikeCount(tripId, delta)
+//        }
+//    }
+    override fun onResume() {
+        super.onResume()
+        onRefresh()
     }
 
-    private fun openPostDetail(item: DiscoverItem) {
-        val i = Intent(requireContext(), PostDetailActivity::class.java)
-        i.putExtra("postId", item.postId)
-        startActivity(i)
+    override fun onRefresh() {
+        progressBar.visibility = View.VISIBLE
+        adapter.clear()
+        viewModel.loadDiscover()
     }
 }
-

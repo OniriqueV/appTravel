@@ -12,6 +12,7 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateBoatPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityBoatDetailBinding
+import com.datn.apptravel.utils.ExpenseFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -99,6 +100,9 @@ class BoatDetailActivity : AppCompatActivity() {
         
         // Setup date/time pickers
         setupDateTimePickers()
+        
+        // Setup expense formatter
+        ExpenseFormatter.addExpenseFormatter(binding.etExpense)
     }
     
     private fun setupDateTimePickers() {
@@ -222,7 +226,7 @@ class BoatDetailActivity : AppCompatActivity() {
                         } else null,
                         startTime = startTimeISO,
                         endTime = endTimeISO,
-                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        expense = ExpenseFormatter.parseExpense(binding.etExpense.text.toString()),
                         photoUrl = uploadedFilename,
                         type = PlanType.BOAT.name,
                         arrivalTime = endTimeISO,
@@ -333,7 +337,7 @@ class BoatDetailActivity : AppCompatActivity() {
         }
         
         if (expense > 0) {
-            binding.etExpense.setText(expense.toString())
+            binding.etExpense.setText(ExpenseFormatter.formatExpense(expense))
         }
     }
     

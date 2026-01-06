@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -29,19 +30,24 @@ android {
         }
 
         val tripServiceBaseUrl = localProperties.getProperty("AUTH_BASE_URL")
-
+        buildConfigField("String", "api", "\"${localProperties.getProperty("api")}\"")
+        buildConfigField("String", "cx", "\"${localProperties.getProperty("cx")}\"")
         buildConfigField("String", "GEOAPIFY_API_KEY", "\"${localProperties.getProperty("GEOAPIFY_API_KEY")}\"")
         buildConfigField("String", "GEOAPIFY_BASE_URL", "\"${localProperties.getProperty("GEOAPIFY_BASE_URL")}\"")
         buildConfigField("String", "OSRM_BASE_URL", "\"${localProperties.getProperty("OSRM_BASE_URL")}\"")
         buildConfigField("String", "NOMINATIM_BASE_URL", "\"${localProperties.getProperty("NOMINATIM_BASE_URL")}\"")
         buildConfigField("String", "AUTH_BASE_URL", "\"${localProperties.getProperty("AUTH_BASE_URL")}\"")
-        buildConfigField("String", "TRIP_SERVICE_BASE_URL", "\"${localProperties.getProperty("TRIP_SERVICE_BASE_URL", "http://10.0.2.2:8083/")}\"")
         buildConfigField("String", "DISCOVER_SERVICE_BASE_URL", "\"${localProperties.getProperty("DISCOVER_SERVICE_BASE_URL", "http://10.0.2.2:8082/")}\"")
         buildConfigField("String", "TRIP_SERVICE_BASE_URL", "\"$tripServiceBaseUrl\"")
         buildConfigField("String", "UPLOAD_BASE_URL", "\"${tripServiceBaseUrl}uploads/\"")
         buildConfigField("String", "GOOGLE_API_BASE_URL", "\"${localProperties.getProperty("GOOGLE_API_BASE_URL")}\"")
         buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_API_KEY", "\"${localProperties.getProperty("api_key")}\"")
         buildConfigField("String", "GOOGLE_CUSTOM_SEARCH_CX", "\"${localProperties.getProperty("cx")}\"")
+        buildConfigField(
+            "String",
+            "GROQ_API_KEY",
+            "\"${localProperties.getProperty("GROQ_API_KEY")}\""
+        )
     }
 
     buildFeatures {
@@ -132,10 +138,15 @@ dependencies {
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.recyclerview)
 
-    implementation("io.coil-kt:coil:2.5.0")
+
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+    implementation("io.coil-kt:coil:2.5.0")
+
+
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
 }

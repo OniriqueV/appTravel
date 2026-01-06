@@ -1,5 +1,6 @@
 package com.datn.apptravel.ui.trip.map
 
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravel.data.repository.AuthRepository
 import com.datn.apptravel.databinding.ActivityTripMapBinding
+import com.datn.apptravel.ui.discover.PlanMap.PlanMapDetailActivity
 import com.datn.apptravel.ui.trip.adapter.ScheduleTripMapAdapter
 import com.datn.apptravel.ui.trip.model.PlanLocation
 import com.datn.apptravel.ui.trip.model.ScheduleItem
@@ -36,7 +38,6 @@ class TripMapActivity : AppCompatActivity() {
     private val authRepository: AuthRepository by inject()
     private lateinit var scheduleAdapter: ScheduleTripMapAdapter
     private val plans = mutableListOf<PlanLocation>()
-    private val scheduleItems = mutableListOf<ScheduleItem>()
     private val routePolylines = mutableListOf<Polyline>()
     private val markers = mutableListOf<Marker>()
     private var highlightedPolyline: Polyline? = null
@@ -44,8 +45,6 @@ class TripMapActivity : AppCompatActivity() {
     private val setZoom = 14.0
     private var tripId: String? = null
     private var tripUserId: String? = null
-    private var startDate: String = ""
-    private var endDate: String = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,22 +66,16 @@ class TripMapActivity : AppCompatActivity() {
         viewModel.planLocations.observe(this) { planLocations ->
             plans.clear()
             plans.addAll(planLocations)
-
-            if (plans.isEmpty()) {
-                Toast.makeText(this, "No plans found for this trip", Toast.LENGTH_SHORT).show()
-                return@observe
+            
+            if (plans.isNotEmpty()) {
+                addMarkersToMap()
+                viewModel.drawRoute(plans)
             }
-
-            updateScheduleItems()
-            addMarkersToMap()
-            viewModel.drawRoute(plans)
         }
-
-        // Observe trip dates
-        viewModel.tripDates.observe(this) { (start, end) ->
-            startDate = start
-            endDate = end
-            updateScheduleItems()
+        
+        // Observe schedule items from ViewModel
+        viewModel.scheduleItems.observe(this) { items ->
+            scheduleAdapter.updateItems(items)
         }
 
         // Observe route segments
@@ -127,9 +120,13 @@ class TripMapActivity : AppCompatActivity() {
 
         // Setup RecyclerView with HORIZONTAL layout and scroll listener
         scheduleAdapter = ScheduleTripMapAdapter(
-            items = scheduleItems,
+            items = emptyList(),
             onPlanClick = { position, plan ->
                 onPlanClicked(position, plan)
+                //mở story (PlanMapDetail)
+                startActivity(
+                    Intent(this@TripMapActivity, PlanMapDetailActivity::class.java)
+                        .putExtra("planId", plan.planId))
             },
             onConnectorClick = { fromPos, toPos ->
                 onConnectorClicked(fromPos, toPos)
@@ -170,6 +167,9 @@ class TripMapActivity : AppCompatActivity() {
             overlays.add(rotationGestureOverlay)
 
             controller.setZoom(setZoom)
+            
+            // Set default center position (Vietnam center) in case no plans available
+            controller.setCenter(GeoPoint(16.0544, 108.2022))
         }
     }
 
@@ -194,59 +194,6 @@ class TripMapActivity : AppCompatActivity() {
                 }
                 return@collect
             }
-        }
-    }
-
-    private fun updateScheduleItems() {
-        if (plans.isEmpty() || startDate.isEmpty() || endDate.isEmpty()) return
-
-        scheduleItems.clear()
-
-        // Add Start date
-        scheduleItems.add(
-            ScheduleItem.DateItem(
-                label = "Start",
-                date = formatDate(startDate)
-            )
-        )
-
-        // Add all plans with connectors between them
-        plans.forEachIndexed { index, plan ->
-            // Add connector before this plan (except for the first plan)
-            if (index > 0) {
-                scheduleItems.add(
-                    ScheduleItem.ConnectorItem(
-                        fromPlanPosition = index - 1,
-                        toPlanPosition = index
-                    )
-                )
-            }
-
-            scheduleItems.add(
-                ScheduleItem.PlanItem(
-                    plan = plan,
-                    position = index
-                )
-            )
-        }
-
-        // Add End date
-        scheduleItems.add(
-            ScheduleItem.DateItem(
-                label = "End",
-                date = formatDate(endDate)
-            )
-        )
-
-        scheduleAdapter.notifyDataSetChanged()
-    }
-
-    private fun formatDate(dateString: String): String {
-        return try {
-            val date = LocalDate.parse(dateString)
-            date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
-        } catch (e: Exception) {
-            dateString
         }
     }
 
@@ -356,6 +303,8 @@ class TripMapActivity : AppCompatActivity() {
 
     private fun highlightVisiblePlan() {
         val layoutManager = binding.rvPlans.layoutManager as? LinearLayoutManager ?: return
+        val scheduleItems = scheduleAdapter.currentList
+        if (scheduleItems.isEmpty()) return
 
         // For horizontal scroll, find the item closest to center
         val recyclerViewCenter = binding.rvPlans.width / 2

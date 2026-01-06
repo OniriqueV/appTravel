@@ -18,11 +18,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.datn.apptravel.R
+import com.datn.apptravel.data.local.SessionManager
+import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityPlanDetailBinding
+import com.datn.apptravel.ui.discover.model.CommentDto
+import com.datn.apptravel.ui.trip.adapter.CommentAdapter
 import com.datn.apptravel.ui.trip.adapter.PhotoCollectionAdapter
+import com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.LodgingDetailActivity
+import com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity
 import com.datn.apptravel.ui.trip.viewmodel.PlanDetailViewModel
+import com.datn.apptravel.utils.ExpenseFormatter
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,10 +48,12 @@ class PlanDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityPlanDetailBinding
     private val viewModel: PlanDetailViewModel by viewModel()
-    private val tripRepository: TripRepository by inject()
+    private val sessionManager: SessionManager by inject()
     private var planId: String? = null
     private var tripId: String? = null
     private lateinit var photoAdapter: PhotoCollectionAdapter
+    private lateinit var commentAdapter: CommentAdapter
+    private var commentDialog: AlertDialog? = null
 
     // Activity result launcher for edit plan
     private val editPlanLauncher = registerForActivityResult(
@@ -83,9 +96,21 @@ class PlanDetailActivity : AppCompatActivity() {
         binding = ActivityPlanDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Set user ID for API calls
+        sessionManager.getUserId()?.let { userId ->
+            viewModel.setUserId(userId)
+        }
+
         setupUI()
         observeViewModel()
         loadPlanData()
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        // Dismiss dialog to prevent WindowLeaked error
+        commentDialog?.dismiss()
+        commentDialog = null
     }
 
     private fun observeViewModel() {
@@ -95,32 +120,44 @@ class PlanDetailActivity : AppCompatActivity() {
                 updateUIWithPlanData(it)
             }
         }
-        
+
         // Observe photos
         viewModel.photos.observe(this) { photos ->
             photoAdapter.updatePhotos(photos)
         }
 
-        // Observe likes count
-        viewModel.likesCount.observe(this) { count ->
-            binding.tvLikesCount.text = count.toString()
-        }
+        // Likes feature disabled for this UI
+        // viewModel.likesCount.observe(this) { count ->
+        //     binding.tvLikesCount.text = count.toString()
+        // }
 
-        // Observe comments count
+        // Observe comments count - but don't show card yet
         viewModel.commentsCount.observe(this) { count ->
             binding.tvCommentsCount.text = count.toString()
-            binding.cardComments.visibility = if (count > 0) View.VISIBLE else View.GONE
+            // Card visibility will be controlled by comments list observer
+        }
+        
+        // Observe comments list - show card only after comments are loaded
+        viewModel.comments.observe(this) { comments ->
+            if (comments.isNotEmpty()) {
+                // Update adapter with comments
+                commentAdapter.updateComments(comments)
+                // Now show the card after comments are ready
+                binding.cardComments.visibility = View.VISIBLE
+            } else {
+                binding.cardComments.visibility = View.GONE
+            }
         }
 
-        // Observe like status
-        viewModel.isLiked.observe(this) { isLiked ->
-            if (isLiked) {
-                binding.ivLike.setImageResource(R.drawable.ic_heart_filled)
-            } else {
-                binding.ivLike.setImageResource(R.drawable.ic_heart_outline)
-            }
-            binding.ivLike.tag = isLiked
-        }
+        // Likes feature disabled for this UI
+        // viewModel.isLiked.observe(this) { isLiked ->
+        //     if (isLiked) {
+        //         binding.ivLike.setImageResource(R.drawable.ic_heart_filled)
+        //     } else {
+        //         binding.ivLike.setImageResource(R.drawable.ic_heart_outline)
+        //     }
+        //     binding.ivLike.tag = isLiked
+        // }
 
         // Observe upload success
         viewModel.uploadSuccess.observe(this) { success ->
@@ -147,6 +184,23 @@ class PlanDetailActivity : AppCompatActivity() {
             error?.let {
                 Toast.makeText(this, it, Toast.LENGTH_LONG).show()
                 viewModel.clearError()
+            }
+        }
+        
+        // Observe delete plan success
+        viewModel.deletePlanSuccess.observe(this) { success ->
+            if (success) {
+                Toast.makeText(this, "Plan deleted successfully!", Toast.LENGTH_SHORT).show()
+                setResult(RESULT_OK)
+                finish()
+            }
+        }
+        
+        // Observe delete photo success
+        viewModel.deletePhotoSuccess.observe(this) { photoIndex ->
+            if (photoIndex >= 0) {
+                photoAdapter.removePhoto(photoIndex)
+                Toast.makeText(this, "Photo deleted successfully!", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -177,16 +231,28 @@ class PlanDetailActivity : AppCompatActivity() {
                 LinearLayoutManager(this@PlanDetailActivity, LinearLayoutManager.HORIZONTAL, false)
             adapter = photoAdapter
         }
+        
+        // Setup comments RecyclerView
+        commentAdapter = CommentAdapter(
+            onReplyClick = { comment ->
+                // TODO: Handle reply to comment
+                showCommentDialog(replyTo = comment)
+            }
+        )
+        binding.rvComments.apply {
+            layoutManager = LinearLayoutManager(this@PlanDetailActivity)
+            adapter = commentAdapter
+        }
 
         binding.bottomWriteComment.setOnClickListener {
             // Open comment input dialog
             showCommentDialog()
         }
 
-        binding.ivLike.setOnClickListener {
-            // Toggle like through ViewModel
-            viewModel.toggleLike()
-        }
+        // Like feature disabled for this UI
+        // binding.ivLike.setOnClickListener {
+        //     viewModel.toggleLike()
+        // }
     }
 
     private fun loadPlanData() {
@@ -204,7 +270,7 @@ class PlanDetailActivity : AppCompatActivity() {
         val commentsCount = intent.getIntExtra(EXTRA_COMMENTS_COUNT, 0)
 
         // Set initial counts in ViewModel
-        viewModel.setInitialCounts(likesCount, commentsCount)
+        viewModel.setInitialCounts(commentsCount)
 
         val planType = try {
             PlanType.valueOf(planTypeStr)
@@ -235,9 +301,10 @@ class PlanDetailActivity : AppCompatActivity() {
         }
         binding.tvExpense.visibility = View.VISIBLE
 
-        // Load photos from API if planId and tripId are available
+        // Load photos and comments from API if planId and tripId are available
         if (planId != null && tripId != null) {
             viewModel.loadPlanPhotos(tripId!!, planId!!)
+            viewModel.loadComments()
         }
     }
 
@@ -305,25 +372,25 @@ class PlanDetailActivity : AppCompatActivity() {
     }
 
     private fun formatExpense(expense: Double): String {
-        return String.Companion.format(Locale.US, "%.0fđ", expense)
+        return ExpenseFormatter.formatExpenseWithCurrency(expense)
     }
-    
+
     private fun loadPlanDataFromViewModel() {
         // This is called after edit to reload data from ViewModel
         viewModel.plan.value?.let { plan ->
             updateUIWithPlanData(plan)
         }
     }
-    
-    private fun updateUIWithPlanData(plan: com.datn.apptravel.data.model.Plan) {
+
+    private fun updateUIWithPlanData(plan: Plan) {
         // Update UI with plan data
         binding.tvPlanTitle.text = getPlanTypeDisplayName(plan.type)
         binding.tvPlanName.text = plan.title
         binding.ivPlanIcon.setImageResource(getPlanTypeIcon(plan.type))
-        
+
         // Update time
         displayTime(plan.startTime, plan.endTime, plan.type)
-        
+
         // Update expense
         if ((plan.expense ?: 0.0) > 0) {
             binding.tvExpense.text = formatExpense(plan.expense!!)
@@ -352,14 +419,14 @@ class PlanDetailActivity : AppCompatActivity() {
                         }
                         
                         val intent = when (planType) {
-                            PlanType.RESTAURANT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity::class.java)
-                            PlanType.LODGING -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.LodgingDetailActivity::class.java)
-                            PlanType.FLIGHT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity::class.java)
-                            PlanType.BOAT -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity::class.java)
-                            PlanType.CAR_RENTAL -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity::class.java)
-                            PlanType.TRAIN -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity::class.java)
+                            PlanType.RESTAURANT -> Intent(this, RestaurantDetailActivity::class.java)
+                            PlanType.LODGING -> Intent(this, LodgingDetailActivity::class.java)
+                            PlanType.FLIGHT -> Intent(this, FlightDetailActivity::class.java)
+                            PlanType.BOAT -> Intent(this, BoatDetailActivity::class.java)
+                            PlanType.CAR_RENTAL -> Intent(this, CarRentalDetailActivity::class.java)
+                            PlanType.TRAIN -> Intent(this, CarRentalDetailActivity::class.java)
                             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
-                            PlanType.CAMPING, PlanType.RELIGION -> Intent(this, com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity::class.java)
+                            PlanType.CAMPING, PlanType.RELIGION -> Intent(this, ActivityDetailActivity::class.java)
                             PlanType.NONE -> {
                                 Toast.makeText(this, "Cannot edit this plan type", Toast.LENGTH_SHORT).show()
                                 return@setOnMenuItemClickListener false
@@ -368,11 +435,11 @@ class PlanDetailActivity : AppCompatActivity() {
                         
                         // Pass plan data to edit activity
                         intent.putExtra("tripId", tripId)
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLAN_ID, planId)
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLAN_TITLE, plan.title)
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_PLACE_ADDRESS, plan.address)
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_START_TIME, plan.startTime)
-                        
+                        intent.putExtra(RestaurantDetailActivity.EXTRA_PLAN_ID, planId)
+                        intent.putExtra(RestaurantDetailActivity.EXTRA_PLAN_TITLE, plan.title)
+                        intent.putExtra(RestaurantDetailActivity.EXTRA_PLACE_ADDRESS, plan.address)
+                        intent.putExtra(RestaurantDetailActivity.EXTRA_START_TIME, plan.startTime)
+
                         // Pass plan type-specific fields
                         when (planType) {
                             PlanType.ACTIVITY, PlanType.TOUR, PlanType.THEATER, PlanType.SHOPPING,
@@ -387,7 +454,7 @@ class PlanDetailActivity : AppCompatActivity() {
                                 // LodgingPlan: has checkInDate, checkOutDate
                                 val checkInDate = plan.checkInDate ?: this@PlanDetailActivity.intent.getStringExtra("checkInDate")
                                 val checkOutDate = plan.checkOutDate ?: this@PlanDetailActivity.intent.getStringExtra("checkOutDate")
-                                checkInDate?.let { intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_START_TIME, it) }
+                                checkInDate?.let { intent.putExtra(RestaurantDetailActivity.EXTRA_START_TIME, it) }
                                 checkOutDate?.let { intent.putExtra("end_time", it) }
                                 plan.phone?.let { intent.putExtra("phone", it) }
                             }
@@ -402,7 +469,7 @@ class PlanDetailActivity : AppCompatActivity() {
                                 // FlightPlan: has arrivalLocation, arrivalAddress, arrivalDate
                                 // arrivalDate is the second time (arrival time)
                                 val arrivalDate = plan.arrivalDate ?: this@PlanDetailActivity.intent.getStringExtra("arrivalDate")
-                                arrivalDate?.let { 
+                                arrivalDate?.let {
                                     intent.putExtra("arrivalDate", it)
                                     intent.putExtra("end_time", it) // Also set as end_time for general use
                                 }
@@ -413,7 +480,7 @@ class PlanDetailActivity : AppCompatActivity() {
                                 // BoatPlan: has arrivalTime, arrivalLocation, arrivalAddress
                                 // arrivalTime is the second time
                                 val arrivalTime = plan.arrivalTime ?: this@PlanDetailActivity.intent.getStringExtra("arrivalTime")
-                                arrivalTime?.let { 
+                                arrivalTime?.let {
                                     intent.putExtra("arrivalTime", it)
                                     intent.putExtra("end_time", it) // Also set as end_time for general use
                                 }
@@ -431,12 +498,12 @@ class PlanDetailActivity : AppCompatActivity() {
                                 plan.endTime?.let { intent.putExtra("end_time", it) }
                             }
                         }
-                        
+
                         intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_EXPENSE, plan.expense ?: 0.0)
                         intent.putExtra("placeLatitude", 0.0) // Will be parsed from plan.location if needed
                         intent.putExtra("placeLongitude", 0.0)
                         intent.putExtra("planType", planType.name) // Pass plan type for editing
-                        
+
                         editPlanLauncher.launch(intent)
                     } else {
                         Toast.makeText(this, "Plan data not available", Toast.LENGTH_SHORT).show()
@@ -468,24 +535,7 @@ class PlanDetailActivity : AppCompatActivity() {
     private fun deletePlan() {
         val currentTripId = tripId ?: return
         val currentPlanId = planId ?: return
-        
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = tripRepository.deletePlan(currentTripId, currentPlanId)
-            
-            withContext(Dispatchers.Main) {
-                if (result.isSuccess) {
-                    Toast.makeText(this@PlanDetailActivity, "Plan deleted successfully!", Toast.LENGTH_SHORT).show()
-                    setResult(RESULT_OK) // Notify previous screen to refresh
-                    finish()
-                } else {
-                    Toast.makeText(
-                        this@PlanDetailActivity,
-                        "Failed to delete plan: ${result.exceptionOrNull()?.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+        viewModel.deletePlan(currentTripId, currentPlanId)
     }
     
     private fun showDeletePhotoConfirmation(photoFileName: String, photoIndex: Int) {
@@ -502,75 +552,101 @@ class PlanDetailActivity : AppCompatActivity() {
     private fun deletePhotoFromPlan(photoFileName: String, photoIndex: Int) {
         val currentTripId = tripId ?: return
         val currentPlanId = planId ?: return
-        
-        CoroutineScope(Dispatchers.IO).launch {
-            val result = tripRepository.deletePhotoFromPlan(currentTripId, currentPlanId, photoFileName)
-            
-            withContext(Dispatchers.Main) {
-                if (result.isSuccess) {
-                    // Remove photo from adapter
-                    photoAdapter.removePhoto(photoIndex)
-                    Toast.makeText(this@PlanDetailActivity, "Photo deleted successfully!", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(
-                        this@PlanDetailActivity,
-                        "Failed to delete photo: ${result.exceptionOrNull()?.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
+        viewModel.deletePhoto(currentTripId, currentPlanId, photoFileName, photoIndex)
     }
 
-    private fun showCommentDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_comment, null)
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
-
-        // Make dialog background transparent to show custom rounded corners
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        val etComment = dialogView.findViewById<EditText>(R.id.etComment)
-        val tvCharCount = dialogView.findViewById<TextView>(R.id.tvCharCount)
-        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancel)
-        val btnPost = dialogView.findViewById<MaterialButton>(R.id.btnPost)
-
-        // Character counter
-        etComment.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                val length = s?.length ?: 0
-                tvCharCount.text = "$length/500"
-                btnPost.isEnabled = length > 0
-            }
-        })
-
-        // Initial state
-        btnPost.isEnabled = false
-
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
+    private fun showCommentDialog(replyTo: CommentDto? = null) {
+        Log.d("PlanDetailActivity", "showCommentDialog called, replyTo: ${replyTo?.userName}")
+        
+        // Check if Activity is still valid
+        if (isFinishing || isDestroyed) {
+            Log.d("PlanDetailActivity", "Activity is finishing or destroyed, cannot show dialog")
+            return
         }
-
-        btnPost.setOnClickListener {
-            val comment = etComment.text.toString().trim()
-            if (comment.isNotEmpty()) {
-                // Post comment through ViewModel
-                viewModel.postComment(comment)
-                Toast.makeText(this, "Comment posted!", Toast.LENGTH_SHORT).show()
-                dialog.dismiss()
+        
+        // Dismiss existing dialog if any
+        commentDialog?.let {
+            if (it.isShowing) {
+                it.dismiss()
             }
         }
+        
+        try {
+            val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_comment, null)
+            commentDialog = AlertDialog.Builder(this)
+                .setView(dialogView)
+                .setCancelable(true)
+                .create()
 
-        dialog.show()
+            // Make dialog background transparent to show custom rounded corners
+            commentDialog?.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        // Auto focus on EditText and show keyboard
-        etComment.requestFocus()
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(etComment, InputMethodManager.SHOW_IMPLICIT)
+            val etComment = dialogView.findViewById<EditText>(R.id.etComment)
+            val tvCharCount = dialogView.findViewById<TextView>(R.id.tvCharCount)
+            val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnCancel)
+            val btnPost = dialogView.findViewById<MaterialButton>(R.id.btnPost)
+
+            // If replying to a comment, show who we're replying to
+            if (replyTo != null) {
+                etComment.hint = "Reply to ${replyTo.userName}..."
+            }
+
+            // Character counter
+            etComment.addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    val length = s?.length ?: 0
+                    tvCharCount.text = "$length/500"
+                    btnPost.isEnabled = length > 0
+                }
+            })
+
+            // Initial state
+            btnPost.isEnabled = false
+
+            btnCancel.setOnClickListener {
+                commentDialog?.dismiss()
+            }
+
+            btnPost.setOnClickListener {
+                val comment = etComment.text.toString().trim()
+                if (comment.isNotEmpty()) {
+                    // Disable button to prevent double posting
+                    btnPost.isEnabled = false
+                    
+                    // Post comment with parentId if replying
+                    val parentId = replyTo?.id?.toString()
+                    viewModel.postComment(comment, parentId)
+                    
+                    // Dismiss dialog immediately after posting
+                    commentDialog?.dismiss()
+                    
+                    // Show confirmation toast
+                    val message = if (replyTo != null) {
+                        "Reply posted!"
+                    } else {
+                        "Comment posted!"
+                    }
+                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            commentDialog?.show()
+            Log.d("PlanDetailActivity", "Dialog shown successfully")
+
+            // Auto focus on EditText and show keyboard after dialog is shown
+            etComment.postDelayed({
+                if (commentDialog?.isShowing == true) {
+                    etComment.requestFocus()
+                    val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+                    imm.showSoftInput(etComment, InputMethodManager.SHOW_IMPLICIT)
+                }
+            }, 100)
+        } catch (e: Exception) {
+            Log.e("PlanDetailActivity", "Error showing comment dialog", e)
+            Toast.makeText(this, "Error showing comment dialog: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun uploadPhotos(uris: List<Uri>) {

@@ -1,94 +1,80 @@
 package com.datn.apptravel.ui.discover
 
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.ui.discover.model.CreatePostRequest
+import com.datn.apptravel.data.local.SessionManager
 import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.model.PostDetailResponse
 import com.datn.apptravel.ui.discover.network.DiscoverRepository
 import kotlinx.coroutines.launch
 
 class DiscoverViewModel(
-    private val repository: DiscoverRepository
+    private val repository: DiscoverRepository,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
+    private val currentUserId: String?
+        get() = sessionManager.getUserId()
 
-    // Feed
+    companion object {
+        private const val PAGE_SIZE = 10
+    }
+
     val discoverList = MutableLiveData<List<DiscoverItem>>()
     val followingList = MutableLiveData<List<DiscoverItem>>()
-
-    // Post detail
-    private val _postDetail = MutableLiveData<PostDetailResponse?>()
-    val postDetail: LiveData<PostDetailResponse?> = _postDetail
-
-
-    // Create Post
-    val isPosting = MutableLiveData<Boolean>()
-    val postCreated = MutableLiveData<String?>()   // trả về postId
     val errorMessage = MutableLiveData<String?>()
+    private var discoverPage = 0
+    private var followingPage = 0
+    // ================= EXPLORE =================
+    fun loadDiscover(reset: Boolean = false) {
+        if (reset) discoverPage = 0
+        val userId = currentUserId ?: return
 
-    // -------------------------------------------------------
-    // LOAD DISCOVER FEED
-    // -------------------------------------------------------
-    fun loadDiscover(page: Int = 0, size: Int = 10, sort: String = "newest") {
         viewModelScope.launch {
             try {
-                val result = repository.getDiscover(page, size, sort)
-                discoverList.postValue(result)
+                discoverList.postValue(
+                    repository.getDiscover(userId, discoverPage, PAGE_SIZE)
+                )
             } catch (e: Exception) {
                 errorMessage.postValue("Không tải được danh sách khám phá")
-                e.printStackTrace()
             }
         }
     }
 
-    // -------------------------------------------------------
-    // LOAD FOLLOWING FEED
-    // -------------------------------------------------------
-    fun loadFollowing(userId: String, page: Int = 0, size: Int = 10) {
+
+    // ================= FOLLOWING =================
+    fun loadFollowing(reset: Boolean = false) {
+        if (reset) followingPage = 0
+        val userId = currentUserId ?: return
+
         viewModelScope.launch {
             try {
-                val result = repository.getFollowing(userId, page, size)
-                followingList.postValue(result)
+                followingList.postValue(
+                    repository.getFollowing(userId, followingPage, PAGE_SIZE)
+                )
             } catch (e: Exception) {
-                errorMessage.postValue("Không tải được danh sách Following")
-                e.printStackTrace()
+                errorMessage.postValue("Không tải được danh sách following")
+                // optional: để Following cũng tắt loading nếu cần
+                // followingList.postValue(emptyList())
             }
         }
     }
 
-    // -------------------------------------------------------
-    // GET POST DETAIL
-    // -------------------------------------------------------
-    fun getPostDetail(postId: String, userId: String?) {
-        viewModelScope.launch {
-            try {
-                val result = repository.getPostDetail(postId, userId)
-                _postDetail.postValue(result)
-            } catch (e: Exception) {
-                errorMessage.postValue("Không tải được chi tiết bài viết")
-            }
+
+    // 🔥 Feed chỉ follow 1 chiều → chỉ update state local cho UI
+    fun updateFollowState(userId: String, isFollowing: Boolean) {
+        discoverList.value?.let { list ->
+            discoverList.postValue(
+                list.map {
+                    if (it.userId == userId) it.copy(isFollowing = isFollowing) else it
+                }
+            )
         }
     }
 
-    // -------------------------------------------------------
-    // CREATE POST
-    // -------------------------------------------------------
-    fun createPost(request: CreatePostRequest) {
-        viewModelScope.launch {
-            isPosting.postValue(true)
-            try {
-                val postId = repository.createPost(request)
-                postCreated.postValue(postId)    // update thành công
-            } catch (e: Exception) {
-                errorMessage.postValue("Đăng bài thất bại")
-                e.printStackTrace()
-            } finally {
-                isPosting.postValue(false)
-            }
-        }
+    fun forceReload() {
+        loadDiscover(reset = true)
+        loadFollowing(reset = true)
     }
 
 }

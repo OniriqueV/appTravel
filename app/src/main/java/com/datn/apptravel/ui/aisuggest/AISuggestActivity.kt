@@ -24,7 +24,7 @@ class AISuggestActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAisuggestBinding
 
     private val viewModel: TravelViewModel by viewModels {
-        val apiService = ApiClient.create(BuildConfig.GEOAPIFY_API_KEY)
+        val apiService = ApiClient.create(BuildConfig.api)
         val repository = TravelRepository(apiService)
         TravelViewModelFactory(repository)
     }

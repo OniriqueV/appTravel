@@ -2,254 +2,237 @@ package com.datn.apptravel.ui.discover.post
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
+import android.graphics.Color
 import android.os.Bundle
-import android.widget.*
+import android.view.View
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.ProgressBar
+import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.children
 import androidx.core.view.isVisible
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.DiscoverViewModel
-import com.datn.apptravel.ui.discover.model.CreatePostRequest
-import com.google.firebase.storage.FirebaseStorage
-import java.util.UUID
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import com.datn.apptravel.ui.discover.model.ShareTripRequest
+import com.datn.apptravel.ui.discover.network.DiscoverRepository
+import com.datn.apptravel.ui.discover.util.ImageUrlUtil
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
+
 
 class CreatePostActivity : AppCompatActivity() {
 
-    private val viewModel: DiscoverViewModel by viewModel()
+    private val discoverRepository: DiscoverRepository by inject()
 
-    private lateinit var edtTitle: EditText
-    private lateinit var edtContent: EditText
-    private lateinit var edtTags: EditText
+    private lateinit var btnBack: ImageButton
     private lateinit var tvSelectedTrip: TextView
-    private lateinit var btnSelectTrip: Button
-    private lateinit var btnSelectImage: Button
-    private lateinit var btnPost: Button
-    private lateinit var progress: ProgressBar
-    private lateinit var recyclerImages: RecyclerView
+    private lateinit var btnSelectTrip: View
+    private lateinit var imgTripCover: ImageView
 
-    private val uploadedImageUrls = mutableListOf<String>()   // URL sau upload -> gửi backend
-    private lateinit var imageAdapter: ImagePreviewAdapter
+    private lateinit var btnVisibility: View
+    private lateinit var tvVisibility: TextView
+
+    private lateinit var edtContent: EditText
+    private lateinit var chipGroupTopic: ChipGroup
+
+    private lateinit var progress: ProgressBar
+    private lateinit var btnPublish: MaterialButton
 
     private var selectedTripId: String? = null
     private var selectedTripTitle: String? = null
+    private var selectedTripImage: String? = null
 
-    // Pick multiple images
-    private val pickImagesLauncher =
-        registerForActivityResult(ActivityResultContracts.GetMultipleContents()) { uris ->
-            if (uris.isNullOrEmpty()) return@registerForActivityResult
-            uploadImagesToFirebase(uris)
-        }
+    private var selectedVisibility: String = VIS_PUBLIC
 
-    // Receive trip from SelectTripForPostActivity
     private val selectTripLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
             val data = result.data ?: return@registerForActivityResult
 
-            selectedTripId = data.getStringExtra("tripId")
-            selectedTripTitle = data.getStringExtra("tripTitle")
+            selectedTripId =
+                data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_ID)
+            selectedTripTitle =
+                data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_TITLE)
+            selectedTripImage =
+                data.getStringExtra(SelectTripForPostActivity.EXTRA_TRIP_IMAGE)
 
-            tvSelectedTrip.text = selectedTripTitle?.let { "Trip: $it" } ?: "Đã chọn chuyến đi"
+            tvSelectedTrip.text =
+                selectedTripTitle?.let { "Trip: $it" } ?: "Trip selected"
+
+            Glide.with(this)
+                .load(ImageUrlUtil.toFullUrl(selectedTripImage))
+                .placeholder(R.drawable.bg_trip_placeholder)
+                .error(R.drawable.bg_trip_placeholder)
+                .into(imgTripCover)
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_create_post)
+        supportActionBar?.hide()
 
-        bindViews()
-        setupRecycler()
-        observeVM()
-
-        btnSelectImage.setOnClickListener {
-            // Chọn nhiều ảnh
-            pickImagesLauncher.launch("image/*")
+        val topBar = findViewById<View>(R.id.topBar)
+        ViewCompat.setOnApplyWindowInsetsListener(topBar) { v, insets ->
+            val status = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            v.setPadding(v.paddingLeft, status.top, v.paddingRight, v.paddingBottom)
+            insets
         }
 
+        window.statusBarColor = Color.parseColor("#C78C4D")
+
+        bindViews()
+        setupVisibilityMenu()
+
+        btnBack.setOnClickListener { finish() }
+
         btnSelectTrip.setOnClickListener {
-            // Mở màn chọn trip của bạn
-            val i = Intent(this, SelectTripForPostActivity::class.java)
-            // nếu activity này cần userId thì truyền thêm:
-            intent.getStringExtra("userId")?.let { i.putExtra("userId", it) }
+            val userId = intent.getStringExtra(EXTRA_USER_ID).orEmpty()
+            val i = Intent(this, SelectTripForPostActivity::class.java).apply {
+                putExtra(SelectTripForPostActivity.EXTRA_USER_ID, userId)
+            }
             selectTripLauncher.launch(i)
         }
 
-        btnPost.setOnClickListener { submitPost() }
+        btnPublish.setOnClickListener { submitPost() }
     }
 
     private fun bindViews() {
-        edtTitle = findViewById(R.id.edtTitle)
-        edtContent = findViewById(R.id.edtContent)
-        edtTags = findViewById(R.id.edtTags)
+        btnBack = findViewById(R.id.btnBack)
         tvSelectedTrip = findViewById(R.id.tvSelectedTrip)
         btnSelectTrip = findViewById(R.id.btnSelectTrip)
-        btnSelectImage = findViewById(R.id.btnSelectImage)
-        btnPost = findViewById(R.id.btnPost)
+        imgTripCover = findViewById(R.id.imgTripCover)
+
+        btnVisibility = findViewById(R.id.btnVisibility)
+        tvVisibility = findViewById(R.id.tvVisibility)
+
+        edtContent = findViewById(R.id.edtContent)
+        chipGroupTopic = findViewById(R.id.chipGroupTopic)
+
         progress = findViewById(R.id.progressCreatePost)
-        recyclerImages = findViewById(R.id.recyclerImages)
+        btnPublish = findViewById(R.id.btnPublish)
+
+        tvVisibility.text = selectedVisibility
     }
 
-    private fun setupRecycler() {
-        imageAdapter = ImagePreviewAdapter()
-        recyclerImages.layoutManager =
-            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        recyclerImages.adapter = imageAdapter
-    }
+    private fun setupVisibilityMenu() {
+        btnVisibility.setOnClickListener {
+            val menu = PopupMenu(this, btnVisibility)
+            menu.menu.add(VIS_PRIVATE)
+            menu.menu.add(VIS_PUBLIC)
+            menu.menu.add(VIS_FOLLOWER)
 
-    private fun observeVM() {
-        viewModel.isPosting.observe(this) { loading ->
-            progress.isVisible = loading
-            btnPost.isEnabled = !loading
-            btnSelectImage.isEnabled = !loading
-            btnSelectTrip.isEnabled = !loading
-        }
-
-        viewModel.postCreated.observe(this) { created ->
-            if (created != null) {
-                Toast.makeText(this, "Đăng bài thành công!", Toast.LENGTH_SHORT).show()
-                setResult(Activity.RESULT_OK)
-                finish()
+            menu.setOnMenuItemClickListener { item ->
+                selectedVisibility = item.title.toString()
+                tvVisibility.text = selectedVisibility
+                true
             }
-        }
-
-        viewModel.errorMessage.observe(this) {
-            if (!it.isNullOrBlank()) Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
+            menu.show()
         }
     }
 
-    /**
-     * Upload xong mới show preview URL (yêu cầu của bạn)
-     */
-    private fun uploadImagesToFirebase(uris: List<Uri>) {
-        progress.isVisible = true
-        btnSelectImage.isEnabled = false
-        btnPost.isEnabled = false
-
-        val storage = FirebaseStorage.getInstance().reference
-        var done = 0
-        val total = uris.size
-
-        // nếu muốn chọn lại thì clear trước
-        uploadedImageUrls.clear()
-        imageAdapter.submitUrls(emptyList())
-
-        uris.forEach { uri ->
-            val fileName = "${UUID.randomUUID()}.jpg"
-            val ref = storage.child("posts/$fileName")
-
-            ref.putFile(uri)
-                .addOnSuccessListener {
-                    ref.downloadUrl.addOnSuccessListener { url ->
-                        uploadedImageUrls.add(url.toString())
-
-                        // ✅ chỉ show preview sau khi có downloadUrl
-                        imageAdapter.submitUrls(uploadedImageUrls.toList())
-                    }
-                }
-                .addOnFailureListener {
-                    Toast.makeText(this, "Upload ảnh thất bại!", Toast.LENGTH_SHORT).show()
-                }
-                .addOnCompleteListener {
-                    done++
-                    if (done == total) {
-                        progress.isVisible = false
-                        btnSelectImage.isEnabled = true
-                        btnPost.isEnabled = true
-                    }
-                }
-        }
+    private fun getSelectedTags(): String {
+        return chipGroupTopic.children
+            .filterIsInstance<Chip>()
+            .filter { it.isChecked }
+            .map {
+                val tag = it.tag?.toString()?.trim()
+                val text = it.text?.toString()?.trim()
+                (tag?.takeIf { s -> s.isNotBlank() } ?: text).orEmpty()
+            }
+            .filter { it.isNotBlank() }
+            .distinct()
+            .joinToString(",")
     }
 
     private fun submitPost() {
-        val userId = intent.getStringExtra("userId")
-        if (userId.isNullOrBlank()) {
-            Toast.makeText(this, "Thiếu userId", Toast.LENGTH_SHORT).show()
+        val userId = intent.getStringExtra(EXTRA_USER_ID).orEmpty()
+        if (userId.isBlank()) {
+            Toast.makeText(this, "Missing userId", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val title = edtTitle.text.toString().trim()
         val content = edtContent.text.toString().trim()
-
-        // ✅ validate
-        if (title.isBlank()) {
-            Toast.makeText(this, "Tiêu đề không được để trống", Toast.LENGTH_SHORT).show()
+        if (content.isBlank()) {
+            Toast.makeText(this, "Content cannot be empty", Toast.LENGTH_SHORT).show()
             return
         }
 
-        if (uploadedImageUrls.isEmpty()) {
-            Toast.makeText(this, "Bạn phải chọn ít nhất 1 ảnh", Toast.LENGTH_SHORT).show()
+        val tripId = selectedTripId
+        if (tripId.isNullOrBlank()) {
+            Toast.makeText(this, "Please select a trip", Toast.LENGTH_SHORT).show()
             return
         }
 
-        val tags = edtTags.text.toString()
-            .split(",")
-            .map { it.trim() }
-            .filter { it.isNotBlank() }
-            .ifEmpty { null }  // ✅ đúng format backend (List<String> hoặc null)
+        val isPublicValue = when (selectedVisibility) {
+            VIS_PUBLIC -> "public"
+            VIS_FOLLOWER -> "follower"
+            else -> "none"
+        }
 
-        val req = CreatePostRequest(
-            userId = userId,
-            title = title,
-            content = content,
-            images = uploadedImageUrls.toList(),
-            tags = tags,
-            tripId = selectedTripId // ✅ nhận từ SelectTripForPostActivity
-        )
+        progress.isVisible = true
+        btnPublish.isEnabled = false
 
-        viewModel.createPost(req)
+        lifecycleScope.launch {
+            try {
+                // ✅ CHỈ ĐỔI ĐOẠN NÀY
+                val req = ShareTripRequest(
+                    tripId = tripId,
+                    content = content,
+                    tags = getSelectedTags(),
+                    isPublic = isPublicValue
+                )
+
+                // ✅ KHÔNG GỌI TRIP API NỮA
+                val result = discoverRepository.shareTrip(req)
+
+                if (result.isSuccess) {
+                    Toast.makeText(
+                        this@CreatePostActivity,
+                        "Chia sẻ chuyến đi thành công",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                } else {
+                    Toast.makeText(
+                        this@CreatePostActivity,
+                        "Chia sẻ thất bại",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(
+                    this@CreatePostActivity,
+                    "Lỗi: ${e.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } finally {
+                progress.isVisible = false
+                btnPublish.isEnabled = true
+            }
+        }
     }
+
 
     companion object {
-
         const val EXTRA_USER_ID = "userId"
-        const val EXTRA_TRIP_ID = "tripId"
 
-        // dùng khi KHÔNG cần result
-        fun start(activity: Activity, userId: String, tripId: String? = null) {
-            if (userId.isBlank()) return
-
-            val i = Intent(activity, CreatePostActivity::class.java).apply {
-                putExtra(EXTRA_USER_ID, userId)
-                putExtra(EXTRA_TRIP_ID, tripId)
-            }
-            activity.startActivity(i)
-        }
+        private const val VIS_PRIVATE = "Private"
+        private const val VIS_PUBLIC = "Public"
+        private const val VIS_FOLLOWER = "Follower"
     }
-}
-
-/**
- * Preview adapter: hiển thị URL ảnh bằng Glide
- */
-private class ImagePreviewAdapter : RecyclerView.Adapter<ImagePreviewAdapter.VH>() {
-
-    private val urls = mutableListOf<String>()
-
-    fun submitUrls(newUrls: List<String>) {
-        urls.clear()
-        urls.addAll(newUrls)
-        notifyDataSetChanged()
-    }
-
-    override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
-        val iv = ImageView(parent.context).apply {
-            layoutParams = RecyclerView.LayoutParams(160, 160).apply {
-                marginEnd = 16
-            }
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        }
-        return VH(iv)
-    }
-
-    override fun getItemCount(): Int = urls.size
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val url = urls[position]
-        Glide.with(holder.imageView).load(url).into(holder.imageView)
-    }
-
-    class VH(val imageView: ImageView) : RecyclerView.ViewHolder(imageView)
 }

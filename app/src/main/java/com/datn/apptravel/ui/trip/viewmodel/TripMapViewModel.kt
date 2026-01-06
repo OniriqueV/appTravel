@@ -4,13 +4,16 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.datn.apptravel.BuildConfig
 import com.datn.apptravel.R
 import com.datn.apptravel.data.api.OSRMRetrofitClient
 import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.model.PlanType
+import com.datn.apptravel.data.model.User
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.ui.base.BaseViewModel
 import com.datn.apptravel.ui.trip.model.PlanLocation
+import com.datn.apptravel.ui.trip.model.ScheduleItem
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
@@ -21,6 +24,7 @@ import org.osmdroid.util.GeoPoint
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -33,6 +37,9 @@ class TripMapViewModel(
 
     private val _tripDates = MutableLiveData<Pair<String, String>>()
     val tripDates: LiveData<Pair<String, String>> = _tripDates
+    
+    private val _scheduleItems = MutableLiveData<List<ScheduleItem>>()
+    val scheduleItems: LiveData<List<ScheduleItem>> = _scheduleItems
 
     private val _routeSegments = MutableLiveData<List<List<GeoPoint>>>()
     val routeSegments: LiveData<List<List<GeoPoint>>> = _routeSegments
@@ -54,45 +61,63 @@ class TripMapViewModel(
             try {
                 setLoading(true)
 
-                // Load trip to get start/end dates
+                // Load trip to get start/end dates and members
+                var tripMembers: List<User>? = null
                 tripRepository.getTripById(tripId).onSuccess { trip ->
                     _tripDates.value = Pair(trip.startDate, trip.endDate)
+                    tripMembers = trip.members
                 }
 
                 // Load plans from API
                 tripRepository.getPlansByTripId(tripId).onSuccess { apiPlans ->
+                    Log.d("TripMapViewModel", "=== PLAN LOADING DEBUG ===")
+                    Log.d("TripMapViewModel", "Total plans from API: ${apiPlans.size}")
+                    
                     if (apiPlans.isEmpty()) {
-                        setError("No plans found for this trip")
+//                        setError("No plans found for this trip")
                         _planLocations.value = emptyList()
                         setLoading(false)
                         return@onSuccess
                     }
 
-                    // Filter plans based on ownership
-                    val filteredPlans = if (currentUserId != null && tripUserId != null && currentUserId != tripUserId) {
-                        // User is not owner - only show plans that have already occurred
+                    // Check if current user is owner or member
+                    val isOwner = currentUserId != null && tripUserId != null && currentUserId == tripUserId
+                    val isMember = currentUserId != null && tripMembers?.any { it.id == currentUserId } == true
+                    
+                    Log.d("TripMapViewModel", "User permissions - isOwner: $isOwner, isMember: $isMember")
+                    
+                    // Filter plans based on permissions
+                    val filteredPlans = if (!isOwner && !isMember) {
+                        // User is neither owner nor member - only show plans that have already occurred
+                        // Plan của hôm nay chỉ hiển thị vào ngày mai (planDate < today)
                         val today = java.time.LocalDate.now()
-                        apiPlans.filter { plan ->
+                        val filtered = apiPlans.filter { plan ->
                             try {
                                 val planDateTime = LocalDateTime.parse(
                                     plan.startTime,
                                     DateTimeFormatter.ISO_DATE_TIME
                                 )
                                 val planDate = planDateTime.toLocalDate()
-                                // Show plans from today or before (planDate <= today)
-                                !planDate.isAfter(today)
+                                // Show only plans before today (planDate < today)
+                                // Plans của hôm nay (planDate == today) sẽ hiển thị vào ngày mai
+                                planDate.isBefore(today)
                             } catch (e: Exception) {
                                 Log.e("TripMapViewModel", "Error parsing date for plan: ${plan.title}", e)
                                 false // Don't show plans with invalid dates
                             }
                         }
+                        Log.d("TripMapViewModel", "After date filtering (non-owner): ${filtered.size} plans")
+                        filtered
                     } else {
-                        // User is owner or no user info - show all plans
+                        // User is owner or member - show all plans
+                        Log.d("TripMapViewModel", "Owner/member mode - showing all ${apiPlans.size} plans")
                         apiPlans
                     }
 
                     // Convert API plans to PlanLocation with geocoding
                     val planLocations = convertPlansToLocations(filteredPlans, packageName)
+                    Log.d("TripMapViewModel", "After coordinate conversion: ${planLocations.size} valid locations")
+                    Log.d("TripMapViewModel", "Plans lost in conversion: ${filteredPlans.size - planLocations.size}")
                     _planLocations.value = planLocations
 
                     if (planLocations.isNotEmpty()) {
@@ -101,6 +126,9 @@ class TripMapViewModel(
                             planLocations[0].longitude
                         )
                     }
+                    
+                    // Update schedule items after plans are loaded
+                    updateScheduleItems()
                 }.onFailure { error ->
                     setError("Failed to load plans: ${error.message}")
                     Log.e("TripMapViewModel", "Error loading plans", error)
@@ -120,7 +148,10 @@ class TripMapViewModel(
         packageName: String
     ): List<PlanLocation> {
         return withContext(Dispatchers.IO) {
-            apiPlans.mapNotNull { plan ->
+            var successCount = 0
+            var failedCount = 0
+            
+            val results = apiPlans.mapNotNull { plan ->
                 try {
                     // Parse time from ISO format
                     val time = try {
@@ -130,28 +161,50 @@ class TripMapViewModel(
                         )
                         String.format("%02d:%02d", dateTime.hour, dateTime.minute)
                     } catch (e: Exception) {
+                        Log.w("TripMapViewModel", "Time parse error for ${plan.title}: ${e.message}")
                         "00:00"
                     }
 
                     // Get coordinates from location field (format: "latitude,longitude")
                     val locationStr = plan.location
+                    Log.d("TripMapViewModel", "Plan: ${plan.title}, location field: '$locationStr', address: '${plan.address}'")
+                    
                     val coordinates = if (!locationStr.isNullOrBlank()) {
                         try {
                             val parts = locationStr.split(",")
                             if (parts.size == 2) {
-                                Pair(parts[0].trim().toDouble(), parts[1].trim().toDouble())
-                            } else null
+                                val lat = parts[0].trim().toDouble()
+                                val lon = parts[1].trim().toDouble()
+                                Log.d("TripMapViewModel", "✓ Parsed coordinates from location field: ($lat, $lon)")
+                                Pair(lat, lon)
+                            } else {
+                                Log.w("TripMapViewModel", "✗ Invalid location format (not 2 parts): $locationStr")
+                                null
+                            }
                         } catch (e: Exception) {
-                            Log.e("TripMapViewModel", "Error parsing location: $locationStr", e)
+                            Log.e("TripMapViewModel", "✗ Error parsing location '$locationStr': ${e.message}")
                             null
                         }
                     } else {
                         // Fallback: geocode from address if location is not available
-                        geocodeLocation(plan.address ?: plan.title, packageName)
+                        Log.d("TripMapViewModel", "Location field empty, trying geocode for: ${plan.address ?: plan.title}")
+                        val geocoded = geocodeLocation(plan.address ?: plan.title, packageName)
+                        if (geocoded != null) {
+                            Log.d("TripMapViewModel", "✓ Geocoded: ${geocoded.first}, ${geocoded.second}")
+                        } else {
+                            Log.w("TripMapViewModel", "✗ Geocoding failed for: ${plan.address ?: plan.title}")
+                        }
+                        geocoded
                     }
 
                     if (coordinates != null) {
+                        successCount++
                         PlanLocation(
+                            planId = plan.id ?: run {
+                                Log.e("TripMapViewModel", "✗ Plan has no ID: ${plan.title}")
+                                failedCount++
+                                return@mapNotNull null
+                            },
                             name = plan.title,
                             time = time,
                             detail = plan.address ?: "",
@@ -161,14 +214,19 @@ class TripMapViewModel(
                             photoUrl = plan.photoUrl
                         )
                     } else {
-                        Log.w("TripMapViewModel", "Could not get coordinates for: ${plan.title}")
+                        failedCount++
+                        Log.w("TripMapViewModel", "✗ Could not get coordinates for: ${plan.title}")
                         null
                     }
                 } catch (e: Exception) {
-                    Log.e("TripMapViewModel", "Error converting plan: ${plan.title}", e)
+                    failedCount++
+                    Log.e("TripMapViewModel", "✗ Error converting plan: ${plan.title}", e)
                     null
                 }
             }
+            
+            Log.d("TripMapViewModel", "Conversion summary: $successCount success, $failedCount failed out of ${apiPlans.size} plans")
+            results
         }
     }
 
@@ -179,7 +237,7 @@ class TripMapViewModel(
         return try {
             // Use Nominatim (OpenStreetMap) geocoding API
             val response = withContext(Dispatchers.IO) {
-                val baseUrl = com.datn.apptravel.BuildConfig.NOMINATIM_BASE_URL
+                val baseUrl = BuildConfig.NOMINATIM_BASE_URL
                 val url = "${baseUrl}search?q=${
                     URLEncoder.encode(address, "UTF-8")
                 }&format=json&limit=1"
@@ -227,6 +285,7 @@ class TripMapViewModel(
             PlanType.NONE -> R.drawable.ic_globe
         }
     }
+
 
     fun drawRoute(plans: List<PlanLocation>) {
         if (plans.size < 2) {
@@ -341,5 +400,63 @@ class TripMapViewModel(
             GeoPoint(fromPlan.latitude, fromPlan.longitude),
             GeoPoint(toPlan.latitude, toPlan.longitude)
         )
+    }
+    
+    private fun updateScheduleItems() {
+        val dates = _tripDates.value ?: return
+        val plans = _planLocations.value ?: emptyList()
+        val startDate = dates.first
+        val endDate = dates.second
+        
+        if (startDate.isEmpty() || endDate.isEmpty()) return
+
+        val items = mutableListOf<ScheduleItem>()
+
+        // Add Start date
+        items.add(
+            ScheduleItem.DateItem(
+                label = "Start",
+                date = formatDate(startDate)
+            )
+        )
+
+        // Add all plans with connectors between them
+        plans.forEachIndexed { index, plan ->
+            // Add connector before this plan (except for the first plan)
+            if (index > 0) {
+                items.add(
+                    ScheduleItem.ConnectorItem(
+                        fromPlanPosition = index - 1,
+                        toPlanPosition = index
+                    )
+                )
+            }
+
+            items.add(
+                ScheduleItem.PlanItem(
+                    plan = plan,
+                    position = index
+                )
+            )
+        }
+
+        // Add End date
+        items.add(
+            ScheduleItem.DateItem(
+                label = "End",
+                date = formatDate(endDate)
+            )
+        )
+
+        _scheduleItems.value = items
+    }
+    
+    private fun formatDate(dateString: String): String {
+        return try {
+            val date = LocalDate.parse(dateString)
+            date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+        } catch (e: Exception) {
+            dateString
+        }
     }
 }

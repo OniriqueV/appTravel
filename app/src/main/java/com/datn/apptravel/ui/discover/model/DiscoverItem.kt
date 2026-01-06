@@ -1,17 +1,26 @@
 package com.datn.apptravel.ui.discover.model
 
+import com.google.gson.annotations.SerializedName
+
 data class DiscoverItem(
-    val postId: String,
-    val title: String?,
-    val coverPhoto: String?,     // ảnh đại diện post
-    val createdAt: Long,
+    val userId: String = "",
+    val userName: String = "",
+    val userAvatar: String? = null,
 
-    val tags: List<String>?,
+    val tripId: String = "",
+    val tripImage: String? = null,
 
-    val userId: String?,
-    val userName: String?,
-    val userAvatar: String?,
+    val caption: String? = null,
+    val tags: String? = null,
 
-    val likesCount: Int,
-    val commentsCount: Int
+    // 🔥 BE trả String ("public" | "follower")
+    val isPublic: String = "public",
+
+    // 🔥 BE trả ISO String
+    val sharedAt: String = "",
+    @SerializedName("following")
+    var isFollowing: Boolean = false, // ⭐ THÊM
+
+    var likeCount: Int = 0,
+    var isLiked: Boolean = false
 )

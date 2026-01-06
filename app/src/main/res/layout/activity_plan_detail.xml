@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F2C594">
+    android:background="#F6E9D4">
 
     <!-- Top Navigation Bar -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="#F2C594"
+        android:background="#F6E9D4"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -221,7 +221,7 @@
 
             </androidx.cardview.widget.CardView>
 
-            <!-- Likes and Comments Card -->
+            <!-- Likes and Comments Card - Hidden -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardLikesComments"
                 android:layout_width="match_parent"
@@ -284,29 +284,23 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:visibility="gone"
-                app:cardBackgroundColor="@android:color/white"
+                app:cardBackgroundColor="#F2C594"
                 app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Comments"
-                        android:textColor="#1F2937"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp"
+                    android:paddingTop="4dp"
+                    android:paddingBottom="4dp">
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rvComments"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
                         android:nestedScrollingEnabled="false" />
 
                 </LinearLayout>

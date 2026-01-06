@@ -12,6 +12,7 @@ import com.datn.apptravel.data.model.PlanType
 import com.datn.apptravel.data.model.request.CreateActivityPlanRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.databinding.ActivityActivityDetailBinding
+import com.datn.apptravel.utils.ExpenseFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -133,6 +134,9 @@ class ActivityDetailActivity : AppCompatActivity() {
         binding.etEndTime.setOnClickListener {
             showTimePicker(false)
         }
+        
+        // Setup expense formatter
+        ExpenseFormatter.addExpenseFormatter(binding.etExpense)
     }
     
     private fun showDatePicker(isStartDateTime: Boolean, isDatePicker: Boolean) {
@@ -245,7 +249,7 @@ class ActivityDetailActivity : AppCompatActivity() {
                         } else null,
                         startTime = startTimeISO,
                         endTime = endTimeISO,
-                        expense = binding.etExpense.text.toString().toDoubleOrNull(),
+                        expense = ExpenseFormatter.parseExpense(binding.etExpense.text.toString()),
                         photoUrl = uploadedFilename,
                         type = selectedPlanType.name
                     )
@@ -368,7 +372,7 @@ class ActivityDetailActivity : AppCompatActivity() {
         }
         
         if (expense > 0) {
-            binding.etExpense.setText(expense.toString())
+            binding.etExpense.setText(ExpenseFormatter.formatExpense(expense))
         }
     }
     

@@ -9,6 +9,7 @@ enum class PlanType(
     val geoapifyCategory: String
 ) {
     NONE("None", R.drawable.ic_globe, ""),
+
     LODGING("Lodging", R.drawable.ic_lodgingsss, "accommodation"),
     FLIGHT("Flight", R.drawable.ic_flight, "airport"),
     RESTAURANT("Restaurant", R.drawable.ic_restaurant, "catering.restaurant"),
@@ -21,10 +22,39 @@ enum class PlanType(
     THEATER("Theater", R.drawable.ic_theater, "entertainment.culture.theatre"),
     SHOPPING("Shopping", R.drawable.ic_shopping, "commercial.shopping_mall"),
     ACTIVITY("Activity", R.drawable.ic_attraction, "leisure");
-    
+
     companion object {
+
+        /** Default types khi tạo trip */
         fun getDefaultTypes(): List<PlanType> {
             return listOf(NONE, LODGING, FLIGHT)
+        }
+
+        fun fromString(type: String?): PlanType {
+            if (type.isNullOrBlank()) return NONE
+
+            return values().firstOrNull {
+                it.name.equals(type, true) ||
+                        it.displayName.equals(type, true)
+            } ?: NONE
+        }
+    }
+
+    fun toDisplayName(): String {
+        return when (this) {
+            NONE -> "Khác"
+            LODGING -> "Chỗ ở"
+            FLIGHT -> "Chuyến bay"
+            RESTAURANT -> "Nhà hàng"
+            TOUR -> "Tour du lịch"
+            BOAT -> "Tàu thuyền"
+            TRAIN -> "Tàu hỏa"
+            RELIGION -> "Tôn giáo"
+            CAR_RENTAL -> "Thuê xe"
+            CAMPING -> "Cắm trại"
+            THEATER -> "Rạp chiếu phim"
+            SHOPPING -> "Mua sắm"
+            ACTIVITY -> "Hoạt động"
         }
     }
 }

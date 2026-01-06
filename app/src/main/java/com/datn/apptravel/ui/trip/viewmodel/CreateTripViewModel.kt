@@ -7,6 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.datn.apptravel.data.local.SessionManager
 import com.datn.apptravel.data.model.Trip
+import com.datn.apptravel.data.model.User
 import com.datn.apptravel.data.model.request.CreateTripRequest
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.ui.base.BaseViewModel
@@ -36,6 +37,7 @@ class CreateTripViewModel(
     private var pendingTripTitle: String? = null
     private var pendingStartDate: String? = null
     private var pendingEndDate: String? = null
+    private var pendingMembers: List<User>? = null
     
     fun uploadCoverPhoto(context: Context, imageUri: Uri) {
         setLoading(true)
@@ -67,32 +69,36 @@ class CreateTripViewModel(
                     title = pendingTripTitle!!,
                     startDate = pendingStartDate!!,
                     endDate = pendingEndDate!!,
-                    coverPhotoUri = coverPhotoFileName
+                    coverPhotoUri = coverPhotoFileName,
+                    members = pendingMembers
                 )
             } else {
-                // Create new trip
+                // Create new trip with members
                 createTrip(
                     title = pendingTripTitle!!,
                     startDate = pendingStartDate!!,
                     endDate = pendingEndDate!!,
-                    coverPhotoUri = coverPhotoFileName
+                    coverPhotoUri = coverPhotoFileName,
+                    members = pendingMembers
                 )
             }
         }
     }
     
-    fun setPendingTripData(title: String, startDate: String, endDate: String, tripId: String? = null) {
+    fun setPendingTripData(title: String, startDate: String, endDate: String, tripId: String? = null, members: List<User>? = null) {
         pendingTripId = tripId
         pendingTripTitle = title
         pendingStartDate = startDate
         pendingEndDate = endDate
+        pendingMembers = members
     }
 
     fun createTrip(
         title: String, 
         startDate: String, 
         endDate: String,
-        coverPhotoUri: String? = null
+        coverPhotoUri: String? = null,
+        members: List<User>? = null
     ) {
         setLoading(true)
         
@@ -128,6 +134,8 @@ class CreateTripViewModel(
                     coverPhoto = coverPhotoUri,
                     content = null,
                     tags = null,
+                    members = members,
+                    sharedWithUsers = null,
                     sharedAt = null
                 )
                 
@@ -154,10 +162,11 @@ class CreateTripViewModel(
         startDate: String,
         endDate: String,
         coverPhotoUri: String? = null,
-        isPublic: String = "none",
+        isPublic: String? = null,
         content: String? = null,
         tags: String? = null,
-        sharedAt: String? = null
+        sharedAt: String? = null,
+        members: List<User>? = null
     ) {
         setLoading(true)
         
@@ -191,16 +200,25 @@ class CreateTripViewModel(
                     return@launch // Stop if there's a conflict
                 }
                 
+                // Fetch existing trip to preserve sharing settings
+                val existingTripResult = tripRepository.getTripById(tripId)
+                var existingTrip: Trip? = null
+                existingTripResult.onSuccess { trip ->
+                    existingTrip = trip
+                }
+                
                 val request = CreateTripRequest(
                     userId = userId,
                     title = title,
                     startDate = formattedStartDate,
                     endDate = formattedEndDate,
-                    isPublic = isPublic,
+                    isPublic = isPublic ?: existingTrip?.isPublic ?: "none", // Preserve existing isPublic if not provided
                     coverPhoto = coverPhotoUri,
-                    content = content,
-                    tags = tags,
-                    sharedAt = sharedAt
+                    content = content ?: existingTrip?.content, // Preserve existing content if not provided
+                    tags = tags ?: existingTrip?.tags, // Preserve existing tags if not provided
+                    members = members,
+                    sharedWithUsers = existingTrip?.sharedWithUsers, // Always preserve sharedWithUsers
+                    sharedAt = sharedAt ?: existingTrip?.sharedAt // Preserve existing sharedAt if not provided
                 )
                 
                 val result = tripRepository.updateTrip(tripId, request)
@@ -238,40 +256,50 @@ class CreateTripViewModel(
     ): Boolean {
         try {
             val userId = sessionManager.getUserId() ?: return false
-            val result = tripRepository.getTripsByUserId(userId)
             
-            result.onSuccess { trips ->
-                val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                val newStartDate = LocalDate.parse(startDate, dateFormatter)
-                val newEndDate = LocalDate.parse(endDate, dateFormatter)
+            // Fetch both owned trips and member trips
+            val ownTripsResult = tripRepository.getTripsByUserId(userId)
+            val memberTripsResult = tripRepository.getTripsByMemberId(userId)
+            
+            val ownTrips = ownTripsResult.getOrNull() ?: emptyList()
+            val memberTrips = memberTripsResult.getOrNull() ?: emptyList()
+            
+            // Merge both lists to check conflicts against all trips
+            val allTrips = (ownTrips + memberTrips).distinctBy { it.id }
+            
+            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            val newStartDate = LocalDate.parse(startDate, dateFormatter)
+            val newEndDate = LocalDate.parse(endDate, dateFormatter)
+            
+            val conflictingTrips = allTrips.filter { trip ->
+                // Exclude the current trip when updating
+                if (excludeTripId != null && trip.id == excludeTripId) {
+                    return@filter false
+                }
                 
-                val conflictingTrips = trips.filter { trip ->
-                    // Exclude the current trip when updating
-                    if (excludeTripId != null && trip.id == excludeTripId) {
-                        return@filter false
-                    }
+                try {
+                    val existingStartDate = LocalDate.parse(trip.startDate, dateFormatter)
+                    val existingEndDate = LocalDate.parse(trip.endDate, dateFormatter)
                     
-                    try {
-                        val existingStartDate = LocalDate.parse(trip.startDate, dateFormatter)
-                        val existingEndDate = LocalDate.parse(trip.endDate, dateFormatter)
-                        
-                        // Check if date ranges overlap
-                        // Two date ranges overlap if:
-                        // new start <= existing end AND new end >= existing start
-                        !(newEndDate.isBefore(existingStartDate) || newStartDate.isAfter(existingEndDate))
-                    } catch (e: Exception) {
-                        false
-                    }
+                    // Check if date ranges overlap
+                    // Two date ranges overlap if:
+                    // new start <= existing end AND new end >= existing start
+                    !(newEndDate.isBefore(existingStartDate) || newStartDate.isAfter(existingEndDate))
+                } catch (e: Exception) {
+                    false
                 }
-                
-                if (conflictingTrips.isNotEmpty()) {
-                    _dateConflictTrips.value = conflictingTrips
-                    val tripTitles = conflictingTrips.joinToString(", ") { "\"${it.title}\"" }
-                    _errorMessage.value = "Thời gian bị trùng với chuyến đi: $tripTitles"
-                    return true
-                }
-            }.onFailure { exception ->
-                _errorMessage.value = "Không thể kiểm tra trùng lặp: ${exception.message}"
+            }
+            
+            if (conflictingTrips.isNotEmpty()) {
+                _dateConflictTrips.value = conflictingTrips
+                val tripTitles = conflictingTrips.joinToString(", ") { "\"${it.title}\"" }
+                _errorMessage.value = "Thời gian bị trùng với chuyến đi: $tripTitles"
+                return true
+            }
+            
+            // Check for failures in API calls
+            if (ownTripsResult.isFailure) {
+                _errorMessage.value = "Không thể kiểm tra trùng lặp: ${ownTripsResult.exceptionOrNull()?.message}"
                 return true
             }
             

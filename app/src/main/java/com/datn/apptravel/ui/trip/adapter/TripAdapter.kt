@@ -1,7 +1,10 @@
 package com.datn.apptravel.ui.trip.adapter
 
+import android.app.Dialog
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
+import android.view.Window
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.datn.apptravel.R
@@ -47,6 +50,14 @@ class TripAdapter(
             binding.apply {
                 tvTripName.text = trip.title
                 
+                // Show/hide warning badge based on conflict status
+                ivWarningBadge.visibility = if (trip.hasConflict) View.VISIBLE else View.GONE
+                
+                // Set click listener for warning badge
+                ivWarningBadge.setOnClickListener {
+                    showConflictDialog()
+                }
+                
                 // Format dates from yyyy-MM-dd to dd-MM-yyyy
                 val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
                 val outputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
@@ -81,6 +92,20 @@ class TripAdapter(
                     ivTripImage.setImageResource(R.drawable.bg_a)
                 }
             }
+        }
+        
+        private fun showConflictDialog() {
+            val dialog = Dialog(binding.root.context)
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+            dialog.setContentView(R.layout.dialog_trip_conflict)
+            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+            
+            val ivClose = dialog.findViewById<android.widget.ImageView>(R.id.ivClose)
+            ivClose.setOnClickListener {
+                dialog.dismiss()
+            }
+            
+            dialog.show()
         }
     }
 }

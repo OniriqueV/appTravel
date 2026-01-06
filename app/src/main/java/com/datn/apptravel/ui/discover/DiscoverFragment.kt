@@ -10,14 +10,14 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import com.datn.apptravel.databinding.FragmentDiscoverBinding
-import com.datn.apptravel.ui.discover.adapter.DiscoverPagerAdapter
+import com.datn.apptravel.ui.discover.feed.adapter.DiscoverPagerAdapter
 import com.datn.apptravel.ui.discover.post.CreatePostActivity
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.auth.FirebaseAuth
-import androidx.core.os.bundleOf
-import androidx.navigation.fragment.findNavController
 import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.search.SearchExploreFragment
+import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
+
+//import com.datn.apptravel.ui.discover.search.SearchExploreFragment
 
 
 class DiscoverFragment : Fragment() {
@@ -48,13 +48,23 @@ class DiscoverFragment : Fragment() {
 
         setupViewPager()
         setupEvents()
+
+        parentFragmentManager.setFragmentResultListener(
+            "FOLLOW_CHANGED",
+            viewLifecycleOwner
+        ) { _, _ ->
+            refreshDiscover()
+        }
     }
 
     private fun setupViewPager() {
+
         binding.vpDiscover.adapter = DiscoverPagerAdapter(
-            fragment = this,
-            userId = userId
+            hostFragment = this,
         )
+
+        // 🔥 DÒNG QUAN TRỌNG NHẤT – ĐẶT NGAY SAU KHI SET ADAPTER
+        binding.vpDiscover.offscreenPageLimit = 1
 
         TabLayoutMediator(binding.tabDiscover, binding.vpDiscover) { tab, position ->
             tab.text = if (position == 0) "Explore" else "Following"
@@ -62,16 +72,20 @@ class DiscoverFragment : Fragment() {
     }
 
     private fun setupEvents() {
-        binding.layoutSearch.setOnClickListener {
-            val f = SearchExploreFragment().apply {
-                arguments = Bundle().apply { putString("userId", userId) }
-            }
 
+        // 🔍 Search (nút icon bên phải)
+        // 🔍 Search (tạm thời disable)
+        binding.btnTopProfile.setOnClickListener {
             parentFragmentManager.beginTransaction()
-                .replace(R.id.nav_host_fragment, f)
+                .replace(
+                    R.id.nav_host_fragment,
+                    com.datn.apptravel.ui.search.SearchExploreFragment()
+                )
                 .addToBackStack("search")
                 .commit()
         }
+
+
 
 
         // ➕ Create Post
@@ -82,11 +96,11 @@ class DiscoverFragment : Fragment() {
             }
 
             val i = Intent(requireContext(), CreatePostActivity::class.java)
-            i.putExtra("userId", userId)
+            i.putExtra(CreatePostActivity.EXTRA_USER_ID, userId)
             createPostLauncher.launch(i)
         }
-
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()
@@ -95,15 +109,19 @@ class DiscoverFragment : Fragment() {
 
     private val createPostLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == Activity.RESULT_OK) {
-                // ✅ Post mới được tạo → refresh Discover
-                refreshDiscover()
-            }
+            if (!isAdded || _binding == null) return@registerForActivityResult
+            if (result.resultCode == Activity.RESULT_OK) refreshDiscover()
         }
 
     private fun refreshDiscover() {
         val adapter = binding.vpDiscover.adapter as? DiscoverPagerAdapter
         adapter?.refresh()
+    }
+
+    private fun openTripDetail(tripId: String) {
+        val intent = Intent(requireContext(), TripDetailActivity::class.java)
+        intent.putExtra("tripId", tripId)
+        startActivity(intent)
     }
 
 }

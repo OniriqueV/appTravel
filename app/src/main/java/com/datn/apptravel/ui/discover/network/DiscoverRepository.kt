@@ -1,36 +1,36 @@
 package com.datn.apptravel.ui.discover.network
 
-import com.datn.apptravel.ui.discover.model.CreatePostRequest
 import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.model.PostDetailResponse
+import com.datn.apptravel.ui.discover.model.ShareTripRequest
 
-class DiscoverRepository(private val api: DiscoverApi) {
+class DiscoverRepository(
+    private val api: DiscoverApi = DiscoverApiClient.api
+) {
 
-    /** Lấy danh sách discover chung */
-    suspend fun getDiscover(page: Int = 0, size: Int = 10, sort: String = "newest"): List<DiscoverItem> {
-        return api.getDiscover(page, size, sort)
+    // ================= FEED =================
+
+    suspend fun getDiscover(
+        userId: String?,
+        page: Int,
+        size: Int
+    ): List<DiscoverItem> =
+        api.getDiscover(userId, page, size)
+
+    suspend fun getFollowing(
+        userId: String,
+        page: Int,
+        size: Int
+    ): List<DiscoverItem> =
+        api.getFollowing(userId, page, size)
+
+
+    suspend fun shareTrip(req: ShareTripRequest): Result<Unit> {
+        return try {
+            api.shareTrip(req)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
-
-    /** Lấy danh sách bài của người dùng mà mình follow */
-    suspend fun getFollowing(userId: String, page: Int = 0, size: Int = 10): List<DiscoverItem> {
-        return api.getFollowing(userId, page, size)
-    }
-
-    /** Chi tiết bài viết */
-    suspend fun getPostDetail(postId: String, userId: String?): PostDetailResponse {
-        return api.getPostDetail(postId, userId)
-    }
-
-    /** Tạo bài viết mới */
-    suspend fun createPost(request: CreatePostRequest): String {
-        val resp = api.createPost(request)        // backend trả Map<String, Any>
-        val postId = resp["postId"]?.toString() ?: ""
-        return postId
-    }
-
-    suspend fun searchDiscover(query: String, page: Int = 0, size: Int = 10): List<DiscoverItem> {
-        return api.searchDiscover(query, page, size)
-    }
-
-
 }
+

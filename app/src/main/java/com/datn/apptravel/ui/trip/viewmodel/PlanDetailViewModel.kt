@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.datn.apptravel.data.model.Plan
 import com.datn.apptravel.data.repository.TripRepository
 import com.datn.apptravel.ui.base.BaseViewModel
+import com.datn.apptravel.ui.discover.model.CommentDto
+import com.datn.apptravel.ui.discover.model.PlanCommentDto
 import kotlinx.coroutines.launch
 
 class PlanDetailViewModel(
@@ -21,29 +23,35 @@ class PlanDetailViewModel(
     private val _photos = MutableLiveData<List<String>>()
     val photos: LiveData<List<String>> = _photos
 
-    private val _likesCount = MutableLiveData<Int>()
-    val likesCount: LiveData<Int> = _likesCount
-
     private val _commentsCount = MutableLiveData<Int>()
     val commentsCount: LiveData<Int> = _commentsCount
 
-    private val _isLiked = MutableLiveData<Boolean>()
-    val isLiked: LiveData<Boolean> = _isLiked
+    private val _comments = MutableLiveData<List<CommentDto>>()
+    val comments: LiveData<List<CommentDto>> = _comments
 
     private val _uploadSuccess = MutableLiveData<Boolean>()
     val uploadSuccess: LiveData<Boolean> = _uploadSuccess
 
     private val _commentPosted = MutableLiveData<Boolean>()
     val commentPosted: LiveData<Boolean> = _commentPosted
+    
+    private val _deletePlanSuccess = MutableLiveData<Boolean>()
+    val deletePlanSuccess: LiveData<Boolean> = _deletePlanSuccess
+    
+    private val _deletePhotoSuccess = MutableLiveData<Int>() // photoIndex
+    val deletePhotoSuccess: LiveData<Int> = _deletePhotoSuccess
+    
+    // Store current planId and userId for API calls
+    private var currentPlanId: String? = null
+    private var currentUserId: String? = null
 
     init {
-        _likesCount.value = 0
         _commentsCount.value = 0
-        _isLiked.value = false
         _photos.value = emptyList()
     }
 
     fun loadPlanPhotos(tripId: String, planId: String) {
+        currentPlanId = planId
         viewModelScope.launch {
             try {
                 setLoading(true)
@@ -59,6 +67,8 @@ class PlanDetailViewModel(
                             Log.d("PlanDetailViewModel", "Loaded ${photosList.size} photos")
                         }
                     }
+                    // Load comments after loading plan
+                    loadComments()
                 }.onFailure { exception ->
                     Log.e("PlanDetailViewModel", "Failed to load photos", exception)
                     setError("Failed to load photos: ${exception.message}")
@@ -127,55 +137,64 @@ class PlanDetailViewModel(
         }
     }
 
-    fun postComment(comment: String) {
+    fun loadComments() {
         viewModelScope.launch {
             try {
-                setLoading(true)
-                // TODO: Implement API call to post comment
-                Log.d("PlanDetailViewModel", "Posting comment: $comment")
+                val planId = currentPlanId ?: return@launch
                 
-                // Simulate success for now
-                val currentCount = _commentsCount.value ?: 0
-                _commentsCount.value = currentCount + 1
-                _commentPosted.value = true
+                Log.d("PlanDetailViewModel", "Loading comments for planId: $planId")
                 
-            } catch (e: Exception) {
-                Log.e("PlanDetailViewModel", "Error posting comment", e)
-                setError("Error posting comment: ${e.message}")
-                _commentPosted.value = false
-            } finally {
-                setLoading(false)
-            }
-        }
-    }
-
-    fun toggleLike() {
-        viewModelScope.launch {
-            try {
-                // TODO: Implement API call to toggle like
-                val currentLikes = _likesCount.value ?: 0
-                val currentIsLiked = _isLiked.value ?: false
+                val result = tripRepository.getComments(planId)
                 
-                if (currentIsLiked) {
-                    _likesCount.value = currentLikes - 1
-                    _isLiked.value = false
-                } else {
-                    _likesCount.value = currentLikes + 1
-                    _isLiked.value = true
+                result.onSuccess { commentsList ->
+                    _comments.value = commentsList
+                    _commentsCount.value = commentsList.size
+                    Log.d("PlanDetailViewModel", "Loaded ${commentsList.size} comments")
+                }.onFailure { exception ->
+                    Log.e("PlanDetailViewModel", "Failed to load comments", exception)
+                    setError("Failed to load comments: ${exception.message}")
                 }
-                
-                Log.d("PlanDetailViewModel", "Toggled like: isLiked=${_isLiked.value}, count=${_likesCount.value}")
-                
             } catch (e: Exception) {
-                Log.e("PlanDetailViewModel", "Error toggling like", e)
+                Log.e("PlanDetailViewModel", "Error loading comments", e)
                 setError("Error: ${e.message}")
             }
         }
     }
 
-    fun setInitialCounts(likes: Int, comments: Int) {
-        _likesCount.value = likes
+    fun postComment(comment: String, parentId: String? = null) {
+        viewModelScope.launch {
+            try {
+                val planId = currentPlanId ?: return@launch
+                val userId = currentUserId ?: return@launch
+                
+                Log.d("PlanDetailViewModel", "Posting comment: $comment, parentId: $parentId")
+                
+                val result = tripRepository.postComment(planId, userId, comment, parentId)
+                
+                result.onSuccess {
+                    Log.d("PlanDetailViewModel", "Comment posted successfully")
+                    _commentPosted.value = true
+                    // Reload comments after posting
+                    loadComments()
+                }.onFailure { exception ->
+                    Log.e("PlanDetailViewModel", "Failed to post comment", exception)
+                    setError("Failed to post comment: ${exception.message}")
+                    _commentPosted.value = false
+                }
+            } catch (e: Exception) {
+                Log.e("PlanDetailViewModel", "Error posting comment", e)
+                setError("Error posting comment: ${e.message}")
+                _commentPosted.value = false
+            }
+        }
+    }
+
+    fun setInitialCounts(comments: Int) {
         _commentsCount.value = comments
+    }
+    
+    fun setUserId(userId: String) {
+        currentUserId = userId
     }
 
     fun resetUploadSuccess() {
@@ -184,5 +203,63 @@ class PlanDetailViewModel(
 
     fun resetCommentPosted() {
         _commentPosted.value = false
+    }
+    
+    fun deletePlan(tripId: String, planId: String) {
+        viewModelScope.launch {
+            try {
+                setLoading(true)
+                Log.d("PlanDetailViewModel", "Deleting plan: $planId")
+                
+                val result = tripRepository.deletePlan(tripId, planId)
+                
+                result.onSuccess {
+                    Log.d("PlanDetailViewModel", "Plan deleted successfully")
+                    _deletePlanSuccess.postValue(true)
+                }.onFailure { exception ->
+                    Log.e("PlanDetailViewModel", "Failed to delete plan", exception)
+                    setError("Failed to delete plan: ${exception.message}")
+                    _deletePlanSuccess.postValue(false)
+                }
+            } catch (e: Exception) {
+                Log.e("PlanDetailViewModel", "Error deleting plan", e)
+                setError("Error: ${e.message}")
+                _deletePlanSuccess.postValue(false)
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+    
+    fun deletePhoto(tripId: String, planId: String, photoFileName: String, photoIndex: Int) {
+        viewModelScope.launch {
+            try {
+                setLoading(true)
+                Log.d("PlanDetailViewModel", "Deleting photo: $photoFileName")
+                
+                val result = tripRepository.deletePhotoFromPlan(tripId, planId, photoFileName)
+                
+                result.onSuccess {
+                    Log.d("PlanDetailViewModel", "Photo deleted successfully")
+                    // Remove from local list
+                    val currentPhotos = _photos.value?.toMutableList() ?: mutableListOf()
+                    if (photoIndex < currentPhotos.size) {
+                        currentPhotos.removeAt(photoIndex)
+                        _photos.postValue(currentPhotos)
+                    }
+                    _deletePhotoSuccess.postValue(photoIndex)
+                }.onFailure { exception ->
+                    Log.e("PlanDetailViewModel", "Failed to delete photo", exception)
+                    setError("Failed to delete photo: ${exception.message}")
+                    _deletePhotoSuccess.postValue(-1)
+                }
+            } catch (e: Exception) {
+                Log.e("PlanDetailViewModel", "Error deleting photo", e)
+                setError("Error: ${e.message}")
+                _deletePhotoSuccess.postValue(-1)
+            } finally {
+                setLoading(false)
+            }
+        }
     }
 }

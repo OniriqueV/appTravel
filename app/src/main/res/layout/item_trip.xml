@@ -16,22 +16,40 @@
         android:padding="16dp"
         android:gravity="center_vertical">
 
-        <!-- Trip Image - Rounded -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginEnd="16dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="0dp">
+        <!-- Trip Image Container with Warning Badge -->
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="16dp">
             
-            <ImageView
-                android:id="@+id/ivTripImage"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@drawable/trip_placeholder" />
+            <!-- Trip Image - Rounded -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
                 
-        </androidx.cardview.widget.CardView>
+                <ImageView
+                    android:id="@+id/ivTripImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/trip_placeholder" />
+                    
+            </androidx.cardview.widget.CardView>
+            
+            <!-- Warning Badge for Conflicting Trips -->
+            <ImageView
+                android:id="@+id/ivWarningBadge"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_gravity="top|start"
+                android:layout_margin="4dp"
+                android:visibility="gone"
+                android:src="@drawable/ic_warning"
+                android:contentDescription="Trip conflict warning" />
+                
+        </FrameLayout>
 
         <!-- Trip Details -->
         <LinearLayout
