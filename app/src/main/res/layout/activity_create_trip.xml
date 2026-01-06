@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F2C594"
+    android:background="#F6E9D4"
     android:fillViewport="true">
 
     <LinearLayout
@@ -42,7 +42,7 @@
                 android:id="@+id/btnSave"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:background="@drawable/button_primary_background"
+                android:background="@drawable/bg_button_primary"
                 android:text="Save"
                 android:textColor="@android:color/white"
                 android:textSize="14sp"
@@ -67,7 +67,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="120dp"
                 android:layout_marginBottom="32dp"
-                android:background="#D9A771"
+                android:background="#EBF2F1"
                 android:clickable="true"
                 android:focusable="true">
 
@@ -229,7 +229,7 @@
                         android:layout_width="56dp"
                         android:layout_height="56dp"
                         android:layout_marginEnd="12dp"
-                        android:background="@drawable/circle_blue_background"
+                        android:background="@drawable/bg_button_primary"
                         android:clickable="true"
                         android:focusable="true">
 
