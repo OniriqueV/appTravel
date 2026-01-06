@@ -58,7 +58,6 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         requestNotificationPermissionIfNeeded()
 
         if (savedInstanceState == null) {
@@ -66,7 +65,7 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
             currentTripsFragment = tripsFragment
             replaceFragment(tripsFragment)
         }
-
+        intent?.let { handleOpenProfile(it) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(
                 notificationReceiver,
@@ -215,4 +214,14 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     }
 
     override fun handleLoading(isLoading: Boolean) {}
+    private fun handleOpenProfile(intent: Intent) {
+        val userId = intent.getStringExtra("open_profile_user_id") ?: return
+        openUserProfile(userId)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleOpenProfile(intent)
+    }
+
 }

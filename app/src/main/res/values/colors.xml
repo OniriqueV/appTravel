@@ -18,7 +18,10 @@
     <color name="grey_400">#BDBDBD</color>
     <color name="grey_500">#9E9E9E</color>
     <color name="grey_700">#616161</color>
-
+    <color name="primary_10">#1AC68B4F</color>
+    <color name="bg_screen">#F6EAD7</color>
+    <color name="primary">#C68B4F</color>
     <color name="red">#FF3B30</color>
-
+    <color name="text_primary">#2D241B</color>
+    <color name="text_secondary">#6B5B4A</color>
 </resources>

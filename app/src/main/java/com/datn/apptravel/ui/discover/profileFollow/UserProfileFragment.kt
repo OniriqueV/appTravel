@@ -14,15 +14,14 @@ import com.datn.apptravel.R
 import com.datn.apptravel.databinding.FragmentUserProfileBinding
 import com.datn.apptravel.ui.discover.network.FollowRepository
 import com.datn.apptravel.ui.discover.network.ProfileRepository
-import com.datn.apptravel.ui.discover.util.ImageUrlUtil
 import com.datn.apptravel.ui.discover.profileFollow.adapter.ProfileTripAdapter
+import com.datn.apptravel.ui.discover.util.ImageUrlUtil
 import com.datn.apptravel.ui.trip.TripsFragment
 import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
-
 
 class UserProfileFragment : Fragment() {
 
@@ -34,7 +33,6 @@ class UserProfileFragment : Fragment() {
 
     private val followRepository: FollowRepository by inject()
     private val profileRepository: ProfileRepository by inject()
-
 
     private lateinit var targetUserId: String
     private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
@@ -56,29 +54,42 @@ class UserProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupUserInfo()
+        loadProfile()
         setupRecycler()
         observeViewModel()
         checkFollowState()
+
         binding.btnBack.setOnClickListener {
             requireActivity().onBackPressed()
         }
 
-        // ✅ FIX: dùng đúng tên param mới (userId)
         viewModel.loadTrips(
             userId = targetUserId,
             viewerId = currentUserId
         )
     }
 
-    // ================= USER INFO =================
-    private fun setupUserInfo() {
+    // 🔥 QUAN TRỌNG: quay lại màn hình là reload profile
+    override fun onResume() {
+        super.onResume()
+        loadProfile()
+    }
+
+    // ================= PROFILE =================
+    private fun loadProfile() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val profile = profileRepository.getProfile(targetUserId)
 
                 binding.tvUserName.text = profile.userName
                 binding.tvTime.text = "${profile.followerCount} followers"
+                binding.tvTime.visibility = View.VISIBLE
+
+                binding.tvTime.setOnClickListener {
+                    FollowersBottomSheet
+                        .newInstance(targetUserId)
+                        .show(parentFragmentManager, "followers")
+                }
 
                 Glide.with(this@UserProfileFragment)
                     .load(ImageUrlUtil.toFullUrl(profile.userAvatar))
@@ -91,7 +102,6 @@ class UserProfileFragment : Fragment() {
             }
         }
     }
-
 
     // ================= FOLLOW STATE =================
     private fun checkFollowState() {
@@ -115,11 +125,9 @@ class UserProfileFragment : Fragment() {
 
         if (isFollowing) {
             binding.btnFollow.text = "Following"
-            binding.btnFollow.isEnabled = true
             binding.btnFollow.setOnClickListener { showUnfollowConfirm() }
         } else {
             binding.btnFollow.text = "Follow"
-            binding.btnFollow.isEnabled = true
             binding.btnFollow.setOnClickListener { follow() }
         }
     }
@@ -139,8 +147,8 @@ class UserProfileFragment : Fragment() {
             try {
                 followRepository.follow(me, targetUserId)
                 renderFollowButton(true)
-            } catch (_: Exception) {
-            }
+                loadProfile()
+            } catch (_: Exception) {}
         }
     }
 
@@ -151,6 +159,7 @@ class UserProfileFragment : Fragment() {
                 followRepository.unfollow(me, targetUserId)
             } finally {
                 renderFollowButton(false)
+                loadProfile()
             }
         }
     }
@@ -159,8 +168,7 @@ class UserProfileFragment : Fragment() {
     private fun setupRecycler() {
         tripAdapter = ProfileTripAdapter(mutableListOf()) { tripId ->
             val intent = Intent(requireContext(), TripDetailActivity::class.java)
-            intent.putExtra(
-                TripsFragment.EXTRA_TRIP_ID, tripId)
+            intent.putExtra(TripsFragment.EXTRA_TRIP_ID, tripId)
             startActivity(intent)
         }
 
@@ -178,11 +186,4 @@ class UserProfileFragment : Fragment() {
         super.onDestroyView()
         _binding = null
     }
-
-    private fun openTripDetail(tripId: String) {
-        val intent = Intent(requireContext(), TripDetailActivity::class.java)
-        intent.putExtra("tripId", tripId)
-        startActivity(intent)
-    }
-
 }

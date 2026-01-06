@@ -14,7 +14,7 @@ import com.datn.apptravel.R
 import com.datn.apptravel.ui.discover.model.DiscoverItem
 import com.datn.apptravel.ui.discover.network.FollowRepository
 import com.datn.apptravel.ui.discover.util.ImageUrlUtil
-import com.datn.apptravel.ui.discover.util.TimeUtil
+import com.datn.apptravel.ui.discover.util.TimeUtil.formatTimeAgo
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.launch
 
@@ -87,7 +87,10 @@ class DiscoverFeedAdapter(
         fun bind(item: DiscoverItem) {
 
             tvUserName.text = item.userName ?: "Unknown"
-            tvTime.text = TimeUtil.formatTimeAgo(item.sharedAt ?: "")
+            tvTime.text = formatTimeAgoFromString(item.sharedAt)
+            tvTime.visibility =
+                if (tvTime.text.isBlank()) View.GONE else View.VISIBLE
+
 
             if (item.caption.isNullOrBlank()) {
                 tvCaption.visibility = View.GONE
@@ -159,5 +162,47 @@ class DiscoverFeedAdapter(
                 }
             }
         }
+
+        private fun formatTimeAgoFromString(value: String?): String {
+            if (value.isNullOrBlank()) return ""
+
+            return try {
+                // 🔥 Parse ISO-8601 string -> LocalDateTime
+                val time = java.time.LocalDateTime.parse(value)
+
+                // 🔥 Convert -> millis
+                val timeMillis = time
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toInstant()
+                    .toEpochMilli()
+
+                val diff = System.currentTimeMillis() - timeMillis
+
+                val seconds = diff / 1000
+                val minutes = seconds / 60
+                val hours = minutes / 60
+                val days = hours / 24
+
+                when {
+                    seconds < 60 -> "Vừa xong"
+                    minutes < 60 -> "$minutes phút trước"
+                    hours < 24 -> "$hours giờ trước"
+                    days < 7 -> "$days ngày trước"
+                    else -> {
+                        java.text.SimpleDateFormat(
+                            "dd/MM/yyyy",
+                            java.util.Locale.getDefault()
+                        ).format(java.util.Date(timeMillis))
+                    }
+                }
+            } catch (e: Exception) {
+                ""
+            }
+        }
+
+
+
+
     }
 }
+

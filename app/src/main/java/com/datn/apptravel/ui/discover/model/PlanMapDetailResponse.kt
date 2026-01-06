@@ -10,5 +10,6 @@ data class PlanMapDetailResponse(
     val images: List<String>,
     val likeCount: Int,
     val commentCount: Int,
-    val liked: Boolean
+    val liked: Boolean,
+    val isOwner: Boolean
 )

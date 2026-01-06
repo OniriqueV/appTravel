@@ -4,8 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:paddingHorizontal="12dp"
-    android:paddingTop="10dp">
-
+    android:paddingTop="10dp"
+    android:background="@color/bg_screen">
     <!-- Top right actions: Post + Search -->
     <LinearLayout
         android:id="@+id/layoutTopActions"
@@ -14,8 +14,8 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
+        app:layout_constraintEnd_toEndOf="parent"
+        android:background="@color/bg_screen">
         <!-- Post button (giữ id để code cũ vẫn chạy) -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/btnCreatePost"
