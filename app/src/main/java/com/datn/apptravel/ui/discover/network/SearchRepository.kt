@@ -1,6 +1,6 @@
-package com.datn.apptravel.ui.search
+package com.datn.apptravels.ui.search
 
-import com.datn.apptravel.ui.search.network.SearchApi
+import com.datn.apptravels.ui.search.network.SearchApi
 
 class SearchRepository(
     private val api: SearchApi

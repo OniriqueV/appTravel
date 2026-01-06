@@ -1,9 +1,9 @@
-package com.datn.apptravel.ui.notification
+package com.datn.apptravels.ui.notification
 
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.model.Notification
-import com.datn.apptravel.data.repository.NotificationRepository
-import com.datn.apptravel.ui.base.BaseViewModel
+import com.datn.apptravels.data.model.Notification
+import com.datn.apptravels.data.repository.NotificationRepository
+import com.datn.apptravels.ui.base.BaseViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

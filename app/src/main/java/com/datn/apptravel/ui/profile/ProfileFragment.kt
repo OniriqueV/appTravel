@@ -1,22 +1,18 @@
-package com.datn.apptravel.ui.profile
+package com.datn.apptravels.ui.profile
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
-import android.provider.MediaStore
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.FragmentProfileBinding
-import com.datn.apptravel.ui.aisuggest.AISuggestActivity
-import com.datn.apptravel.ui.aisuggest.ExtendedAISuggestActivity
-import com.datn.apptravel.ui.activity.SignInActivity
-import com.datn.apptravel.ui.base.BaseFragment
-import com.datn.apptravel.ui.profile.edit.EditProfileActivity
-import com.datn.apptravel.ui.profile.password.ChangePasswordActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.FragmentProfileBinding
+import com.datn.apptravels.ui.activity.SignInActivity
+import com.datn.apptravels.ui.base.BaseFragment
+import com.datn.apptravels.ui.profile.edit.EditProfileActivity
+import com.datn.apptravels.ui.profile.password.ChangePasswordActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.koin.androidx.viewmodel.ext.android.viewModel
 

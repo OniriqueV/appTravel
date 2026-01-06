@@ -1,7 +1,7 @@
-package com.datn.apptravel.ui.discover.network
+package com.datn.apptravels.ui.discover.network
 
-import com.datn.apptravel.ui.discover.model.CommentRequest
-import com.datn.apptravel.ui.discover.model.PlanCommentDto
+import com.datn.apptravels.ui.discover.model.CommentRequest
+import com.datn.apptravels.ui.discover.model.PlanCommentDto
 
 class PlanMapDetailRepository(
     private val api: PlanMapApi

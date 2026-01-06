@@ -1,10 +1,10 @@
-package com.datn.apptravel.ui.aisuggest.data.repository
+package com.datn.apptravels.ui.aisuggest.data.repository
 
-import com.datn.apptravel.ui.aisuggest.data.api.ApiService
-import com.datn.apptravel.ui.aisuggest.data.model.ApiResult
-import com.datn.apptravel.ui.aisuggest.data.model.ChatRequest
-import com.datn.apptravel.ui.aisuggest.data.model.Message
-import com.datn.apptravel.ui.aisuggest.data.model.TravelRequest
+import com.datn.apptravels.ui.aisuggest.data.api.ApiService
+import com.datn.apptravels.ui.aisuggest.data.model.ApiResult
+import com.datn.apptravels.ui.aisuggest.data.model.ChatRequest
+import com.datn.apptravels.ui.aisuggest.data.model.Message
+import com.datn.apptravels.ui.aisuggest.data.model.TravelRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.SocketTimeoutException

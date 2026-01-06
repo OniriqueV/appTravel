@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.api
+package com.datn.apptravels.data.api
 
 sealed class NetworkResult<out T> {
     data class Success<T>(val data: T) : NetworkResult<T>()

@@ -1,6 +1,6 @@
-package com.datn.apptravel.data.api
+package com.datn.apptravels.data.api
 
-import com.datn.apptravel.BuildConfig
+import com.datn.apptravels.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.activity
+package com.datn.apptravels.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,9 +10,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.datn.apptravel.R
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.ui.app.AuthViewModel
+import com.datn.apptravels.R
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.ui.app.AuthViewModel
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel

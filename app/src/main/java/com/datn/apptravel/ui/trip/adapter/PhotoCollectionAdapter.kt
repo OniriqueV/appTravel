@@ -1,13 +1,13 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.ItemPhotoCollectionBinding
-import com.datn.apptravel.utils.ApiConfig
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.ItemPhotoCollectionBinding
+import com.datn.apptravels.utils.ApiConfig
 
 class PhotoCollectionAdapter(
     private val photos: MutableList<String>,

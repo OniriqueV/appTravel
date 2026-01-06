@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.profile.edit
+package com.datn.apptravels.ui.profile.edit
 
 import android.content.Intent
 import android.net.Uri
@@ -9,8 +9,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.ActivityEditProfileBinding
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.ActivityEditProfileBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.koin.androidx.viewmodel.ext.android.viewModel
 

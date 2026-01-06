@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.search
+package com.datn.apptravels.ui.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

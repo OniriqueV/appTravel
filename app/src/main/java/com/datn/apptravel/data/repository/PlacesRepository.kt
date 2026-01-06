@@ -1,9 +1,9 @@
-package com.datn.apptravel.data.repository
+package com.datn.apptravels.data.repository
 
-import com.datn.apptravel.BuildConfig
-import com.datn.apptravel.data.api.ApiService
-import com.datn.apptravel.data.api.NetworkResult
-import com.datn.apptravel.data.model.response.MapPlace
+import com.datn.apptravels.BuildConfig
+import com.datn.apptravels.data.api.ApiService
+import com.datn.apptravels.data.api.NetworkResult
+import com.datn.apptravels.data.model.response.MapPlace
 
 class PlacesRepository(private val apiService: ApiService) {
     

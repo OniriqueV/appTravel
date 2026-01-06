@@ -1,14 +1,14 @@
-package com.datn.apptravel.ui.activity
+package com.datn.apptravels.ui.activity
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-import com.datn.apptravel.databinding.ActivityOnboardingBinding
-import com.datn.apptravel.ui.base.BaseActivity
-import com.datn.apptravel.ui.app.OnboardingFragment
-import com.datn.apptravel.ui.app.OnboardingViewModel
+import com.datn.apptravels.databinding.ActivityOnboardingBinding
+import com.datn.apptravels.ui.base.BaseActivity
+import com.datn.apptravels.ui.app.OnboardingFragment
+import com.datn.apptravels.ui.app.OnboardingViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class OnboardingActivity : BaseActivity<ActivityOnboardingBinding, OnboardingViewModel>() {

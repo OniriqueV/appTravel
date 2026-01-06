@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover
+package com.datn.apptravels.ui.discover
 
 import android.app.Activity
 import android.content.Intent
@@ -9,13 +9,13 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
-import com.datn.apptravel.databinding.FragmentDiscoverBinding
-import com.datn.apptravel.ui.discover.feed.adapter.DiscoverPagerAdapter
-import com.datn.apptravel.ui.discover.post.CreatePostActivity
+import com.datn.apptravels.databinding.FragmentDiscoverBinding
+import com.datn.apptravels.ui.discover.feed.adapter.DiscoverPagerAdapter
+import com.datn.apptravels.ui.discover.post.CreatePostActivity
 import com.google.android.material.tabs.TabLayoutMediator
 import com.google.firebase.auth.FirebaseAuth
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.trip.detail.tripdetail.TripDetailActivity
 
 //import com.datn.apptravel.ui.discover.search.SearchExploreFragment
 
@@ -79,7 +79,7 @@ class DiscoverFragment : Fragment() {
             parentFragmentManager.beginTransaction()
                 .replace(
                     R.id.nav_host_fragment,
-                    com.datn.apptravel.ui.search.SearchExploreFragment()
+                    com.datn.apptravels.ui.search.SearchExploreFragment()
                 )
                 .addToBackStack("search")
                 .commit()

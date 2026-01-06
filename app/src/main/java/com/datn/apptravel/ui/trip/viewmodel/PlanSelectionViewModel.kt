@@ -1,13 +1,13 @@
-package com.datn.apptravel.ui.trip.viewmodel
+package com.datn.apptravels.ui.trip.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.api.NetworkResult
-import com.datn.apptravel.data.model.PlanType
-import com.datn.apptravel.data.model.response.MapPlace
-import com.datn.apptravel.data.repository.PlacesRepository
-import com.datn.apptravel.ui.base.BaseViewModel
+import com.datn.apptravels.data.api.NetworkResult
+import com.datn.apptravels.data.model.PlanType
+import com.datn.apptravels.data.model.response.MapPlace
+import com.datn.apptravels.data.repository.PlacesRepository
+import com.datn.apptravels.ui.base.BaseViewModel
 import kotlinx.coroutines.launch
 
 class PlanSelectionViewModel(

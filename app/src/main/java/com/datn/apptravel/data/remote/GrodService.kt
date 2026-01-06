@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.remote
+package com.datn.apptravels.data.remote
 
 import retrofit2.Response
 import retrofit2.http.Body

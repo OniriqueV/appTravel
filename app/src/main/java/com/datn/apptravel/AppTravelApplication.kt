@@ -1,9 +1,9 @@
-package com.datn.apptravel
+package com.datn.apptravels
 
 import android.app.Application
 import android.util.Log
-import com.datn.apptravel.data.repository.NotificationRepository
-import com.datn.apptravel.di.appModule
+import com.datn.apptravels.data.repository.NotificationRepository
+import com.datn.apptravels.di.appModule
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

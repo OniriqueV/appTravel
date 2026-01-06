@@ -1,7 +1,7 @@
-package com.datn.apptravel.ui.discover.network
+package com.datn.apptravels.ui.discover.network
 
-import com.datn.apptravel.data.api.RetrofitClient
-import com.datn.apptravel.data.api.TripApiService
+import com.datn.apptravels.data.api.RetrofitClient
+import com.datn.apptravels.data.api.TripApiService
 
 object TripApiClient {
     val api: TripApiService by lazy { RetrofitClient.tripApiService }

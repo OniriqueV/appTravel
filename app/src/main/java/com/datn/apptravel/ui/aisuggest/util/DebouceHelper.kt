@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.aisuggest.util
+package com.datn.apptravels.ui.aisuggest.util
 
 import kotlinx.coroutines.*
 

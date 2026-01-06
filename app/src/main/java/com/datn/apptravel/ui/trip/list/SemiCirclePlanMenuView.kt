@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.list
+package com.datn.apptravels.ui.trip.list
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
@@ -8,8 +8,8 @@ import android.view.MotionEvent
 import android.view.View
 import androidx.core.content.ContextCompat
 import androidx.core.view.GestureDetectorCompat
-import com.datn.apptravel.R
-import com.datn.apptravel.data.model.PlanType
+import com.datn.apptravels.R
+import com.datn.apptravels.data.model.PlanType
 import kotlin.math.*
 
 class SemiCirclePlanMenuView @JvmOverloads constructor(

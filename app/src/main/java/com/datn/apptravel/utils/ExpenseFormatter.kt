@@ -1,4 +1,4 @@
-package com.datn.apptravel.utils
+package com.datn.apptravels.utils
 
 import android.text.Editable
 import android.text.TextWatcher

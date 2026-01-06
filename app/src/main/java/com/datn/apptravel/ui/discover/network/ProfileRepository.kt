@@ -1,8 +1,7 @@
-package com.datn.apptravel.ui.discover.network
+package com.datn.apptravels.ui.discover.network
 
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.model.User
-import com.datn.apptravel.ui.discover.profileFollow.model.FollowerDto
+import com.datn.apptravels.ui.discover.model.DiscoverItem
+import com.datn.apptravels.ui.discover.profileFollow.model.FollowerDto
 
 class ProfileRepository(
     private val api: ProfileApi

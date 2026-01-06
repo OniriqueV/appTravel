@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.search
+package com.datn.apptravels.ui.search
 
 sealed class SearchItem {
 

@@ -1,10 +1,9 @@
-package com.datn.apptravel.data.repository
+package com.datn.apptravels.data.repository
 
 import android.util.Log
-import com.datn.apptravel.data.api.RetrofitClient
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.data.model.Notification
-import com.datn.apptravel.data.model.NotificationType
+import com.datn.apptravels.data.api.RetrofitClient
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.data.model.Notification
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

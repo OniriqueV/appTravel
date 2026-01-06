@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.util
+package com.datn.apptravels.ui.discover.util
 
 import java.text.SimpleDateFormat
 import java.util.Locale

@@ -1,12 +1,12 @@
-package com.datn.apptravel.ui.aisuggest.data.repository
+package com.datn.apptravels.ui.aisuggest.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.datn.apptravel.BuildConfig
-import com.datn.apptravel.ui.aisuggest.data.api.ApiService
-import com.datn.apptravel.ui.aisuggest.data.api.GeoapifyClient
-import com.datn.apptravel.ui.aisuggest.data.api.GeoapifyService
-import com.datn.apptravel.ui.aisuggest.data.model.*
+import com.datn.apptravels.BuildConfig
+import com.datn.apptravels.ui.aisuggest.data.api.ApiService
+import com.datn.apptravels.ui.aisuggest.data.api.GeoapifyClient
+import com.datn.apptravels.ui.aisuggest.data.api.GeoapifyService
+import com.datn.apptravels.ui.aisuggest.data.model.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

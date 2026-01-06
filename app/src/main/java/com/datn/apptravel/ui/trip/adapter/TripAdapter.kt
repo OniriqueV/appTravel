@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
 import android.app.Dialog
 import android.view.LayoutInflater
@@ -7,10 +7,10 @@ import android.view.ViewGroup
 import android.view.Window
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.ItemTripBinding
-import com.datn.apptravel.data.model.Trip
-import com.datn.apptravel.utils.ApiConfig
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.ItemTripBinding
+import com.datn.apptravels.data.model.Trip
+import com.datn.apptravels.utils.ApiConfig
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 

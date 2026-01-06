@@ -1,6 +1,6 @@
-package com.datn.apptravel.ui.trip.ai
+package com.datn.apptravels.ui.trip.ai
 
-import com.datn.apptravel.data.model.AISuggestedPlan
+import com.datn.apptravels.data.model.AISuggestedPlan
 
 data class PreviewScheduleDay(
     val date: String, // yyyy-MM-dd

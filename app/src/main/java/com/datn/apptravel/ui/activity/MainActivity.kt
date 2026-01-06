@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.activity
+package com.datn.apptravels.ui.activity
 
 import android.Manifest
 import android.content.BroadcastReceiver
@@ -12,17 +12,17 @@ import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.ActivityMainBinding
-import com.datn.apptravel.ui.base.BaseActivity
-import com.datn.apptravel.ui.discover.DiscoverFragment
-import com.datn.apptravel.ui.notification.NotificationFragment
-import com.datn.apptravel.ui.profile.ProfileFragment
-import com.datn.apptravel.ui.trip.TripsFragment
-import com.datn.apptravel.ui.app.MainViewModel
-import com.datn.apptravel.ui.trip.CreateTripActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.ActivityMainBinding
+import com.datn.apptravels.ui.base.BaseActivity
+import com.datn.apptravels.ui.discover.DiscoverFragment
+import com.datn.apptravels.ui.notification.NotificationFragment
+import com.datn.apptravels.ui.profile.ProfileFragment
+import com.datn.apptravels.ui.trip.TripsFragment
+import com.datn.apptravels.ui.app.MainViewModel
+import com.datn.apptravels.ui.trip.CreateTripActivity
 import com.google.android.material.badge.BadgeDrawable
-import com.datn.apptravel.data.repository.NotificationRepository
+import com.datn.apptravels.data.repository.NotificationRepository
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.android.ext.android.inject
 
@@ -188,7 +188,7 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
      * - Dùng FragmentManager replace theo kiến trúc hiện tại
      */
     fun openUserProfile(userId: String) {
-        val fragment = com.datn.apptravel.ui.discover.profileFollow.UserProfileFragment().apply {
+        val fragment = com.datn.apptravels.ui.discover.profileFollow.UserProfileFragment().apply {
             arguments = Bundle().apply { putString("userId", userId) }
         }
         replaceFragment(fragment)

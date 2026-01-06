@@ -1,6 +1,6 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
-import com.datn.apptravel.ui.discover.model.CommentDto
+import com.datn.apptravels.ui.discover.model.CommentDto
 
 data class CommentItem(
     val comment: CommentDto,

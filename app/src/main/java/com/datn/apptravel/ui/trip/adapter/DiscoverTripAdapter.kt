@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
 import android.os.Handler
 import android.os.Looper
@@ -10,19 +10,12 @@ import android.widget.TextView
 import androidx.recyclerview.widget.LinearSnapHelper
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.data.repository.TripRepository
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.utils.ApiConfig
+import com.datn.apptravels.R
+import com.datn.apptravels.data.repository.TripRepository
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.ui.discover.model.DiscoverItem
+import com.datn.apptravels.utils.ApiConfig
 import de.hdodenhof.circleimageview.CircleImageView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 
 class DiscoverTripAdapter(
     private var originalItems: List<DiscoverItem>,

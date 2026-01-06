@@ -1,10 +1,10 @@
-package com.datn.apptravel.ui.discover.feed.adapter
+package com.datn.apptravels.ui.discover.feed.adapter
 
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import com.datn.apptravel.ui.discover.Refreshable
-import com.datn.apptravel.ui.discover.feed.FollowingFragment
-import com.datn.apptravel.ui.discover.feed.RandomFeedFragment
+import com.datn.apptravels.ui.discover.Refreshable
+import com.datn.apptravels.ui.discover.feed.FollowingFragment
+import com.datn.apptravels.ui.discover.feed.RandomFeedFragment
 
 class DiscoverPagerAdapter(
     hostFragment: Fragment

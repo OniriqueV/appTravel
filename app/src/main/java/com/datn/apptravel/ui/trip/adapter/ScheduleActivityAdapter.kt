@@ -1,12 +1,12 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.databinding.ItemScheduleActivityBinding
-import com.datn.apptravel.ui.trip.detail.PlanDetailActivity
-import com.datn.apptravel.ui.trip.model.ScheduleActivity
+import com.datn.apptravels.databinding.ItemScheduleActivityBinding
+import com.datn.apptravels.ui.trip.detail.PlanDetailActivity
+import com.datn.apptravels.ui.trip.model.ScheduleActivity
 
 class ScheduleActivityAdapter(
     private val activities: List<ScheduleActivity>

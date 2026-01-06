@@ -1,14 +1,13 @@
-package com.datn.apptravel.data.api
+package com.datn.apptravels.data.api
 
 
-import com.datn.apptravel.data.model.Plan
-import com.datn.apptravel.data.model.Trip
-import com.datn.apptravel.data.model.User
-import com.datn.apptravel.data.model.request.*
-import com.datn.apptravel.data.model.response.FileUploadResponse
-import com.datn.apptravel.data.model.response.TripResponse
-import com.datn.apptravel.ui.discover.model.CommentDto
-import com.datn.apptravel.ui.discover.model.PlanCommentDto
+import com.datn.apptravels.data.model.Plan
+import com.datn.apptravels.data.model.Trip
+import com.datn.apptravels.data.model.User
+import com.datn.apptravels.data.model.request.*
+import com.datn.apptravels.data.model.response.FileUploadResponse
+import com.datn.apptravels.data.model.response.TripResponse
+import com.datn.apptravels.ui.discover.model.CommentDto
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.aisuggest
+package com.datn.apptravels.ui.aisuggest
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -13,17 +13,17 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.datn.apptravel.BuildConfig
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.ActivityExtendedAisuggestBinding
-import com.datn.apptravel.ui.aisuggest.data.api.ApiClient
-import com.datn.apptravel.ui.aisuggest.data.model.ApiResult
-import com.datn.apptravel.ui.aisuggest.data.model.SavedItinerary
-import com.datn.apptravel.ui.aisuggest.data.model.TravelRequest
-import com.datn.apptravel.ui.aisuggest.data.repository.ExtendedTravelRepository
-import com.datn.apptravel.ui.aisuggest.ui.viewmodel.ExtendedTravelViewModel
-import com.datn.apptravel.ui.aisuggest.ui.viewmodel.ExtendedTravelViewModelFactory
-import com.datn.apptravel.ui.aisuggest.ui.adapter.SavedItineraryAdapter
+import com.datn.apptravels.BuildConfig
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.ActivityExtendedAisuggestBinding
+import com.datn.apptravels.ui.aisuggest.data.api.ApiClient
+import com.datn.apptravels.ui.aisuggest.data.model.ApiResult
+import com.datn.apptravels.ui.aisuggest.data.model.SavedItinerary
+import com.datn.apptravels.ui.aisuggest.data.model.TravelRequest
+import com.datn.apptravels.ui.aisuggest.data.repository.ExtendedTravelRepository
+import com.datn.apptravels.ui.aisuggest.ui.viewmodel.ExtendedTravelViewModel
+import com.datn.apptravels.ui.aisuggest.ui.viewmodel.ExtendedTravelViewModelFactory
+import com.datn.apptravels.ui.aisuggest.ui.adapter.SavedItineraryAdapter
 import com.google.android.material.chip.Chip
 import kotlinx.coroutines.launch
 

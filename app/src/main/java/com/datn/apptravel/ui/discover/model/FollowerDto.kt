@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.profileFollow.model
+package com.datn.apptravels.ui.discover.profileFollow.model
 
 data class FollowerDto(
     val userId: String,

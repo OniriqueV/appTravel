@@ -38,7 +38,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <com.datn.apptravel.ui.trip.list.SemiCirclePlanMenuView
+    <com.datn.apptravels.ui.trip.list.SemiCirclePlanMenuView
         android:id="@+id/semiCircleMenu"
         android:layout_width="120dp"
         android:layout_height="240dp"

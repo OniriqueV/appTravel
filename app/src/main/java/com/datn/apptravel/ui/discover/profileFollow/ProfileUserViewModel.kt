@@ -1,12 +1,11 @@
-package com.datn.apptravel.ui.discover.profileFollow
+package com.datn.apptravels.ui.discover.profileFollow
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.network.ProfileApi
-import com.datn.apptravel.ui.discover.network.ProfileRepository
+import com.datn.apptravels.ui.discover.model.DiscoverItem
+import com.datn.apptravels.ui.discover.network.ProfileRepository
 import kotlinx.coroutines.launch
 
 class ProfileUserViewModel(

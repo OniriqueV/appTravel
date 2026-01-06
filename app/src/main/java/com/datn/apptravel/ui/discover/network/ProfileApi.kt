@@ -1,9 +1,8 @@
-package com.datn.apptravel.ui.discover.network
+package com.datn.apptravels.ui.discover.network
 
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.model.ProfileResponse
-import com.datn.apptravel.ui.discover.model.User
-import com.datn.apptravel.ui.discover.profileFollow.model.FollowerDto
+import com.datn.apptravels.ui.discover.model.DiscoverItem
+import com.datn.apptravels.ui.discover.model.ProfileResponse
+import com.datn.apptravels.ui.discover.profileFollow.model.FollowerDto
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query

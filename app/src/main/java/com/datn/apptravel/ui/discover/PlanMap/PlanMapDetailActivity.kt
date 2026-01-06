@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.PlanMap
+package com.datn.apptravels.ui.discover.PlanMap
 
 import android.animation.ValueAnimator
 import android.content.res.Resources
@@ -14,9 +14,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.viewpager2.widget.ViewPager2
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.PlanMap.adapter.StoryAdapter
-import com.datn.apptravel.ui.discover.PlanMap.bottomsheet.PlanMapDetailCommentBottomSheet
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.discover.PlanMap.adapter.StoryAdapter
+import com.datn.apptravels.ui.discover.PlanMap.bottomsheet.PlanMapDetailCommentBottomSheet
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class PlanMapDetailActivity :

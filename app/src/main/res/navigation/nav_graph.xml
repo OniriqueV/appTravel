@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/discoverFragment"
-        android:name="com.datn.apptravel.ui.discover.DiscoverFragment"
+        android:name="com.datn.apptravels.ui.discover.DiscoverFragment"
         android:label="Discover"
         tools:layout="@layout/fragment_discover">
 
@@ -22,7 +22,7 @@
 
     <fragment
         android:id="@+id/searchExploreFragment"
-        android:name="com.datn.apptravel.ui.search.SearchExploreFragment"
+        android:name="com.datn.apptravels.ui.search.SearchExploreFragment"
         android:label="Search Explore"
         tools:layout="@layout/fragment_search_explore">
 
@@ -34,7 +34,7 @@
 
     <fragment
         android:id="@+id/userProfileFragment"
-        android:name="com.datn.apptravel.ui.discover.profileFollow.UserProfileFragment"
+        android:name="com.datn.apptravels.ui.discover.profileFollow.UserProfileFragment"
         android:label="User Profile"
         tools:layout="@layout/fragment_user_profile">
 

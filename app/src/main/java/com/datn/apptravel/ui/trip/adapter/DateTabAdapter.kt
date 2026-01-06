@@ -1,9 +1,9 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.databinding.ItemDateTabBinding
+import com.datn.apptravels.databinding.ItemDateTabBinding
 import java.text.SimpleDateFormat
 import java.util.Locale
 

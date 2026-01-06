@@ -1,10 +1,10 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.data.model.TopicSelection
-import com.datn.apptravel.databinding.ItemTopicBinding
+import com.datn.apptravels.data.model.TopicSelection
+import com.datn.apptravels.databinding.ItemTopicBinding
 
 class TopicAdapter(
     private val topics: List<TopicSelection>,

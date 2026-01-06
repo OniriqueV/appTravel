@@ -1,13 +1,13 @@
-package com.datn.apptravel.ui.aisuggest.ui.viewmodel
+package com.datn.apptravels.ui.aisuggest.ui.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.ui.aisuggest.data.model.ApiResult
-import com.datn.apptravel.ui.aisuggest.data.model.TravelRequest
-import com.datn.apptravel.ui.aisuggest.data.repository.TravelRepository
+import com.datn.apptravels.ui.aisuggest.data.model.ApiResult
+import com.datn.apptravels.ui.aisuggest.data.model.TravelRequest
+import com.datn.apptravels.ui.aisuggest.data.repository.TravelRepository
 import kotlinx.coroutines.launch
 import kotlin.jvm.java
 

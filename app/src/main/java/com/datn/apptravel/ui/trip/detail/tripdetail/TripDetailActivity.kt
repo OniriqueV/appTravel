@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.detail.tripdetail
+package com.datn.apptravels.ui.trip.detail.tripdetail
 
 import android.app.Dialog
 import android.content.Intent
@@ -15,36 +15,31 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.data.model.TopicSelection
-import com.datn.apptravel.data.model.Trip
-import com.datn.apptravel.data.model.TripTopic
-import com.datn.apptravel.databinding.ActivityTripDetailBinding
-import com.datn.apptravel.databinding.DialogShareTripBinding
-import com.datn.apptravel.databinding.DialogSelectFollowersBinding
-import com.datn.apptravel.ui.trip.adapter.FollowerSelectionAdapter
-import com.datn.apptravel.ui.trip.adapter.ScheduleDayAdapter
-import com.datn.apptravel.ui.trip.adapter.TopicAdapter
-import com.datn.apptravel.ui.trip.adapter.TripMemberAdapter
-import com.datn.apptravel.ui.trip.adapter.TripMemberSmallAdapter
-import com.datn.apptravel.ui.trip.TripsFragment
-import com.datn.apptravel.ui.trip.list.PlanSelectionActivity
-import com.datn.apptravel.ui.trip.map.TripMapActivity
-import com.datn.apptravel.ui.trip.viewmodel.TripDetailViewModel
-import com.datn.apptravel.utils.ApiConfig
-import androidx.lifecycle.lifecycleScope
-import com.datn.apptravel.data.model.AISuggestedPlan
-import com.datn.apptravel.data.model.CityPlan
-import com.datn.apptravel.data.model.User
-import com.datn.apptravel.ui.trip.CreateTripActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.data.model.TopicSelection
+import com.datn.apptravels.data.model.Trip
+import com.datn.apptravels.data.model.TripTopic
+import com.datn.apptravels.databinding.ActivityTripDetailBinding
+import com.datn.apptravels.databinding.DialogShareTripBinding
+import com.datn.apptravels.databinding.DialogSelectFollowersBinding
+import com.datn.apptravels.ui.trip.adapter.FollowerSelectionAdapter
+import com.datn.apptravels.ui.trip.adapter.ScheduleDayAdapter
+import com.datn.apptravels.ui.trip.adapter.TopicAdapter
+import com.datn.apptravels.ui.trip.adapter.TripMemberAdapter
+import com.datn.apptravels.ui.trip.adapter.TripMemberSmallAdapter
+import com.datn.apptravels.ui.trip.TripsFragment
+import com.datn.apptravels.ui.trip.list.PlanSelectionActivity
+import com.datn.apptravels.ui.trip.map.TripMapActivity
+import com.datn.apptravels.ui.trip.viewmodel.TripDetailViewModel
+import com.datn.apptravels.utils.ApiConfig
+import com.datn.apptravels.data.model.AISuggestedPlan
+import com.datn.apptravels.data.model.CityPlan
+import com.datn.apptravels.data.model.User
+import com.datn.apptravels.ui.trip.CreateTripActivity
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.firebase.auth.FirebaseAuth
-import com.datn.apptravel.ui.trip.ai.AIDialogFragment
-import com.datn.apptravel.ui.trip.ai.AIPlanPreviewDialogFragment
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.datn.apptravels.ui.trip.ai.AIDialogFragment
+import com.datn.apptravels.ui.trip.ai.AIPlanPreviewDialogFragment
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.time.LocalDate
@@ -319,7 +314,12 @@ class TripDetailActivity : AppCompatActivity() {
         
         // Observe trip ended status
         viewModel.isTripEnded.observe(this) { ended ->
-            // Update menu visibility if needed
+            // Hide AI suggest button when trip has ended
+            if (ended) {
+                binding.btnAiSuggest.visibility = View.GONE
+            } else if (!isReadOnly) {
+                binding.btnAiSuggest.visibility = View.VISIBLE
+            }
         }
         
         // Observe can view map

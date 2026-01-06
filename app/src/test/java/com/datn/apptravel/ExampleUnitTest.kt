@@ -1,4 +1,4 @@
-package com.datn.apptravel
+package com.datn.apptravels
 
 import org.junit.Test
 

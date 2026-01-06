@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.post
+package com.datn.apptravels.ui.discover.post
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,9 +9,8 @@ import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.model.User
-import com.datn.apptravel.ui.discover.network.FollowRepository
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.discover.network.FollowRepository
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.koin.android.ext.android.inject
 import androidx.lifecycle.lifecycleScope

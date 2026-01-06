@@ -1,10 +1,10 @@
-package com.datn.apptravel.ui.profile.password
+package com.datn.apptravels.ui.profile.password
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.repository.AuthRepository
+import com.datn.apptravels.data.repository.AuthRepository
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch

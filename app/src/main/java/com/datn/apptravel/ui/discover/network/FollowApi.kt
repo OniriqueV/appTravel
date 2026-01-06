@@ -1,11 +1,11 @@
-package com.datn.apptravel.ui.discover.network
+package com.datn.apptravels.ui.discover.network
 
 
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Query
-import com.datn.apptravel.ui.discover.model.User
+import com.datn.apptravels.ui.discover.model.User
 import retrofit2.http.Path
 
 

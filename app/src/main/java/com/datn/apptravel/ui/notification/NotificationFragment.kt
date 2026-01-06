@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.notification
+package com.datn.apptravels.ui.notification
 
 import android.view.LayoutInflater
 import android.view.View
@@ -9,9 +9,9 @@ import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.FragmentNotificationBinding
-import com.datn.apptravel.ui.base.BaseFragment
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.FragmentNotificationBinding
+import com.datn.apptravels.ui.base.BaseFragment
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -112,7 +112,7 @@ class NotificationFragment : BaseFragment<FragmentNotificationBinding, Notificat
                 // Update badge count
                 val unreadCount = viewModel.getUnreadCount()
                 android.util.Log.d("NotificationFragment", "Unread count: $unreadCount")
-                (activity as? com.datn.apptravel.ui.activity.MainActivity)?.updateNotificationBadge(unreadCount)
+                (activity as? com.datn.apptravels.ui.activity.MainActivity)?.updateNotificationBadge(unreadCount)
             }
         }
     }

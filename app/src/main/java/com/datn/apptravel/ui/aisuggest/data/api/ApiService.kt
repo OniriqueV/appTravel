@@ -1,7 +1,7 @@
-package com.datn.apptravel.ui.aisuggest.data.api
+package com.datn.apptravels.ui.aisuggest.data.api
 
-import com.datn.apptravel.ui.aisuggest.data.model.ChatRequest
-import com.datn.apptravel.ui.aisuggest.data.model.ChatResponse
+import com.datn.apptravels.ui.aisuggest.data.model.ChatRequest
+import com.datn.apptravels.ui.aisuggest.data.model.ChatResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Headers

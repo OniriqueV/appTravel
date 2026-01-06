@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.aisuggest.data.model
+package com.datn.apptravels.ui.aisuggest.data.model
 
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken

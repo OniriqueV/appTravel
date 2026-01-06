@@ -9,11 +9,11 @@ plugins {
 
 android {
 
-    namespace = "com.datn.apptravel"
+    namespace = "com.datn.apptravels"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.datn.apptravel"
+        applicationId = "com.datn.apptravels"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.aisuggest.data.api
+package com.datn.apptravels.ui.aisuggest.data.api
 
 import retrofit2.Response
 import retrofit2.http.GET

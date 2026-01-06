@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.model
+package com.datn.apptravels.data.model
 
 data class Trip(
     val id: String? = null,

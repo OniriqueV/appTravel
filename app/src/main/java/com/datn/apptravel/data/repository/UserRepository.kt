@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.repository
+package com.datn.apptravels.data.repository
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -6,7 +6,7 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Base64
 import android.util.Log
-import com.datn.apptravel.data.model.User
+import com.datn.apptravels.data.model.User
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 import java.io.ByteArrayOutputStream

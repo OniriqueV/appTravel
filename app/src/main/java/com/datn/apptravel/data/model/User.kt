@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.model
+package com.datn.apptravels.data.model
 
 data class User(
     val id: String = "",                    // Firebase UID (String instead of Long)

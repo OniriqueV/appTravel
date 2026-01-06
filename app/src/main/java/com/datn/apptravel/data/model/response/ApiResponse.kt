@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.model.response
+package com.datn.apptravels.data.model.response
 
 data class ApiResponse(
     val success: Boolean,

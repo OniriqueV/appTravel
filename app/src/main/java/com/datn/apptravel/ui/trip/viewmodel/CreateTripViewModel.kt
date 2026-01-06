@@ -1,16 +1,16 @@
-package com.datn.apptravel.ui.trip.viewmodel
+package com.datn.apptravels.ui.trip.viewmodel
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.data.model.Trip
-import com.datn.apptravel.data.model.User
-import com.datn.apptravel.data.model.request.CreateTripRequest
-import com.datn.apptravel.data.repository.TripRepository
-import com.datn.apptravel.ui.base.BaseViewModel
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.data.model.Trip
+import com.datn.apptravels.data.model.User
+import com.datn.apptravels.data.model.request.CreateTripRequest
+import com.datn.apptravels.data.repository.TripRepository
+import com.datn.apptravels.ui.base.BaseViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.time.LocalDate

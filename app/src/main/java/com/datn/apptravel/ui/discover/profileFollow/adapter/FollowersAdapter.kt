@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.profileFollow.adapter
+package com.datn.apptravels.ui.discover.profileFollow.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,10 +7,9 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.datn.apptravel.ui.discover.model.User
-import com.datn.apptravel.ui.discover.util.ImageUrlUtil
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.profileFollow.model.FollowerDto
+import com.datn.apptravels.ui.discover.util.ImageUrlUtil
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.discover.profileFollow.model.FollowerDto
 
 
 class FollowersAdapter(

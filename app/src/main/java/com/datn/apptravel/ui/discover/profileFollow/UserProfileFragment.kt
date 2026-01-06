@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.profileFollow
+package com.datn.apptravels.ui.discover.profileFollow
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,14 +10,14 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.FragmentUserProfileBinding
-import com.datn.apptravel.ui.discover.network.FollowRepository
-import com.datn.apptravel.ui.discover.network.ProfileRepository
-import com.datn.apptravel.ui.discover.profileFollow.adapter.ProfileTripAdapter
-import com.datn.apptravel.ui.discover.util.ImageUrlUtil
-import com.datn.apptravel.ui.trip.TripsFragment
-import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.FragmentUserProfileBinding
+import com.datn.apptravels.ui.discover.network.FollowRepository
+import com.datn.apptravels.ui.discover.network.ProfileRepository
+import com.datn.apptravels.ui.discover.profileFollow.adapter.ProfileTripAdapter
+import com.datn.apptravels.ui.discover.util.ImageUrlUtil
+import com.datn.apptravels.ui.trip.TripsFragment
+import com.datn.apptravels.ui.trip.detail.tripdetail.TripDetailActivity
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject

@@ -1,12 +1,12 @@
-package com.datn.apptravel.ui.aisuggest.ui.adapter
+package com.datn.apptravels.ui.aisuggest.ui.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.databinding.ItemSavedItineraryBinding
-import com.datn.apptravel.ui.aisuggest.data.model.SavedItinerary
+import com.datn.apptravels.databinding.ItemSavedItineraryBinding
+import com.datn.apptravels.ui.aisuggest.data.model.SavedItinerary
 import java.text.SimpleDateFormat
 import java.util.*
 

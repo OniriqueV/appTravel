@@ -1,8 +1,8 @@
-package com.datn.apptravel.utils
+package com.datn.apptravels.utils
 
-import com.datn.apptravel.data.model.AnalyzedPlan
-import com.datn.apptravel.data.model.GeoapifyPlace
-import com.datn.apptravel.data.model.UserInsight
+import com.datn.apptravels.data.model.AnalyzedPlan
+import com.datn.apptravels.data.model.GeoapifyPlace
+import com.datn.apptravels.data.model.UserInsight
 
 object AIPromptBuilder {
 

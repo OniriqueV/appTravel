@@ -1,6 +1,6 @@
-package com.datn.apptravel.data.api
+package com.datn.apptravels.data.api
 
-import com.datn.apptravel.data.model.response.GoogleImageSearchResponse
+import com.datn.apptravels.data.model.response.GoogleImageSearchResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 

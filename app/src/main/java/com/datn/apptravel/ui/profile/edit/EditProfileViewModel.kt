@@ -1,13 +1,13 @@
-package com.datn.apptravel.ui.profile.edit
+package com.datn.apptravels.ui.profile.edit
 
 import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.model.User
-import com.datn.apptravel.data.repository.AuthRepository
-import com.datn.apptravel.data.repository.UserRepository
+import com.datn.apptravels.data.model.User
+import com.datn.apptravels.data.repository.AuthRepository
+import com.datn.apptravels.data.repository.UserRepository
 import kotlinx.coroutines.launch
 
 class EditProfileViewModel(

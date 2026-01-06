@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.detail.plandetail
+package com.datn.apptravels.ui.trip.detail.plandetail
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
@@ -8,11 +8,11 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.datn.apptravel.data.model.PlanType
-import com.datn.apptravel.data.model.request.CreateFlightPlanRequest
-import com.datn.apptravel.data.repository.TripRepository
-import com.datn.apptravel.databinding.ActivityFlightDetailBinding
-import com.datn.apptravel.utils.ExpenseFormatter
+import com.datn.apptravels.data.model.PlanType
+import com.datn.apptravels.data.model.request.CreateFlightPlanRequest
+import com.datn.apptravels.data.repository.TripRepository
+import com.datn.apptravels.databinding.ActivityFlightDetailBinding
+import com.datn.apptravels.utils.ExpenseFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

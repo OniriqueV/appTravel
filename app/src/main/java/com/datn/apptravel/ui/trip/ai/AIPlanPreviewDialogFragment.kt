@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.ai
+package com.datn.apptravels.ui.trip.ai
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -6,8 +6,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.datn.apptravel.data.model.AISuggestedPlan
-import com.datn.apptravel.databinding.DialogAiPlanPreviewBinding
+import com.datn.apptravels.data.model.AISuggestedPlan
+import com.datn.apptravels.databinding.DialogAiPlanPreviewBinding
 import java.text.SimpleDateFormat
 import java.util.*
 

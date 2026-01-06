@@ -1,7 +1,7 @@
-package com.datn.apptravel.data.model
+package com.datn.apptravels.data.model
 
 import androidx.annotation.DrawableRes
-import com.datn.apptravel.R
+import com.datn.apptravels.R
 
 enum class PlanType(
     val displayName: String,

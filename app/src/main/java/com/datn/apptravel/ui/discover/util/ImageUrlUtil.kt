@@ -1,6 +1,6 @@
-package com.datn.apptravel.ui.discover.util
+package com.datn.apptravels.ui.discover.util
 
-import com.datn.apptravel.BuildConfig
+import com.datn.apptravels.BuildConfig
 
 object ImageUrlUtil {
 

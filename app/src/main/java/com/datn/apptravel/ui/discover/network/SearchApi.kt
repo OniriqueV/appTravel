@@ -1,6 +1,6 @@
-package com.datn.apptravel.ui.search.network
+package com.datn.apptravels.ui.search.network
 
-import com.datn.apptravel.ui.search.model.SearchResponse
+import com.datn.apptravels.ui.search.model.SearchResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
 

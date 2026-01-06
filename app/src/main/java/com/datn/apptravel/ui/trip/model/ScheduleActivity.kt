@@ -1,6 +1,6 @@
-package com.datn.apptravel.ui.trip.model
+package com.datn.apptravels.ui.trip.model
 
-import com.datn.apptravel.data.model.PlanType
+import com.datn.apptravels.data.model.PlanType
 
 data class ScheduleActivity(
     val id: String? = null,

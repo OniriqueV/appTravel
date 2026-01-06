@@ -1,14 +1,13 @@
-package com.datn.apptravel.data.repository
+package com.datn.apptravels.data.repository
 
 import android.content.Context
 import android.net.Uri
-import com.datn.apptravel.data.api.TripApiService
-import com.datn.apptravel.data.model.Plan
-import com.datn.apptravel.data.model.PlanType
-import com.datn.apptravel.data.model.Trip
-import com.datn.apptravel.data.model.request.*
-import com.datn.apptravel.ui.discover.model.CommentDto
-import com.datn.apptravel.ui.discover.model.PlanCommentDto
+import com.datn.apptravels.data.api.TripApiService
+import com.datn.apptravels.data.model.Plan
+import com.datn.apptravels.data.model.PlanType
+import com.datn.apptravels.data.model.Trip
+import com.datn.apptravels.data.model.request.*
+import com.datn.apptravels.ui.discover.model.CommentDto
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -17,7 +16,6 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
-import java.util.Locale
 
 class TripRepository(private val tripApiService: TripApiService) {
     
@@ -59,7 +57,7 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
     
-    suspend fun getUserById(userId: String): Result<com.datn.apptravel.data.model.User> {
+    suspend fun getUserById(userId: String): Result<com.datn.apptravels.data.model.User> {
         return try {
             val response = tripApiService.getUserById(userId)
             if (response.isSuccessful) {
@@ -781,7 +779,7 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
 
-    suspend fun getFollowers(userId: String): Result<List<com.datn.apptravel.data.model.User>> {
+    suspend fun getFollowers(userId: String): Result<List<com.datn.apptravels.data.model.User>> {
         return try {
             val response = tripApiService.getFollowers(userId)
             if (response.isSuccessful) {

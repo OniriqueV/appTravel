@@ -7,9 +7,9 @@
 //import androidx.recyclerview.widget.ListAdapter
 //import androidx.recyclerview.widget.RecyclerView
 //import com.bumptech.glide.Glide
-//import com.datn.apptravel.R
+//import com.datn.apptravels.R
 //import com.datn.apptravel.data.model.User
-//import com.datn.apptravel.databinding.ItemFollowerSelectionBinding
+//import com.datn.apptravels.databinding.ItemFollowerSelectionBinding
 //import com.datn.apptravel.utils.ApiConfig
 //
 //class SharedUserSelectionAdapter(

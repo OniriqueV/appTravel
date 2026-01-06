@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.app
+package com.datn.apptravels.ui.app
 
 import android.content.Intent
 import android.os.Bundle
@@ -6,10 +6,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import com.datn.apptravel.databinding.FragmentOnboardingBinding
-import com.datn.apptravel.ui.activity.SignInActivity
-import com.datn.apptravel.ui.app.OnboardingViewModel
-import com.datn.apptravel.ui.common.model.OnboardingData
+import com.datn.apptravels.databinding.FragmentOnboardingBinding
+import com.datn.apptravels.ui.activity.SignInActivity
+import com.datn.apptravels.ui.common.model.OnboardingData
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel
 
 class OnboardingFragment : Fragment() {

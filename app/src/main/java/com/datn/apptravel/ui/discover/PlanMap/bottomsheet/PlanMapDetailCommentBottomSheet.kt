@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.PlanMap.bottomsheet
+package com.datn.apptravels.ui.discover.PlanMap.bottomsheet
 
 import android.content.Context
 import android.content.DialogInterface
@@ -13,10 +13,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.PlanMap.PlanMapDetailViewModel
-import com.datn.apptravel.ui.discover.PlanMap.adapter.PlanMapCommentAdapter
-import com.datn.apptravel.ui.discover.model.PlanCommentDto
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.discover.PlanMap.PlanMapDetailViewModel
+import com.datn.apptravels.ui.discover.PlanMap.adapter.PlanMapCommentAdapter
+import com.datn.apptravels.ui.discover.model.PlanCommentDto
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel

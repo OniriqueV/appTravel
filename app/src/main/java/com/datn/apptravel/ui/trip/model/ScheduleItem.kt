@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.model
+package com.datn.apptravels.ui.trip.model
 
 sealed class ScheduleItem {
     data class DateItem(

@@ -1,6 +1,5 @@
-package com.datn.apptravel.ui.discover.post
+package com.datn.apptravels.ui.discover.post
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
@@ -8,10 +7,10 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.model.TripItem
-import com.datn.apptravel.ui.discover.network.TripApiClient
-import com.datn.apptravel.ui.discover.post.adapter.TripSelectAdapter
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.discover.model.TripItem
+import com.datn.apptravels.ui.discover.network.TripApiClient
+import com.datn.apptravels.ui.discover.post.adapter.TripSelectAdapter
 import kotlinx.coroutines.launch
 
 class SelectTripForPostActivity : AppCompatActivity() {

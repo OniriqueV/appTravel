@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.api
+package com.datn.apptravels.data.api
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,11 +7,11 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.datn.apptravel.R
-import com.datn.apptravel.data.model.Notification
-import com.datn.apptravel.data.model.NotificationType
-import com.datn.apptravel.data.repository.NotificationRepository
-import com.datn.apptravel.ui.activity.MainActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.data.model.Notification
+import com.datn.apptravels.data.model.NotificationType
+import com.datn.apptravels.data.repository.NotificationRepository
+import com.datn.apptravels.ui.activity.MainActivity
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope

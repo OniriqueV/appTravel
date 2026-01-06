@@ -1,6 +1,6 @@
-package com.datn.apptravel.utils
+package com.datn.apptravels.utils
 
-import com.datn.apptravel.BuildConfig
+import com.datn.apptravels.BuildConfig
 
 object ApiConfig {
 

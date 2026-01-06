@@ -1,10 +1,10 @@
-package com.datn.apptravel.ui.notification
+package com.datn.apptravels.ui.notification
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.data.model.Notification
-import com.datn.apptravel.databinding.PageNotificationsBinding
+import com.datn.apptravels.data.model.Notification
+import com.datn.apptravels.databinding.PageNotificationsBinding
 
 class NotificationPagerAdapter(
     private val onItemClick: (Notification) -> Unit,

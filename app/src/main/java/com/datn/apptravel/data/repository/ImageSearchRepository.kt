@@ -1,7 +1,7 @@
-package com.datn.apptravel.data.repository
+package com.datn.apptravels.data.repository
 
-import com.datn.apptravel.BuildConfig
-import com.datn.apptravel.data.api.GoogleImageSearchService
+import com.datn.apptravels.BuildConfig
+import com.datn.apptravels.data.api.GoogleImageSearchService
 
 class ImageSearchRepository(
     private val googleImageSearchService: GoogleImageSearchService

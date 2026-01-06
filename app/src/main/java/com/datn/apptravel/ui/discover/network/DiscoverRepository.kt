@@ -1,7 +1,7 @@
-package com.datn.apptravel.ui.discover.network
+package com.datn.apptravels.ui.discover.network
 
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.model.ShareTripRequest
+import com.datn.apptravels.ui.discover.model.DiscoverItem
+import com.datn.apptravels.ui.discover.model.ShareTripRequest
 
 class DiscoverRepository(
     private val api: DiscoverApi = DiscoverApiClient.api

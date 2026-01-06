@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.list
+package com.datn.apptravels.ui.trip.list
 
 import android.Manifest
 import android.content.Intent
@@ -16,18 +16,18 @@ import androidx.appcompat.widget.SearchView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.data.model.PlanType
-import com.datn.apptravel.data.model.response.MapPlace
-import com.datn.apptravel.data.repository.ImageSearchRepository
-import com.datn.apptravel.databinding.ActivityPlanSelectionBinding
-import com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.LodgingDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity
-import com.datn.apptravel.ui.trip.viewmodel.PlanSelectionViewModel
+import com.datn.apptravels.R
+import com.datn.apptravels.data.model.PlanType
+import com.datn.apptravels.data.model.response.MapPlace
+import com.datn.apptravels.data.repository.ImageSearchRepository
+import com.datn.apptravels.databinding.ActivityPlanSelectionBinding
+import com.datn.apptravels.ui.trip.detail.plandetail.ActivityDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.BoatDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.CarRentalDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.FlightDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.LodgingDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.RestaurantDetailActivity
+import com.datn.apptravels.ui.trip.viewmodel.PlanSelectionViewModel
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.material.bottomsheet.BottomSheetDialog

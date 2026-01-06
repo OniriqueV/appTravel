@@ -1,10 +1,10 @@
-package com.datn.apptravel.ui.profile.password
+package com.datn.apptravels.ui.profile.password
 
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.datn.apptravel.databinding.ActivityChangePasswordBinding
+import com.datn.apptravels.databinding.ActivityChangePasswordBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import org.koin.androidx.viewmodel.ext.android.viewModel
 

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.post
+package com.datn.apptravels.ui.discover.post
 
 import android.app.Activity
 import android.content.Intent
@@ -12,11 +12,10 @@ import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.*
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.model.User
-import com.datn.apptravel.ui.discover.model.ShareTripRequest
-import com.datn.apptravel.ui.discover.network.DiscoverRepository
-import com.datn.apptravel.ui.discover.util.ImageUrlUtil
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.discover.model.ShareTripRequest
+import com.datn.apptravels.ui.discover.network.DiscoverRepository
+import com.datn.apptravels.ui.discover.util.ImageUrlUtil
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.base
+package com.datn.apptravels.ui.base
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

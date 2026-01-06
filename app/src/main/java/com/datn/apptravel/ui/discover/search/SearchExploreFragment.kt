@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.search
+package com.datn.apptravels.ui.search
 
 import android.content.Intent
 import android.os.Bundle
@@ -7,14 +7,13 @@ import android.view.inputmethod.EditorInfo
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.datn.apptravel.databinding.FragmentSearchExploreBinding
-import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
-import com.datn.apptravel.ui.discover.profileFollow.UserProfileFragment
-import com.datn.apptravel.R
-import com.datn.apptravel.data.api.RetrofitClient
-import com.datn.apptravel.ui.discover.search.adapter.SearchAdapter
-import com.datn.apptravel.ui.search.network.SearchApi
-import com.datn.apptravel.ui.trip.map.TripMapActivity
+import com.datn.apptravels.databinding.FragmentSearchExploreBinding
+import com.datn.apptravels.ui.discover.profileFollow.UserProfileFragment
+import com.datn.apptravels.R
+import com.datn.apptravels.data.api.RetrofitClient
+import com.datn.apptravels.ui.discover.search.adapter.SearchAdapter
+import com.datn.apptravels.ui.search.network.SearchApi
+import com.datn.apptravels.ui.trip.map.TripMapActivity
 
 
 class SearchExploreFragment : Fragment(R.layout.fragment_search_explore) {

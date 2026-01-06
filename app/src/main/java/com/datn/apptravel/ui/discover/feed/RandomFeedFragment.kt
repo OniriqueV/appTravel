@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.feed
+package com.datn.apptravels.ui.discover.feed
 
 import android.content.Intent
 import android.os.Bundle
@@ -11,13 +11,13 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.activity.MainActivity
-import com.datn.apptravel.ui.discover.DiscoverViewModel
-import com.datn.apptravel.ui.discover.Refreshable
-import com.datn.apptravel.ui.discover.feed.adapter.DiscoverFeedAdapter
-import com.datn.apptravel.ui.discover.network.FollowRepository
-import com.datn.apptravel.ui.trip.map.TripMapActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.activity.MainActivity
+import com.datn.apptravels.ui.discover.DiscoverViewModel
+import com.datn.apptravels.ui.discover.Refreshable
+import com.datn.apptravels.ui.discover.feed.adapter.DiscoverFeedAdapter
+import com.datn.apptravels.ui.discover.network.FollowRepository
+import com.datn.apptravels.ui.trip.map.TripMapActivity
 import com.google.firebase.auth.FirebaseAuth
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.sharedViewModel

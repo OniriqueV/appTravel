@@ -1,14 +1,13 @@
-package com.datn.apptravel.ui.trip.ai
+package com.datn.apptravels.ui.trip.ai
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.R
-import com.datn.apptravel.data.model.AISuggestedPlan
-import com.datn.apptravel.databinding.ItemAiPlanPreviewBinding
-import com.google.android.material.card.MaterialCardView
+import com.datn.apptravels.R
+import com.datn.apptravels.data.model.AISuggestedPlan
+import com.datn.apptravels.databinding.ItemAiPlanPreviewBinding
 import com.google.android.material.textview.MaterialTextView
 import java.text.NumberFormat
 import java.text.SimpleDateFormat

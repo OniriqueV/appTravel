@@ -1,9 +1,9 @@
-package com.datn.apptravel.ui.discover.network
+package com.datn.apptravels.ui.discover.network
 
-import com.datn.apptravel.ui.discover.model.CommentRequest
+import com.datn.apptravels.ui.discover.model.CommentRequest
 import retrofit2.http.*
-import com.datn.apptravel.ui.discover.model.PlanMapDetailResponse
-import com.datn.apptravel.ui.discover.model.PlanCommentDto
+import com.datn.apptravels.ui.discover.model.PlanMapDetailResponse
+import com.datn.apptravels.ui.discover.model.PlanCommentDto
 
 interface PlanMapApi {
 

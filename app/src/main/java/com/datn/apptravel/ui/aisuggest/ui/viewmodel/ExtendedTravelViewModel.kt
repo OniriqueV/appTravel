@@ -1,12 +1,12 @@
-package com.datn.apptravel.ui.aisuggest.ui.viewmodel
+package com.datn.apptravels.ui.aisuggest.ui.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.ui.aisuggest.data.model.*
-import com.datn.apptravel.ui.aisuggest.data.repository.ExtendedTravelRepository
+import com.datn.apptravels.ui.aisuggest.data.model.*
+import com.datn.apptravels.ui.aisuggest.data.repository.ExtendedTravelRepository
 import kotlinx.coroutines.launch
 
 class ExtendedTravelViewModel(private val repository: ExtendedTravelRepository) : ViewModel() {

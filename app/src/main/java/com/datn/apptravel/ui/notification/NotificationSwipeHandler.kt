@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.notification
+package com.datn.apptravels.ui.notification
 
 import android.graphics.Canvas
 import android.graphics.Color
@@ -7,7 +7,7 @@ import android.graphics.RectF
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.R
+import com.datn.apptravels.R
 
 class NotificationSwipeHandler(
     private val onDelete: (Int) -> Unit

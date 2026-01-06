@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.viewmodel
+package com.datn.apptravels.ui.trip.viewmodel
 
 import android.content.Context
 import android.net.Uri
@@ -6,11 +6,10 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.model.Plan
-import com.datn.apptravel.data.repository.TripRepository
-import com.datn.apptravel.ui.base.BaseViewModel
-import com.datn.apptravel.ui.discover.model.CommentDto
-import com.datn.apptravel.ui.discover.model.PlanCommentDto
+import com.datn.apptravels.data.model.Plan
+import com.datn.apptravels.data.repository.TripRepository
+import com.datn.apptravels.ui.base.BaseViewModel
+import com.datn.apptravels.ui.discover.model.CommentDto
 import kotlinx.coroutines.launch
 
 class PlanDetailViewModel(

@@ -1,6 +1,6 @@
-package com.datn.apptravel.data.model.request
+package com.datn.apptravels.data.model.request
 
-import com.datn.apptravel.data.model.User
+import com.datn.apptravels.data.model.User
 
 data class CreateTripRequest(
     val userId: String,

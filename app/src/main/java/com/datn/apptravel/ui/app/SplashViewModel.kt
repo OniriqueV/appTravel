@@ -1,10 +1,10 @@
-package com.datn.apptravel.ui.app
+package com.datn.apptravels.ui.app
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.repository.AuthRepository
-import com.datn.apptravel.ui.base.BaseViewModel
+import com.datn.apptravels.data.repository.AuthRepository
+import com.datn.apptravels.ui.base.BaseViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 

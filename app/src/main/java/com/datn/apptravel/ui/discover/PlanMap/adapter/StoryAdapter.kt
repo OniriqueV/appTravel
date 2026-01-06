@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.PlanMap.adapter
+package com.datn.apptravels.ui.discover.PlanMap.adapter
 
 import android.view.LayoutInflater
 import android.view.View
@@ -6,8 +6,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.util.ImageUrlUtil
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.discover.util.ImageUrlUtil
 
 class StoryAdapter : RecyclerView.Adapter<StoryAdapter.VH>() {
 

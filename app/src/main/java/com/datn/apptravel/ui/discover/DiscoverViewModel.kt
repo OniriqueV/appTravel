@@ -1,11 +1,11 @@
-package com.datn.apptravel.ui.discover
+package com.datn.apptravels.ui.discover
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.network.DiscoverRepository
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.ui.discover.model.DiscoverItem
+import com.datn.apptravels.ui.discover.network.DiscoverRepository
 import kotlinx.coroutines.launch
 
 class DiscoverViewModel(

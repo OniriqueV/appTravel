@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
 import android.graphics.Color
 import android.view.LayoutInflater
@@ -7,15 +7,15 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.databinding.ItemPlanConnectorBinding
-import com.datn.apptravel.databinding.ItemPlanMapHorizontalBinding
+import com.datn.apptravels.R
+import com.datn.apptravels.databinding.ItemPlanConnectorBinding
+import com.datn.apptravels.databinding.ItemPlanMapHorizontalBinding
 
-import com.datn.apptravel.databinding.ItemTripMapDateBinding
+import com.datn.apptravels.databinding.ItemTripMapDateBinding
 
-import com.datn.apptravel.ui.trip.model.PlanLocation
-import com.datn.apptravel.ui.trip.model.ScheduleItem
-import com.datn.apptravel.utils.ApiConfig
+import com.datn.apptravels.ui.trip.model.PlanLocation
+import com.datn.apptravels.ui.trip.model.ScheduleItem
+import com.datn.apptravels.utils.ApiConfig
 
 class ScheduleTripMapAdapter(
     private var items: List<ScheduleItem>,
@@ -82,6 +82,7 @@ class ScheduleTripMapAdapter(
         highlightedPlanPosition = planPosition
         highlightedConnectorPosition = -1
         
+        // Post notify calls to avoid IllegalStateException during RecyclerView layout
         if (oldPosition != -1) {
             notifyItemChanged(oldPosition)
         }
@@ -99,6 +100,7 @@ class ScheduleTripMapAdapter(
         highlightedConnectorPosition = adapterPosition
         highlightedPlanPosition = -1
         
+        // Post notify calls to avoid IllegalStateException during RecyclerView layout
         if (oldPlanPosition != -1) {
             notifyItemChanged(oldPlanPosition)
         }

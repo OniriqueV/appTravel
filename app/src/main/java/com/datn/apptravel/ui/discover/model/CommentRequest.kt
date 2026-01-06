@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.model
+package com.datn.apptravels.ui.discover.model
 
 data class CommentRequest(
     val content: String,

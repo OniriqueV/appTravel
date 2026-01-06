@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.activity
+package com.datn.apptravels.ui.activity
 
 import android.os.Bundle
 import android.widget.Button
@@ -7,8 +7,8 @@ import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.app.AuthViewModel
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.app.AuthViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ForgotPasswordActivity : AppCompatActivity() {

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.common.model
+package com.datn.apptravels.ui.common.model
 
 data class OnboardingData(
     val imageRes: Int,

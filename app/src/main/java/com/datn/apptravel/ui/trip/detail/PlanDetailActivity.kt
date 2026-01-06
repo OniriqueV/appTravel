@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.detail
+package com.datn.apptravels.ui.trip.detail
 
 import android.content.Intent
 import android.net.Uri
@@ -17,28 +17,23 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.datn.apptravel.R
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.data.model.Plan
-import com.datn.apptravel.data.model.PlanType
-import com.datn.apptravel.data.repository.TripRepository
-import com.datn.apptravel.databinding.ActivityPlanDetailBinding
-import com.datn.apptravel.ui.discover.model.CommentDto
-import com.datn.apptravel.ui.trip.adapter.CommentAdapter
-import com.datn.apptravel.ui.trip.adapter.PhotoCollectionAdapter
-import com.datn.apptravel.ui.trip.detail.plandetail.ActivityDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.BoatDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.CarRentalDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.FlightDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.LodgingDetailActivity
-import com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity
-import com.datn.apptravel.ui.trip.viewmodel.PlanDetailViewModel
-import com.datn.apptravel.utils.ExpenseFormatter
+import com.datn.apptravels.R
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.data.model.Plan
+import com.datn.apptravels.data.model.PlanType
+import com.datn.apptravels.databinding.ActivityPlanDetailBinding
+import com.datn.apptravels.ui.discover.model.CommentDto
+import com.datn.apptravels.ui.trip.adapter.CommentAdapter
+import com.datn.apptravels.ui.trip.adapter.PhotoCollectionAdapter
+import com.datn.apptravels.ui.trip.detail.plandetail.ActivityDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.BoatDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.CarRentalDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.FlightDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.LodgingDetailActivity
+import com.datn.apptravels.ui.trip.detail.plandetail.RestaurantDetailActivity
+import com.datn.apptravels.ui.trip.viewmodel.PlanDetailViewModel
+import com.datn.apptravels.utils.ExpenseFormatter
 import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.text.SimpleDateFormat
@@ -499,7 +494,7 @@ class PlanDetailActivity : AppCompatActivity() {
                             }
                         }
 
-                        intent.putExtra(com.datn.apptravel.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_EXPENSE, plan.expense ?: 0.0)
+                        intent.putExtra(com.datn.apptravels.ui.trip.detail.plandetail.RestaurantDetailActivity.EXTRA_EXPENSE, plan.expense ?: 0.0)
                         intent.putExtra("placeLatitude", 0.0) // Will be parsed from plan.location if needed
                         intent.putExtra("placeLongitude", 0.0)
                         intent.putExtra("planType", planType.name) // Pass plan type for editing

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip
+package com.datn.apptravels.ui.trip
 
 import android.app.Dialog
 import android.content.Intent
@@ -12,27 +12,23 @@ import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
-import com.datn.apptravel.R
-import com.datn.apptravel.data.model.Trip
-import com.datn.apptravel.data.repository.AuthRepository
-import com.datn.apptravel.data.repository.TripRepository
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.data.local.CachedDiscoverTripDetail
-import com.datn.apptravel.databinding.FragmentTripsBinding
-import com.datn.apptravel.ui.base.BaseFragment
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.trip.adapter.TripAdapter
-import com.datn.apptravel.ui.trip.adapter.DiscoverTripAdapter
-import com.datn.apptravel.ui.trip.detail.tripdetail.TripDetailActivity
-import com.datn.apptravel.ui.trip.viewmodel.TripsViewModel
-import com.datn.apptravel.utils.ApiConfig
-import com.datn.apptravel.ui.discover.network.DiscoverRepository
-import com.datn.apptravel.ui.trip.map.TripMapActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.data.model.Trip
+import com.datn.apptravels.data.repository.AuthRepository
+import com.datn.apptravels.data.repository.TripRepository
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.databinding.FragmentTripsBinding
+import com.datn.apptravels.ui.base.BaseFragment
+import com.datn.apptravels.ui.discover.model.DiscoverItem
+import com.datn.apptravels.ui.trip.adapter.TripAdapter
+import com.datn.apptravels.ui.trip.adapter.DiscoverTripAdapter
+import com.datn.apptravels.ui.trip.detail.tripdetail.TripDetailActivity
+import com.datn.apptravels.ui.trip.viewmodel.TripsViewModel
+import com.datn.apptravels.utils.ApiConfig
+import com.datn.apptravels.ui.discover.network.DiscoverRepository
+import com.datn.apptravels.ui.trip.map.TripMapActivity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.time.LocalDate
@@ -219,7 +215,7 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
                         startActivity(intent)
                     } else {
                         // Người ngoài (không phải owner/member) -> redirect sang TripMapActivity
-                        val intent = Intent(requireContext(), com.datn.apptravel.ui.trip.map.TripMapActivity::class.java).apply {
+                        val intent = Intent(requireContext(), com.datn.apptravels.ui.trip.map.TripMapActivity::class.java).apply {
                             putExtra("tripId", trip.id.toString())
                             putExtra("tripTitle", trip.title)
                             putExtra("tripUserId", trip.userId)

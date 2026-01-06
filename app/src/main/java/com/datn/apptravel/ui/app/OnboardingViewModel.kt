@@ -1,10 +1,10 @@
-package com.datn.apptravel.ui.app
+package com.datn.apptravels.ui.app
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.base.BaseViewModel
-import com.datn.apptravel.ui.common.model.OnboardingData
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.base.BaseViewModel
+import com.datn.apptravels.ui.common.model.OnboardingData
 
 class OnboardingViewModel : BaseViewModel() {
 

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.ai
+package com.datn.apptravels.ui.trip.ai
 
 import android.app.DatePickerDialog
 import android.os.Bundle
@@ -10,9 +10,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.DialogFragment
-import com.datn.apptravel.R
-import com.datn.apptravel.data.model.CityPlan
-import com.datn.apptravel.databinding.DialogAiSimpleInputBinding
+import com.datn.apptravels.R
+import com.datn.apptravels.data.model.CityPlan
+import com.datn.apptravels.databinding.DialogAiSimpleInputBinding
 import com.google.android.material.textfield.TextInputEditText
 import java.text.SimpleDateFormat
 import java.util.*

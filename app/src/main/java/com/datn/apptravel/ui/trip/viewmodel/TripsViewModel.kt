@@ -1,15 +1,15 @@
-package com.datn.apptravel.ui.trip.viewmodel
+package com.datn.apptravels.ui.trip.viewmodel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.data.local.CachedDiscoverTripDetail
-import com.datn.apptravel.data.model.Trip
-import com.datn.apptravel.data.repository.TripRepository
-import com.datn.apptravel.ui.base.BaseViewModel
-import com.datn.apptravel.ui.discover.model.DiscoverItem
-import com.datn.apptravel.ui.discover.network.DiscoverRepository
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.data.local.CachedDiscoverTripDetail
+import com.datn.apptravels.data.model.Trip
+import com.datn.apptravels.data.repository.TripRepository
+import com.datn.apptravels.ui.base.BaseViewModel
+import com.datn.apptravels.ui.discover.model.DiscoverItem
+import com.datn.apptravels.ui.discover.network.DiscoverRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll

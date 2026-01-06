@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.model
+package com.datn.apptravels.data.model
 
 enum class TripTopic(val topicName: String, val iconRes: Int) {
     CUISINE("Cuisine", android.R.drawable.ic_menu_compass),

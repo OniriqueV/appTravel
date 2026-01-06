@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.profileFollow
+package com.datn.apptravels.ui.discover.profileFollow
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -6,9 +6,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.datn.apptravel.databinding.BottomSheetFollowersBinding
-import com.datn.apptravel.ui.discover.network.ProfileRepository
-import com.datn.apptravel.ui.discover.profileFollow.adapter.FollowersAdapter
+import com.datn.apptravels.databinding.BottomSheetFollowersBinding
+import com.datn.apptravels.ui.discover.network.ProfileRepository
+import com.datn.apptravels.ui.discover.profileFollow.adapter.FollowersAdapter
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
@@ -36,7 +36,7 @@ class FollowersBottomSheet : BottomSheetDialogFragment() {
         val userId = arguments?.getString(ARG_USER_ID) ?: return
 
         adapter = FollowersAdapter(mutableListOf()) { clickedUserId ->
-            (activity as? com.datn.apptravel.ui.activity.MainActivity)
+            (activity as? com.datn.apptravels.ui.activity.MainActivity)
                 ?.openUserProfile(clickedUserId)
             dismiss()
         }

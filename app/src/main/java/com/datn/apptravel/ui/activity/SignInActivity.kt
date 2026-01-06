@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.activity
+package com.datn.apptravels.ui.activity
 
 import android.content.Intent
 import android.os.Bundle
@@ -10,10 +10,9 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import com.datn.apptravel.R
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.ui.app.AuthViewModel
-import com.datn.apptravel.ui.activity.SignUpActivity
+import com.datn.apptravels.R
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.ui.app.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient

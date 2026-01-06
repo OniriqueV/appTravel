@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.trip.map
+package com.datn.apptravels.ui.trip.map
 
 import android.content.Intent
 import android.graphics.Color
@@ -10,13 +10,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.data.repository.AuthRepository
-import com.datn.apptravel.databinding.ActivityTripMapBinding
-import com.datn.apptravel.ui.discover.PlanMap.PlanMapDetailActivity
-import com.datn.apptravel.ui.trip.adapter.ScheduleTripMapAdapter
-import com.datn.apptravel.ui.trip.model.PlanLocation
-import com.datn.apptravel.ui.trip.model.ScheduleItem
-import com.datn.apptravel.ui.trip.viewmodel.TripMapViewModel
+import com.datn.apptravels.data.repository.AuthRepository
+import com.datn.apptravels.databinding.ActivityTripMapBinding
+import com.datn.apptravels.ui.discover.PlanMap.PlanMapDetailActivity
+import com.datn.apptravels.ui.trip.adapter.ScheduleTripMapAdapter
+import com.datn.apptravels.ui.trip.model.PlanLocation
+import com.datn.apptravels.ui.trip.model.ScheduleItem
+import com.datn.apptravels.ui.trip.viewmodel.TripMapViewModel
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.osmdroid.config.Configuration
@@ -26,8 +26,6 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 import org.osmdroid.views.overlay.gestures.RotationGestureOverlay
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import org.koin.android.ext.android.inject
 
 
@@ -142,7 +140,8 @@ class TripMapActivity : AppCompatActivity() {
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                     super.onScrolled(recyclerView, dx, dy)
-                    highlightVisiblePlan()
+                    // Post to avoid calling during layout computation
+                    recyclerView.post { highlightVisiblePlan() }
                 }
 
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {

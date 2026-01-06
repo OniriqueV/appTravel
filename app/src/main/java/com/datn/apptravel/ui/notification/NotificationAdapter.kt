@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.notification
+package com.datn.apptravels.ui.notification
 
 import android.view.LayoutInflater
 import android.view.View
@@ -7,10 +7,10 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.R
-import com.datn.apptravel.data.model.Notification
-import com.datn.apptravel.data.model.NotificationType
-import com.datn.apptravel.databinding.ItemNotificationBinding
+import com.datn.apptravels.R
+import com.datn.apptravels.data.model.Notification
+import com.datn.apptravels.data.model.NotificationType
+import com.datn.apptravels.databinding.ItemNotificationBinding
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.TimeUnit

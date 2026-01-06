@@ -1,14 +1,13 @@
-package com.datn.apptravel.data.local
+package com.datn.apptravels.data.local
 
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.datn.apptravel.data.model.Trip
-import com.datn.apptravel.data.model.User
+import com.datn.apptravels.data.model.Trip
+import com.datn.apptravels.data.model.User
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map

@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.model.request
+package com.datn.apptravels.data.model.request
 
 data class LoginRequest(
     val email: String,

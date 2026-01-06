@@ -1,15 +1,13 @@
-package com.datn.apptravel.data.repository
+package com.datn.apptravels.data.repository
 
 import android.util.Log
-import com.datn.apptravel.BuildConfig
-import com.datn.apptravel.data.model.*
-import com.datn.apptravel.data.remote.*
-import com.datn.apptravel.utils.AIPromptBuilder
+import com.datn.apptravels.BuildConfig
+import com.datn.apptravels.data.model.*
+import com.datn.apptravels.data.remote.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
-import org.json.JSONObject
 
 class AIRepository(
     private val groqService: GroqService,

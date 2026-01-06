@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.search.model
+package com.datn.apptravels.ui.search.model
 
 data class SearchResponse(
     val keyword: String,

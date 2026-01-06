@@ -1,4 +1,4 @@
-package com.datn.apptravel.data.api
+package com.datn.apptravels.data.api
 
 import com.google.firebase.auth.FirebaseAuth
 import okhttp3.Interceptor

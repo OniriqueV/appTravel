@@ -1,15 +1,14 @@
-package com.datn.apptravel.data.api
+package com.datn.apptravels.data.api
 
-import com.datn.apptravel.BuildConfig
-import com.datn.apptravel.data.api.RetrofitClient.retrofit
-import com.datn.apptravel.ui.discover.network.FollowApi
-import com.datn.apptravel.ui.discover.network.PlanMapApi
+import com.datn.apptravels.BuildConfig
+import com.datn.apptravels.ui.discover.network.FollowApi
+import com.datn.apptravels.ui.discover.network.PlanMapApi
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
-import com.datn.apptravel.ui.discover.network.ProfileApi
+import com.datn.apptravels.ui.discover.network.ProfileApi
 
 
 

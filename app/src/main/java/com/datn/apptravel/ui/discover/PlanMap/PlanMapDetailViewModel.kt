@@ -1,13 +1,13 @@
-package com.datn.apptravel.ui.discover.PlanMap
+package com.datn.apptravels.ui.discover.PlanMap
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.datn.apptravel.data.local.SessionManager
-import com.datn.apptravel.ui.discover.model.PlanCommentDto
-import com.datn.apptravel.ui.discover.model.PlanMapDetailResponse
-import com.datn.apptravel.ui.discover.network.PlanMapDetailRepository
+import com.datn.apptravels.data.local.SessionManager
+import com.datn.apptravels.ui.discover.model.PlanCommentDto
+import com.datn.apptravels.ui.discover.model.PlanMapDetailResponse
+import com.datn.apptravels.ui.discover.network.PlanMapDetailRepository
 import kotlinx.coroutines.launch
 
 class PlanMapDetailViewModel(

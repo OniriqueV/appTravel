@@ -1,6 +1,6 @@
-package com.datn.apptravel.data.api
+package com.datn.apptravels.data.api
 
-import com.datn.apptravel.data.model.Notification
+import com.datn.apptravels.data.model.Notification
 import retrofit2.Response
 import retrofit2.http.*
 

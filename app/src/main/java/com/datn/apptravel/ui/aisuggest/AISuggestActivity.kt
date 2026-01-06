@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.aisuggest
+package com.datn.apptravels.ui.aisuggest
 
 import android.content.Context
 import android.net.ConnectivityManager
@@ -9,14 +9,14 @@ import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.datn.apptravel.BuildConfig
-import com.datn.apptravel.ui.aisuggest.data.api.ApiClient
-import com.datn.apptravel.ui.aisuggest.data.model.ApiResult
-import com.datn.apptravel.ui.aisuggest.data.model.TravelRequest
-import com.datn.apptravel.ui.aisuggest.data.repository.TravelRepository
-import com.datn.apptravel.databinding.ActivityAisuggestBinding
-import com.datn.apptravel.ui.aisuggest.ui.viewmodel.TravelViewModel
-import com.datn.apptravel.ui.aisuggest.ui.viewmodel.TravelViewModelFactory
+import com.datn.apptravels.BuildConfig
+import com.datn.apptravels.ui.aisuggest.data.api.ApiClient
+import com.datn.apptravels.ui.aisuggest.data.model.ApiResult
+import com.datn.apptravels.ui.aisuggest.data.model.TravelRequest
+import com.datn.apptravels.ui.aisuggest.data.repository.TravelRepository
+import com.datn.apptravels.databinding.ActivityAisuggestBinding
+import com.datn.apptravels.ui.aisuggest.ui.viewmodel.TravelViewModel
+import com.datn.apptravels.ui.aisuggest.ui.viewmodel.TravelViewModelFactory
 import com.google.android.material.chip.Chip
 
 class AISuggestActivity : AppCompatActivity() {

@@ -1,4 +1,4 @@
-package com.datn.apptravel.ui.discover.PlanMap.adapter
+package com.datn.apptravels.ui.discover.PlanMap.adapter
 
 import android.util.TypedValue
 import android.view.LayoutInflater
@@ -8,10 +8,10 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import coil.load
-import com.datn.apptravel.R
-import com.datn.apptravel.ui.discover.model.PlanCommentDto
-import com.datn.apptravel.ui.discover.util.ImageUrlUtil
-import com.datn.apptravel.ui.discover.util.TimeUtil
+import com.datn.apptravels.R
+import com.datn.apptravels.ui.discover.model.PlanCommentDto
+import com.datn.apptravels.ui.discover.util.ImageUrlUtil
+import com.datn.apptravels.ui.discover.util.TimeUtil
 
 class PlanMapCommentAdapter(
     private val currentUserId: String,

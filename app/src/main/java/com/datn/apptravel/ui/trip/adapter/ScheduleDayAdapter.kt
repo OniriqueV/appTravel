@@ -1,11 +1,11 @@
-package com.datn.apptravel.ui.trip.adapter
+package com.datn.apptravels.ui.trip.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.datn.apptravel.databinding.ItemScheduleDayBinding
-import com.datn.apptravel.ui.trip.model.ScheduleDay
+import com.datn.apptravels.databinding.ItemScheduleDayBinding
+import com.datn.apptravels.ui.trip.model.ScheduleDay
 
 class ScheduleDayAdapter(
     private var scheduleDays: List<ScheduleDay>,

@@ -1,5 +1,5 @@
-package com.datn.apptravel.ui.discover.network
-import com.datn.apptravel.ui.discover.model.User
+package com.datn.apptravels.ui.discover.network
+import com.datn.apptravels.ui.discover.model.User
 
 class FollowRepository(
     private val api: FollowApi
