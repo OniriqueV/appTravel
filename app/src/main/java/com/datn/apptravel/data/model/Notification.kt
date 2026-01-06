@@ -4,7 +4,7 @@ data class Notification(
     val id: String,
     val title: String,
     val message: String,
-    val type: NotificationType,
+    val type: NotificationType?,  // Nullable to handle parsing errors
     val timestamp: Long,
     val isRead: Boolean = false
 )

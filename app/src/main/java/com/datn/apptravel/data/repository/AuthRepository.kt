@@ -6,12 +6,14 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-class AuthRepository {
+class AuthRepository(private val notificationRepository: NotificationRepository) {
     
     private val auth = FirebaseAuth.getInstance()
     private val firestore = FirebaseFirestore.getInstance()
@@ -69,6 +71,9 @@ class AuthRepository {
             saveUserToFirestore(user)
             _currentUser.value = user
             
+            // Save FCM token to backend after successful signup
+            saveFcmTokenToBackend()
+            
             Log.d(TAG, "Sign up successful for user: ${user.email}")
             Result.success(user)
             
@@ -88,6 +93,9 @@ class AuthRepository {
                 ?: throw Exception("User data not found")
             
             _currentUser.value = user
+            
+            // Save FCM token to backend after successful login
+            saveFcmTokenToBackend()
             
             Log.d(TAG, "Login successful for user: ${user.email}")
             Result.success(user)
@@ -141,6 +149,9 @@ class AuthRepository {
             }
             
             _currentUser.value = user
+            
+            // Save FCM token to backend after successful Google sign-in
+            saveFcmTokenToBackend()
             
             Log.d(TAG, "Google sign in successful for user: ${user!!.email}")
             Result.success(user)
@@ -266,6 +277,31 @@ class AuthRepository {
                 .await()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update last login", e)
+        }
+    }
+    
+    private fun saveFcmTokenToBackend() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                Log.d(TAG, " FCM Token obtained after login: $token")
+                
+                // Launch coroutine to save token
+                kotlinx.coroutines.GlobalScope.launch {
+                    try {
+                        val result = notificationRepository.saveFcmToken(token)
+                        result.onSuccess {
+                            Log.d(TAG, "FCM token saved to backend after login")
+                        }.onFailure { error ->
+                            Log.e(TAG, "Failed to save FCM token after login: ${error.message}")
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error saving FCM token after login", e)
+                    }
+                }
+            } else {
+                Log.e(TAG, "Failed to get FCM token after login", task.exception)
+            }
         }
     }
 }

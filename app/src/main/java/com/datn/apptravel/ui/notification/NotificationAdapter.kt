@@ -43,8 +43,8 @@ class NotificationAdapter(
                 tvNotificationMessage.text = notification.message
                 tvTimeAgo.text = getTimeAgo(notification.timestamp)
 
-                // Set icon based on notification type
-                when (notification.type) {
+                // Set icon based on notification type (with null-safety)
+                when (notification.type ?: NotificationType.GENERAL) {
                     NotificationType.FLIGHT -> {
                         iconNotification.setImageResource(R.drawable.ic_flight)
                         iconNotification.setColorFilter(

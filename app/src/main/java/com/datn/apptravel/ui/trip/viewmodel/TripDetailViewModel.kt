@@ -96,6 +96,15 @@ class TripDetailViewModel(
         val owner = trip.userId == userId
         val member = trip.members?.any { it.id == userId } == true
         
+        Log.d("TripDetailViewModel", "=== calculatePermissions ===")
+        Log.d("TripDetailViewModel", "Trip: ${trip.title} (id: ${trip.id})")
+        Log.d("TripDetailViewModel", "Trip userId: ${trip.userId} (type: ${trip.userId::class.simpleName})")
+        Log.d("TripDetailViewModel", "Current userId: $userId (type: ${userId::class.simpleName})")
+        Log.d("TripDetailViewModel", "Members: ${trip.members?.map { "${it.firstName} (${it.id})" }}")
+        Log.d("TripDetailViewModel", "owner check: ${trip.userId} == $userId = $owner")
+        Log.d("TripDetailViewModel", "member check: ${trip.members?.any { it.id == userId }} = $member")
+        Log.d("TripDetailViewModel", "============================")
+        
         _isOwner.value = owner
         _isMember.value = member
         

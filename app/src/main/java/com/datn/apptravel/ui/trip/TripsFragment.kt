@@ -206,14 +206,25 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
                     val isOwner = user.id == trip.userId
                     val isMember = trip.members?.any { it.id == user.id } == true
                     
+                    // DEBUG LOG
+                    android.util.Log.d("TripsFragment", "=== Navigation Debug ===")
+                    android.util.Log.d("TripsFragment", "Trip: ${trip.title} (id: ${trip.id})")
+                    android.util.Log.d("TripsFragment", "Trip userId: ${trip.userId} (type: ${trip.userId::class.simpleName})")
+                    android.util.Log.d("TripsFragment", "Current user id: ${user.id} (type: ${user.id::class.simpleName})")
+                    android.util.Log.d("TripsFragment", "Members: ${trip.members?.map { "${it.firstName} (${it.id})" }}")
+                    android.util.Log.d("TripsFragment", "isOwner: $isOwner, isMember: $isMember")
+                    android.util.Log.d("TripsFragment", "======================")
+                    
                     // Owner hoặc member đều vào TripDetailActivity
                     // TripDetailActivity sẽ tự xử lý permissions
                     if (isOwner || isMember) {
+                        android.util.Log.d("TripsFragment", "✅ Navigating to TripDetailActivity (owner or member)")
                         val intent = Intent(requireContext(), TripDetailActivity::class.java).apply {
                             putExtra(EXTRA_TRIP_ID, trip.id.toString())
                         }
                         startActivity(intent)
                     } else {
+                        android.util.Log.d("TripsFragment", "➡️ Navigating to TripMapActivity (not owner/member)")
                         // Người ngoài (không phải owner/member) -> redirect sang TripMapActivity
                         val intent = Intent(requireContext(), com.datn.apptravels.ui.trip.map.TripMapActivity::class.java).apply {
                             putExtra("tripId", trip.id.toString())

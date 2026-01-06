@@ -39,33 +39,47 @@ class NotificationViewModel(
     fun getNotifications() {
         setLoading(true)
         viewModelScope.launch {
-            android.util.Log.d("NotificationViewModel", "Fetching notifications from API...")
-            val result = notificationRepository.getNotifications()
-            result.onSuccess { notifications ->
-                android.util.Log.d("NotificationViewModel", "Got ${notifications.size} notifications from API")
-                _allNotifications.value = notifications
-                updatePagination()
-            }.onFailure { error ->
-                android.util.Log.e("NotificationViewModel", "❌ Failed to get notifications: ${error.message}")
+            try {
+                android.util.Log.d("NotificationViewModel", "Fetching notifications from API...")
+                val result = notificationRepository.getNotifications()
+                result.onSuccess { notifications ->
+                    android.util.Log.d("NotificationViewModel", "✅ Got ${notifications.size} notifications from API")
+                    _allNotifications.value = notifications
+                    updatePagination()
+                }.onFailure { error ->
+                    android.util.Log.e("NotificationViewModel", "❌ Failed to get notifications: ${error.message}", error)
+                    _allNotifications.value = emptyList()
+                    _notifications.value = emptyList()
+                    _totalPages.value = 0
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("NotificationViewModel", "❌ Exception in getNotifications: ${e.message}", e)
                 _allNotifications.value = emptyList()
                 _notifications.value = emptyList()
                 _totalPages.value = 0
+            } finally {
+                setLoading(false)
             }
-            setLoading(false)
         }
     }
 
     private fun updatePagination() {
-        val allNotifs = _allNotifications.value
-        val totalPages = (allNotifs.size + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE
-        _totalPages.value = totalPages.coerceAtLeast(1)
-        
-        // Ensure current page is valid
-        if (_currentPage.value >= totalPages && totalPages > 0) {
-            _currentPage.value = totalPages - 1
+        try {
+            val allNotifs = _allNotifications.value
+            val totalPages = (allNotifs.size + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE
+            _totalPages.value = totalPages.coerceAtLeast(1)
+            
+            android.util.Log.d("NotificationViewModel", "updatePagination: ${allNotifs.size} notifs → $totalPages pages")
+            
+            // Ensure current page is valid
+            if (_currentPage.value >= totalPages && totalPages > 0) {
+                _currentPage.value = totalPages - 1
+            }
+            
+            updateCurrentPageNotifications()
+        } catch (e: Exception) {
+            android.util.Log.e("NotificationViewModel", "❌ Error in updatePagination: ${e.message}", e)
         }
-        
-        updateCurrentPageNotifications()
     }
 
     private fun updateCurrentPageNotifications() {

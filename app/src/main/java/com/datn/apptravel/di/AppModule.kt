@@ -46,9 +46,9 @@ val appModule = module {
     single { FirebaseAuth.getInstance() }
     single { FirebaseFirestore.getInstance() }
 
-    single { AuthRepository() }
-    single { UserRepository(get(), androidContext()) }
     single { NotificationRepository(get()) }
+    single { AuthRepository(get()) }
+    single { UserRepository(get(), androidContext()) }
     single { PlacesRepository(get()) }
     single { TripRepository(get()) }
     single { ImageSearchRepository(get()) }

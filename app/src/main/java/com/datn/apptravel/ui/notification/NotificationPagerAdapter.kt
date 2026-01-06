@@ -15,11 +15,14 @@ class NotificationPagerAdapter(
     private val itemsPerPage = 6
 
     fun submitList(notifications: List<Notification>) {
+        android.util.Log.d("NotificationPagerAdapter", "submitList: ${notifications.size} notifications")
         allNotifications = notifications
         notifyDataSetChanged()
+        android.util.Log.d("NotificationPagerAdapter", "Item count: $itemCount pages")
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
+        android.util.Log.d("NotificationPagerAdapter", "onCreateViewHolder called")
         val binding = PageNotificationsBinding.inflate(
             LayoutInflater.from(parent.context),
             parent,
@@ -29,10 +32,16 @@ class NotificationPagerAdapter(
     }
 
     override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
-        val startIndex = position * itemsPerPage
-        val endIndex = (startIndex + itemsPerPage).coerceAtMost(allNotifications.size)
-        val pageNotifications = allNotifications.subList(startIndex, endIndex)
-        holder.bind(pageNotifications)
+        android.util.Log.d("NotificationPagerAdapter", "onBindViewHolder: page $position")
+        try {
+            val startIndex = position * itemsPerPage
+            val endIndex = (startIndex + itemsPerPage).coerceAtMost(allNotifications.size)
+            val pageNotifications = allNotifications.subList(startIndex, endIndex)
+            android.util.Log.d("NotificationPagerAdapter", "  Binding ${pageNotifications.size} notifications (index $startIndex-$endIndex)")
+            holder.bind(pageNotifications)
+        } catch (e: Exception) {
+            android.util.Log.e("NotificationPagerAdapter", "❌ Error binding page $position: ${e.message}", e)
+        }
     }
 
     override fun getItemCount(): Int {

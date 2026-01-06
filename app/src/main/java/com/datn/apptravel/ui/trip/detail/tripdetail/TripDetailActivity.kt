@@ -193,6 +193,26 @@ class TripDetailActivity : AppCompatActivity() {
             layoutManager = LinearLayoutManager(this@TripDetailActivity, LinearLayoutManager.HORIZONTAL, false)
         }
     }
+    
+    private fun checkPermissionsAndRedirect(trip: Trip) {
+        val isOwner = viewModel.isOwner.value ?: false
+        val isMember = viewModel.isMember.value ?: false
+        
+        Log.d("TripDetailActivity", "checkPermissionsAndRedirect - Trip: ${trip.id}, userId: ${trip.userId}")
+        Log.d("TripDetailActivity", "  Members: ${trip.members?.map { it.id }}")
+        Log.d("TripDetailActivity", "  isOwner: $isOwner, isMember: $isMember, isReadOnly: $isReadOnly")
+        
+        // Check if user should be redirected to map view
+        if (!isOwner && !isMember && !isReadOnly) {
+            Log.d("TripDetailActivity", "User is neither owner nor member, redirecting to map view")
+            val intent = Intent(this, TripMapActivity::class.java)
+            intent.putExtra("tripId", trip.id.toString())
+            intent.putExtra("tripTitle", trip.title)
+            intent.putExtra("tripUserId", trip.userId)
+            startActivity(intent)
+            finish()
+        }
+    }
 
     private fun setupObservers() {
         Log.d("TripDetailActivity", "setupObservers - Setting up observers")
@@ -202,45 +222,65 @@ class TripDetailActivity : AppCompatActivity() {
             viewModel.setCurrentUser(userId)
         }
         
-        // Observe ownership/membership status from ViewModel
-        viewModel.isOwner.observe(this) { isOwner ->
-            // Check if user should be redirected to map view
-            val isMember = viewModel.isMember.value ?: false
-            if (!isOwner && !isMember && !isReadOnly && currentTrip != null) {
-                Log.d("TripDetailActivity", "User is neither owner nor member, redirecting to map view")
-                val intent = Intent(this, TripMapActivity::class.java)
-                intent.putExtra("tripId", tripId)
-                intent.putExtra("tripTitle", currentTrip?.title ?: "Trip")
-                intent.putExtra("tripUserId", currentTrip?.userId)
-                startActivity(intent)
-                finish()
-                return@observe
-            }
-            updateUIBasedOnPermissions()
-        }
-        
-        viewModel.isMember.observe(this) { isMember ->
-            // Check if user should be redirected to map view
-            val isOwner = viewModel.isOwner.value ?: false
-            if (!isOwner && !isMember && !isReadOnly && currentTrip != null) {
-                Log.d("TripDetailActivity", "User is neither owner nor member, redirecting to map view")
-                val intent = Intent(this, TripMapActivity::class.java)
-                intent.putExtra("tripId", tripId)
-                intent.putExtra("tripTitle", currentTrip?.title ?: "Trip")
-                intent.putExtra("tripUserId", currentTrip?.userId)
-                startActivity(intent)
-                finish()
-                return@observe
-            }
-            updateUIBasedOnPermissions()
-        }
-        
-        // Observe trip details
+        // Observe trip details FIRST - this is the source of truth
         viewModel.tripDetails.observe(this) { trip ->
-            Log.d("TripDetailActivity", "Observer triggered - trip: ${trip?.id}")
+            Log.d("TripDetailActivity", "Observer triggered - trip: ${trip?.id}, members: ${trip?.members?.size}")
             currentTrip = trip
+            
+            // Don't check permissions here - let the permission observer handle redirect
+            // Just update UI
             binding.root.visibility = View.VISIBLE
             updateUI(trip)
+        }
+        
+        // Use MediatorLiveData to observe permission changes AFTER initial trip load
+        // This prevents race condition where one observer triggers before the other is set
+        val permissionChecker = androidx.lifecycle.MediatorLiveData<Pair<Boolean?, Boolean?>>()
+        
+        permissionChecker.addSource(viewModel.isOwner) { isOwner ->
+            val isMember = viewModel.isMember.value
+            Log.d("TripDetailActivity", "isOwner source triggered: $isOwner, isMember: $isMember")
+            permissionChecker.value = Pair(isOwner, isMember)
+        }
+        
+        permissionChecker.addSource(viewModel.isMember) { isMember ->
+            val isOwner = viewModel.isOwner.value
+            Log.d("TripDetailActivity", "isMember source triggered: $isMember, isOwner: $isOwner")
+            permissionChecker.value = Pair(isOwner, isMember)
+        }
+        
+        permissionChecker.observe(this) { (isOwnerNullable, isMemberNullable) ->
+            // CRITICAL: Only proceed if BOTH values are non-null (means calculatePermissions() ran)
+            if (isOwnerNullable == null || isMemberNullable == null) {
+                Log.d("TripDetailActivity", "⏸️ Skipping permission check - values not ready yet")
+                return@observe
+            }
+            
+            val isOwner = isOwnerNullable
+            val isMember = isMemberNullable
+            
+            Log.d("TripDetailActivity", "=== Permission observer triggered ===")
+            Log.d("TripDetailActivity", "isOwner: $isOwner, isMember: $isMember, isReadOnly: $isReadOnly")
+            Log.d("TripDetailActivity", "currentTrip: ${currentTrip?.id}")
+            
+            // Check redirect AFTER permissions are calculated
+            currentTrip?.let { trip ->
+                if (!isOwner && !isMember && !isReadOnly) {
+                    Log.d("TripDetailActivity", "❌ Redirecting to TripMapActivity (not owner/member)")
+                    val intent = Intent(this, TripMapActivity::class.java)
+                    intent.putExtra("tripId", trip.id.toString())
+                    intent.putExtra("tripTitle", trip.title)
+                    intent.putExtra("tripUserId", trip.userId)
+                    startActivity(intent)
+                    finish()
+                    return@observe
+                }
+                
+                Log.d("TripDetailActivity", "✅ Staying in TripDetailActivity (owner or member)")
+            }
+            
+            // Update UI based on permissions
+            updateUIBasedOnPermissions()
         }
 
         // Observe error messages
