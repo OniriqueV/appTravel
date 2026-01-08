@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    <path
+        android:fillColor="#CD7F32"
+        android:pathData="M40,10 A30,30 0 1,1 40,70 A30,30 0 1,1 40,10"/>
+    <!-- Globe lines -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:pathData="M40,20 L40,60 M25,40 L55,40 M30,25 Q40,30 50,25 M30,55 Q40,50 50,55"/>
+    <!-- Number 10 -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M32,52 L32,30 L36,30 L36,52 Z M42,52 C40.9,52 40,51.1 40,50 L40,32 C40,30.9 40.9,30 42,30 L46,30 C47.1,30 48,30.9 48,32 L48,50 C48,51.1 47.1,52 46,52 Z M44,34 L44,48 L44,34 Z"/>
+</vector>

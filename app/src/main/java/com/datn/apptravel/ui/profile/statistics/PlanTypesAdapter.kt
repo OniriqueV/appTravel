@@ -37,8 +37,8 @@ class PlanTypesAdapter : ListAdapter<PlanTypeItem, PlanTypesAdapter.PlanTypeView
 
         private fun getIconForType(type: String): Int {
             return when (type) {
-                "Hoạt động" -> R.drawable.ic_activity
-                "Chỗ ở" -> R.drawable.ic_lodging
+                "Hoạt động" -> R.drawable.ic_plan
+                "Chỗ ở" -> R.drawable.ic_lodgingsss
                 "Nhà hàng" -> R.drawable.ic_restaurant
                 "Máy bay" -> R.drawable.ic_flight
                 "Tàu thuyền" -> R.drawable.ic_boat

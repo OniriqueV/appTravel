@@ -40,10 +40,10 @@ class DocumentsAdapter(
                             if (bitmap != null) {
                                 ivFileIcon.setImageBitmap(bitmap)
                             } else {
-                                ivFileIcon.setImageResource(R.drawable.ic_image)
+                                ivFileIcon.setImageResource(R.drawable.img_sample_2)
                             }
                         } catch (e: Exception) {
-                            ivFileIcon.setImageResource(R.drawable.ic_image)
+                            ivFileIcon.setImageResource(R.drawable.img_sample_2)
                         }
                     }
                     "PDF" -> {
