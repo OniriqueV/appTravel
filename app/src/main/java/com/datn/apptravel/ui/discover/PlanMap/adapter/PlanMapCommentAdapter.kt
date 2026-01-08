@@ -16,11 +16,19 @@ import com.datn.apptravels.ui.discover.util.TimeUtil
 class PlanMapCommentAdapter(
     private val currentUserId: String,
     private val onLongClick: (PlanCommentDto) -> Unit,
-    private val onReplyClick: (PlanCommentDto) -> Unit
+    private val onReplyClick: (PlanCommentDto, PlanCommentDto) -> Unit
 ) : RecyclerView.Adapter<PlanMapCommentAdapter.VH>() {
 
+    companion object {
+        private const val TYPE_PARENT = 0
+        private const val TYPE_REPLY = 1
+    }
+
     private var isOwner: Boolean = false
+
+    private val allComments = mutableListOf<PlanCommentDto>()
     private val items = mutableListOf<PlanCommentDto>()
+    private val expandedParents = mutableSetOf<String>()
 
     fun setOwner(value: Boolean) {
         if (isOwner != value) {
@@ -30,26 +38,57 @@ class PlanMapCommentAdapter(
     }
 
     fun submit(list: List<PlanCommentDto>) {
+        allComments.clear()
+        allComments.addAll(list)
+        rebuildDisplayList()
+    }
+
+    private fun rebuildDisplayList() {
         items.clear()
-        items.addAll(list)
+
+        val grouped = allComments.groupBy { it.parentId }
+        val parents = grouped[null].orEmpty()
+
+        for (parent in parents) {
+            items.add(parent)
+
+            val key = parent.id.toString()
+            if (expandedParents.contains(key)) {
+                items.addAll(grouped[key].orEmpty())
+            }
+        }
+
         notifyDataSetChanged()
     }
 
+    private fun repliesCountFor(parentId: Long): Int {
+        val key = parentId.toString()
+        return allComments.count { it.parentId == key }
+    }
+
+    override fun getItemViewType(position: Int): Int =
+        if (items[position].parentId == null) TYPE_PARENT else TYPE_REPLY
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_plan_map_comment, parent, false)
-        return VH(view)
+        val layout =
+            if (viewType == TYPE_PARENT)
+                R.layout.item_comment_plan
+            else
+                R.layout.item_comment_plan_reply
+
+        return VH(
+            LayoutInflater.from(parent.context)
+                .inflate(layout, parent, false)
+        )
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = items[position]
+        val isReply = getItemViewType(position) == TYPE_REPLY
 
         holder.tvUser.text = item.userName ?: "Unknown"
         holder.tvContent.text = item.content.trim().replace("\"", "")
 
-        val isReply = item.parentId != null
-
-        // 🔥 Time
         if (!item.createdAt.isNullOrBlank()) {
             holder.tvTime.visibility = View.VISIBLE
             holder.tvTime.text = TimeUtil.formatTimeAgo(item.createdAt)
@@ -57,76 +96,100 @@ class PlanMapCommentAdapter(
             holder.tvTime.visibility = View.GONE
         }
 
-        // 🔥 Reply button
-        holder.tvReply.visibility =
-            if (isReply) View.GONE else View.VISIBLE
+        // ✅ Reply (cha + con đều reply được, nhưng LUÔN về cha)
+        holder.tvReply?.visibility = View.VISIBLE
+        holder.tvReply?.setOnClickListener {
+            val parent = if (item.parentId == null) {
+                item
+            } else {
+                allComments.first { it.id.toString() == item.parentId }
+            }
+            onReplyClick(item, parent)
+        }
 
-        if (!isReply) {
-            holder.tvReply.setOnClickListener {
-                onReplyClick(item)
+        // View / Hide replies (chỉ comment cha)
+        holder.btnViewReplies?.let { btn ->
+            val count = repliesCountFor(item.id)
+            val key = item.id.toString()
+            val expanded = expandedParents.contains(key)
+
+            btn.visibility =
+                if (!isReply && count > 0) View.VISIBLE else View.GONE
+
+            btn.text =
+                if (expanded) "Hide $count replies"
+                else "View $count replies"
+
+            btn.setOnClickListener {
+                if (expanded) expandedParents.remove(key)
+                else expandedParents.add(key)
+                rebuildDisplayList()
             }
         }
 
-        // 🔥 Avatar
-        holder.imgAvatar.visibility =
-            if (isReply) View.INVISIBLE else View.VISIBLE
+        // Avatar
+        holder.imgAvatar?.let { avatar ->
+            avatar.setImageDrawable(null)
+            avatar.visibility = View.VISIBLE
 
-        if (!isReply) {
-            val avatarUrl = item.userAvatar?.trim()
-            if (!avatarUrl.isNullOrEmpty()) {
-                holder.imgAvatar.load(ImageUrlUtil.toFullUrl(avatarUrl)) {
+            val url = item.userAvatar?.trim()
+            if (!url.isNullOrEmpty()) {
+                avatar.load(ImageUrlUtil.toFullUrl(url)) {
                     placeholder(R.drawable.ic_avatar_placeholder)
                     error(R.drawable.ic_avatar_placeholder)
-                    crossfade(true)
                 }
             } else {
-                holder.imgAvatar.setImageResource(R.drawable.ic_avatar_placeholder)
+                avatar.setImageResource(R.drawable.ic_avatar_placeholder)
             }
         }
 
-        // 🔥 Padding
-        val startPadding = if (isReply) dp(holder.itemView, 48) else dp(holder.itemView, 8)
-        holder.itemView.setPadding(
-            startPadding,
-            dp(holder.itemView, 6),
-            dp(holder.itemView, 8),
-            dp(holder.itemView, 6)
-        )
-
-        // 🔥 Delete
+        /* =====================================================
+           🔥 FIX CHÍNH: LONG CLICK GẮN VÀO commentBubble
+           ===================================================== */
         val canDelete = isOwner || item.userId == currentUserId
-        holder.itemView.setOnLongClickListener {
-            if (canDelete) onLongClick(item)
+
+        holder.commentBubble.setOnLongClickListener {
+            if (canDelete) {
+                onLongClick(item)
+            }
             true
         }
 
-        holder.itemView.foreground =
-            if (canDelete) getSelectableItemBackground(holder.itemView)
+        holder.commentBubble.foreground =
+            if (canDelete) getSelectableItemBackground(holder.commentBubble)
             else null
     }
-
-
 
     override fun getItemCount() = items.size
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val tvUser: TextView = view.findViewById(R.id.tvUser)
-        val tvContent: TextView = view.findViewById(R.id.tvContent)
-        val tvTime: TextView = view.findViewById(R.id.tvTime)
-        val imgAvatar: ImageView = view.findViewById(R.id.imgAvatar)
-        val tvReply: TextView = view.findViewById(R.id.tvReply)
+        val tvUser: TextView = view.findViewById(R.id.tvUserName)
+        val tvContent: TextView = view.findViewById(R.id.tvCommentContent)
+        val tvTime: TextView = view.findViewById(R.id.tvTimeAgo)
+
+        val imgAvatar: ImageView? = view.findViewById(R.id.ivUserAvatar)
+        val tvReply: TextView? = view.findViewById(R.id.btnReply)
+        val btnViewReplies: TextView? = view.findViewById(R.id.btnViewReplies)
+
+        // 🔥 QUAN TRỌNG
+        val commentBubble: View = view.findViewById(R.id.commentBubble)
     }
 
     private fun getSelectableItemBackground(view: View) =
-        TypedValue().let { outValue ->
+        TypedValue().let {
             view.context.theme.resolveAttribute(
                 android.R.attr.selectableItemBackground,
-                outValue,
+                it,
                 true
             )
-            view.context.getDrawable(outValue.resourceId)
+            view.context.getDrawable(it.resourceId)
         }
 
-    private fun dp(view: View, value: Int): Int =
-        (value * view.resources.displayMetrics.density).toInt()
+    fun expandParent(parentId: Long) {
+        val key = parentId.toString()
+        if (!expandedParents.contains(key)) {
+            expandedParents.add(key)
+            rebuildDisplayList()
+        }
+    }
 }

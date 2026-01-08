@@ -30,8 +30,9 @@ class PlanMapDetailCommentBottomSheet : BottomSheetDialogFragment() {
     private lateinit var btnSend: TextView
 
     private var listener: CommentSheetListener? = null
-    private var replyToComment: PlanCommentDto? = null
 
+    // 🔹 comment cha đang được reply
+    private var replyParent: PlanCommentDto? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -57,12 +58,12 @@ class PlanMapDetailCommentBottomSheet : BottomSheetDialogFragment() {
         adapter = PlanMapCommentAdapter(
             currentUserId = viewModel.currentUserId().orEmpty(),
             onLongClick = ::showDeleteDialog,
-            onReplyClick = ::setReplyTo // 🔥
+            onReplyClick = ::setReplyTo
         )
+
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = adapter
 
-        // ✅ QUAN TRỌNG: observe owner TRƯỚC
         viewModel.isOwnerLive.observe(viewLifecycleOwner) { isOwner ->
             adapter.setOwner(isOwner)
         }
@@ -74,26 +75,22 @@ class PlanMapDetailCommentBottomSheet : BottomSheetDialogFragment() {
             }
         }
 
+        // ✅ SEND COMMENT – CHUẨN 2 CẤP
         btnSend.setOnClickListener {
             val text = edtComment.text.toString().trim()
             if (text.isBlank()) return@setOnClickListener
 
-            if (replyToComment != null) {
-                viewModel.postComment(
-                    text,
-                    replyToComment!!.id.toString()
-                )
-            } else {
-                viewModel.postComment(text)
-            }
+            viewModel.postComment(
+                text = text,
+                parentId = replyParent?.id?.toString()
+            )
 
-            replyToComment = null
+            // reset
+            replyParent = null
             edtComment.setText("")
             edtComment.hint = "Add a comment..."
         }
-
     }
-
 
     override fun onStart() {
         super.onStart()
@@ -134,10 +131,14 @@ class PlanMapDetailCommentBottomSheet : BottomSheetDialogFragment() {
         fun onCommentSheetDismissed()
     }
 
-    private fun setReplyTo(comment: PlanCommentDto) {
-        replyToComment = comment
-        edtComment.hint = "Reply to ${comment.userName ?: "user"}"
+    /**
+     * display: comment được click (cha hoặc con)
+     * parent: comment cha gốc
+     */
+    private fun setReplyTo(display: PlanCommentDto, parent: PlanCommentDto) {
+        replyParent = parent
+        adapter.expandParent(parent.id)
+        edtComment.hint = "Reply"
         edtComment.requestFocus()
     }
-
 }

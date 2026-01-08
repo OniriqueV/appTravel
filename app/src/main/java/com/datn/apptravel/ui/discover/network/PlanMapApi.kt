@@ -45,6 +45,4 @@ interface PlanMapApi {
         @Path("commentId") commentId: Long,
         @Header("X-USER-ID") userId: String
     ): retrofit2.Response<Unit>
-
-
 }
