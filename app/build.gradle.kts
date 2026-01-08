@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     id("com.google.gms.google-services")
     id("kotlin-parcelize")
+    id("kotlin-kapt") // Added for Glide annotation processor
 }
 
 android {
@@ -89,6 +90,7 @@ dependencies {
 
     implementation("androidx.navigation:navigation-fragment-ktx:2.7.7")
     implementation("androidx.navigation:navigation-ui-ktx:2.7.7")
+
     // Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
     implementation("com.google.firebase:firebase-auth")
@@ -113,7 +115,7 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.10.0")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.12")
     implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.12")
-    
+
     // Gson for JSON parsing
     implementation("com.google.code.gson:gson:2.10.1")
 
@@ -126,6 +128,7 @@ dependencies {
 
     // Glide for image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
+    kapt("com.github.bumptech.glide:compiler:4.16.0") // Added: Glide annotation processor
 
     // OSMDroid for OpenStreetMap
     implementation("org.osmdroid:osmdroid-android:6.1.18")
@@ -135,16 +138,25 @@ dependencies {
 
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.2.0")
+
+    // RecyclerView and CardView
     implementation(libs.androidx.cardview)
     implementation(libs.androidx.recyclerview)
 
-
+    // SwipeRefreshLayout
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
+
+    // Coil for image loading (alternative to Glide)
     implementation("io.coil-kt:coil:2.5.0")
 
+    implementation(libs.androidx.activity)
 
+    // ===== ADDED FOR NEW FEATURES =====
 
+    // PhotoView for image zoom and pan functionality
+    implementation("com.github.chrisbanes:PhotoView:2.3.0")
 
+    // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

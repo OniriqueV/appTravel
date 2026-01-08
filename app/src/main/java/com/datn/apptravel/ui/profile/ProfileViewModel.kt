@@ -5,13 +5,15 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.datn.apptravels.data.model.User
 import com.datn.apptravels.data.repository.AuthRepository
+import com.datn.apptravels.data.repository.BadgeRepository
 import com.datn.apptravels.data.repository.UserRepository
 import com.datn.apptravels.ui.base.BaseViewModel
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val authRepository: AuthRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val badgeRepository: BadgeRepository
 ) : BaseViewModel() {
 
     private val _userProfile = MutableLiveData<User?>()
@@ -51,6 +53,20 @@ class ProfileViewModel(
             } finally {
                 setLoading(false)
             }
+        }
+    }
+
+    suspend fun getNewBadgeCount(): Int {
+        return try {
+            val currentUser = authRepository.getCurrentFirebaseUser()
+            if (currentUser != null) {
+                val result = badgeRepository.getUserBadges(currentUser.uid)
+                result.getOrNull()?.count { it.isNew } ?: 0
+            } else {
+                0
+            }
+        } catch (e: Exception) {
+            0
         }
     }
 }

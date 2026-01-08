@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="2dp">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <!-- Lock Overlay (for locked badges) -->
+        <View
+            android:id="@+id/viewLock"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="#40000000"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Badge Icon -->
+        <ImageView
+            android:id="@+id/ivBadgeIcon"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:src="@drawable/ic_badge"
+            android:scaleType="fitCenter"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Badge Name -->
+        <TextView
+            android:id="@+id/tvBadgeName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="First Journey"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:gravity="center"
+            android:layout_marginTop="12dp"
+            app:layout_constraintTop_toBottomOf="@id/ivBadgeIcon"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <!-- Badge Description -->
+        <TextView
+            android:id="@+id/tvBadgeDescription"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Tạo chuyến đi đầu tiên"
+            android:textSize="11sp"
+            android:textColor="#666666"
+            android:gravity="center"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:layout_marginTop="4dp"
+            app:layout_constraintTop_toBottomOf="@id/tvBadgeName"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintBottom_toBottomOf="parent" />
+
+        <!-- Lock Icon (for locked badges) -->
+        <ImageView
+            android:id="@+id/ivLock"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_lock"
+            app:tint="#666666"
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/ivBadgeIcon"
+            app:layout_constraintBottom_toBottomOf="@id/ivBadgeIcon"
+            app:layout_constraintStart_toStartOf="@id/ivBadgeIcon"
+            app:layout_constraintEnd_toEndOf="@id/ivBadgeIcon" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.cardview.widget.CardView>

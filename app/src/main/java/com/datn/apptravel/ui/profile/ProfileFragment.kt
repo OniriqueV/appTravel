@@ -6,14 +6,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import com.datn.apptravels.R
 import com.datn.apptravels.databinding.FragmentProfileBinding
 import com.datn.apptravels.ui.activity.SignInActivity
 import com.datn.apptravels.ui.base.BaseFragment
+import com.datn.apptravels.ui.profile.badges.BadgesActivity
+import com.datn.apptravels.ui.profile.documents.DocumentsActivity
 import com.datn.apptravels.ui.profile.edit.EditProfileActivity
 import com.datn.apptravels.ui.profile.password.ChangePasswordActivity
+import com.datn.apptravels.ui.profile.statistics.StatisticsActivity
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ProfileFragment : BaseFragment<FragmentProfileBinding, ProfileViewModel>() {
@@ -39,6 +44,7 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding, ProfileViewModel>()
         loadUserProfile()
         setupClickListeners()
         observeViewModel()
+        checkNewBadges()
     }
 
     private fun setupToolbar() {
@@ -52,21 +58,30 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding, ProfileViewModel>()
     }
 
     private fun setupClickListeners() {
-        // AI Suggest - Nút mới thêm vào
-//        binding.btnAISuggest.setOnClickListener {
-//            val intent = Intent(requireContext(), ExtendedAISuggestActivity::class.java)
-//            startActivity(intent)
-//        }
-
         // Edit profile
         binding.cardProfile.setOnClickListener {
             val intent = Intent(requireContext(), EditProfileActivity::class.java)
             editProfileLauncher.launch(intent)
         }
 
-        // Document (coming soon)
+        // Statistics - NEW
+        binding.layoutStatistics.setOnClickListener {
+            val intent = Intent(requireContext(), StatisticsActivity::class.java)
+            startActivity(intent)
+        }
+
+        // Badges - NEW
+        binding.layoutBadges.setOnClickListener {
+            val intent = Intent(requireContext(), BadgesActivity::class.java)
+            startActivity(intent)
+            // Reset badge indicator after viewing
+            binding.tvNewBadgeCount.visibility = View.GONE
+        }
+
+        // Documents - UPDATED
         binding.layoutDocument.setOnClickListener {
-            showToast("Chức năng đang được phát triển")
+            val intent = Intent(requireContext(), DocumentsActivity::class.java)
+            startActivity(intent)
         }
 
         // Change password
@@ -98,7 +113,6 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding, ProfileViewModel>()
                 // Show/hide change password based on provider
                 binding.layoutChangePassword.visibility =
                     if (it.provider == "LOCAL") View.VISIBLE else View.GONE
-
             }
         }
 
@@ -111,6 +125,19 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding, ProfileViewModel>()
         viewModel.error.observe(viewLifecycleOwner) { errorMsg ->
             errorMsg?.let {
                 showToast(it)
+            }
+        }
+    }
+
+    // NEW: Check for new badges
+    private fun checkNewBadges() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val newBadgeCount = viewModel.getNewBadgeCount()
+            if (newBadgeCount > 0) {
+                binding.tvNewBadgeCount.text = newBadgeCount.toString()
+                binding.tvNewBadgeCount.visibility = View.VISIBLE
+            } else {
+                binding.tvNewBadgeCount.visibility = View.GONE
             }
         }
     }
@@ -139,5 +166,11 @@ class ProfileFragment : BaseFragment<FragmentProfileBinding, ProfileViewModel>()
 
     override fun handleLoading(isLoading: Boolean) {
         binding.progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Refresh badge count when returning to fragment
+        checkNewBadges()
     }
 }
