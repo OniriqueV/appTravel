@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tải lên tài liệu"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:textColor="#333333"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- File name info -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tên file:"
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="4dp"/>
+
+    <TextView
+        android:id="@+id/tvFileName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="document.pdf"
+        android:textSize="14sp"
+        android:textColor="#333333"
+        android:layout_marginBottom="16dp"
+        android:maxLines="1"
+        android:ellipsize="end"/>
+
+    <!-- File size info -->
+    <TextView
+        android:id="@+id/tvFileSize"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Kích thước: 250 KB"
+        android:textSize="12sp"
+        android:textColor="#999999"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Title input -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Tiêu đề tài liệu *"
+        app:boxStrokeColor="#FF6B35"
+        app:hintTextColor="#FF6B35"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="text"
+            android:maxLines="1"
+            android:singleLine="true"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Category selection -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Loại tài liệu *"
+        android:textSize="14sp"
+        android:textColor="#333333"
+        android:layout_marginBottom="8dp"/>
+
+    <RadioGroup
+        android:id="@+id/radioGroupCategory"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp">
+
+        <RadioButton
+            android:id="@+id/rbTicket"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vé máy bay"
+            android:textSize="14sp"
+            android:buttonTint="#FF6B35"/>
+
+        <RadioButton
+            android:id="@+id/rbBooking"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Booking khách sạn"
+            android:textSize="14sp"
+            android:buttonTint="#FF6B35"/>
+
+        <RadioButton
+            android:id="@+id/rbItinerary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lịch trình"
+            android:textSize="14sp"
+            android:buttonTint="#FF6B35"/>
+
+        <RadioButton
+            android:id="@+id/rbVisa"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Visa"
+            android:textSize="14sp"
+            android:buttonTint="#FF6B35"/>
+
+        <RadioButton
+            android:id="@+id/rbOther"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Khác"
+            android:textSize="14sp"
+            android:checked="true"
+            android:buttonTint="#FF6B35"/>
+    </RadioGroup>
+
+    <!-- Description input (optional) -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ghi chú (không bắt buộc)"
+        app:boxStrokeColor="#FF6B35"
+        app:hintTextColor="#FF6B35"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textMultiLine"
+            android:maxLines="3"
+            android:minLines="2"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+</LinearLayout>

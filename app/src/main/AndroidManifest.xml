@@ -12,8 +12,7 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" /> <!-- Android 13+ images -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <!-- Android 13+ notifications -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" /> <!-- Android 13+ notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -29,9 +28,29 @@
         android:theme="@style/Theme.AppTravel"
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
-<!--        <activity-->
-<!--            android:name=".ui.aisuggest.ExtendedAISuggestActivity"-->
-<!--            android:exported="false" />-->
+        <activity
+            android:name=".ui.profile.documents.DocumentsActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain"
+            />
+
+        <activity
+            android:name=".ui.profile.documents.ImageViewerActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+
+        <activity
+            android:name=".ui.profile.statistics.StatisticsActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain"/>
+
+        <activity
+            android:name=".ui.profile.badges.BadgesActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.AppTravel.NoActionBarMain"/>
+         <!-- <activity -->
+        <!-- android:name=".ui.aisuggest.ExtendedAISuggestActivity" -->
+        <!-- android:exported="false" /> -->
         <activity
             android:name=".ui.aisuggest.ExtendedAISuggestActivity"
             android:exported="false"
@@ -72,7 +91,8 @@
             android:name=".ui.profile.edit.EditProfileActivity"
             android:exported="false"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppTravel" />
+            android:theme="@style/Theme.AppTravel.NoActionBarMain"
+            />
         <activity
             android:name=".ui.profile.password.ChangePasswordActivity"
             android:exported="false"
@@ -121,23 +141,20 @@
         <activity
             android:name=".ui.trip.detail.plandetail.CarRentalDetailActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBarMain" />
-
-        <!-- Plan Detail Activity -->
-<!--        <activity-->
-<!--            android:name=".ui.trip.detail.PlanDetailActivity"-->
-<!--            android:exported="false"-->
-<!--            android:theme="@style/Theme.AppTravel.NoActionBarMain" />-->
-
+            android:theme="@style/Theme.AppTravel.NoActionBarMain" /> <!-- Plan Detail Activity -->
+        <!-- <activity -->
+        <!-- android:name=".ui.trip.detail.PlanDetailActivity" -->
+        <!-- android:exported="false" -->
+        <!-- android:theme="@style/Theme.AppTravel.NoActionBarMain" /> -->
         <activity android:name=".ui.discover.post.CreatePostActivity" />
-        <activity android:name=".ui.discover.post.SelectTripForPostActivity"
+        <activity
+            android:name=".ui.discover.post.SelectTripForPostActivity"
             android:exported="false"
             android:theme="@style/Theme.AppTravel.NoActionBarMain" />
         <activity
             android:name=".ui.discover.PlanMap.PlanMapDetailActivity"
             android:exported="false"
-            android:theme="@style/Theme.AppTravel.NoActionBar" />
-        <!-- ===== Firebase Cloud Messaging Service ===== -->
+            android:theme="@style/Theme.AppTravel.NoActionBar" /> <!-- ===== Firebase Cloud Messaging Service ===== -->
         <service
             android:name=".data.api.NotificationService"
             android:exported="false">
@@ -145,7 +162,6 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-
     </application>
 
 </manifest>

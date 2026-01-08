@@ -80,6 +80,10 @@ val appModule = module {
         )
     }
 
+    single { DocumentRepository(get(), androidContext()) }
+    single { StatisticsRepository(get()) }
+    single { BadgeRepository(get()) }
+
 
     viewModel { SplashViewModel(get()) }
     viewModel { OnboardingViewModel() }
@@ -90,7 +94,7 @@ val appModule = module {
 
     viewModel { ProfileUserViewModel(profileRepository = get()) }
 
-    viewModel { ProfileViewModel(get(), get()) }
+    viewModel { ProfileViewModel(get(), get(), get()) }
     viewModel { EditProfileViewModel(get(), get()) }
     viewModel { ChangePasswordViewModel(get()) }
 
@@ -101,4 +105,6 @@ val appModule = module {
     viewModel { PlanSelectionViewModel(get()) }
     viewModel { PlanDetailViewModel(get()) }
     viewModel { TripMapViewModel(get()) }
+
+
 }

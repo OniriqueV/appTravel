@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- Badge/Medal shape -->
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M12,2L9,8L2,9l5,5l-1,7l6,-3l6,3l-1,-7l5,-5l-7,-1z"/>
+
+    <!-- Star in center -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M12,9l0.93,2.83l2.98,0l-2.41,1.75l0.92,2.84l-2.42,-1.76l-2.42,1.76l0.92,-2.84l-2.41,-1.75l2.98,0z"/>
+
+</vector>

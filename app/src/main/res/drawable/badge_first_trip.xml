@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="80dp"
+    android:height="80dp"
+    android:viewportWidth="80"
+    android:viewportHeight="80">
+    <!-- Circle background -->
+    <path
+        android:fillColor="#FFD700"
+        android:pathData="M40,10 A30,30 0 1,1 40,70 A30,30 0 1,1 40,10"/>
+    <!-- Star -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M40,25 L43,35 L53,35 L45,42 L48,52 L40,45 L32,52 L35,42 L27,35 L37,35 Z"/>
+    <!-- Number 1 -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M38,52 L38,48 L42,48 L42,52 Z M40,46 L40,30 L38,32 L36,30 L40,26 L44,30 L42,32 Z"/>
+</vector>

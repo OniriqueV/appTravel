@@ -26,30 +26,6 @@
             android:textStyle="bold"/>
     </androidx.appcompat.widget.Toolbar>
 
-    <!-- AI Suggest Icon - Góc trên bên phải -->
-<!--    <com.google.android.material.card.MaterialCardView-->
-<!--        android:id="@+id/btnAISuggest"-->
-<!--        android:layout_width="48dp"-->
-<!--        android:layout_height="48dp"-->
-<!--        android:layout_marginEnd="16dp"-->
-<!--        app:cardCornerRadius="24dp"-->
-<!--        app:cardElevation="4dp"-->
-<!--        app:cardBackgroundColor="#FF6B35"-->
-<!--        android:clickable="true"-->
-<!--        android:focusable="true"-->
-<!--        android:foreground="?android:attr/selectableItemBackground"-->
-<!--        app:layout_constraintTop_toTopOf="@id/toolbar"-->
-<!--        app:layout_constraintBottom_toBottomOf="@id/toolbar"-->
-<!--        app:layout_constraintEnd_toEndOf="parent">-->
-
-<!--        <ImageView-->
-<!--            android:layout_width="28dp"-->
-<!--            android:layout_height="28dp"-->
-<!--            android:layout_gravity="center"-->
-<!--            android:src="@drawable/ic_ai_sparkle"-->
-<!--            app:tint="@android:color/white" />-->
-<!--    </com.google.android.material.card.MaterialCardView>-->
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -127,12 +103,110 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
+            <!-- NEW: Statistics Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/layoutStatistics"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_chart"
+                        app:tint="#FF6B35" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Thống kê"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:layout_marginStart="12dp" />
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#999999" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- NEW: Badges Card -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/layoutBadges"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="2dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?android:attr/selectableItemBackground">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:padding="16dp"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_badge"
+                        app:tint="#FF6B35" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Huy hiệu"
+                        android:textSize="16sp"
+                        android:textColor="#333333"
+                        android:layout_marginStart="12dp" />
+
+                    <!-- Badge indicator -->
+                    <TextView
+                        android:id="@+id/tvNewBadgeCount"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:background="@drawable/bg_badge_indicator"
+                        android:gravity="center"
+                        android:text="0"
+                        android:textColor="@android:color/white"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:visibility="gone"
+                        android:layout_marginEnd="8dp"/>
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#999999" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- Document -->
             <androidx.cardview.widget.CardView
                 android:id="@+id/layoutDocument"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="2dp"
                 android:clickable="true"
@@ -156,7 +230,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Document"
+                        android:text="Tài liệu"
                         android:textSize="16sp"
                         android:textColor="#333333"
                         android:layout_marginStart="12dp" />
@@ -199,7 +273,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Change Password"
+                        android:text="Đổi mật khẩu"
                         android:textSize="16sp"
                         android:textColor="#333333"
                         android:layout_marginStart="12dp" />
@@ -217,7 +291,8 @@
                 android:id="@+id/btnLogout"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Log out"
+                android:layout_marginTop="24dp"
+                android:text="Đăng xuất"
                 android:textColor="@android:color/white"
                 app:backgroundTint="#FF6B35"
                 app:icon="@drawable/ic_logout"
