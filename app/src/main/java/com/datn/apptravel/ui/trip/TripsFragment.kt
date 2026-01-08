@@ -2,6 +2,7 @@ package com.datn.apptravels.ui.trip
 
 import android.app.Dialog
 import android.content.Intent
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +14,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.datn.apptravels.R
+import com.datn.apptravels.data.model.AdventureItem
 import com.datn.apptravels.data.model.Trip
 import com.datn.apptravels.data.repository.AuthRepository
 import com.datn.apptravels.data.repository.TripRepository
@@ -25,12 +27,11 @@ import com.datn.apptravels.ui.trip.adapter.DiscoverTripAdapter
 import com.datn.apptravels.ui.trip.detail.tripdetail.TripDetailActivity
 import com.datn.apptravels.ui.trip.viewmodel.TripsViewModel
 import com.datn.apptravels.utils.ApiConfig
-import com.datn.apptravels.ui.discover.network.DiscoverRepository
 import com.datn.apptravels.ui.trip.map.TripMapActivity
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.firstOrNull
 import org.koin.android.ext.android.inject
-import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -38,30 +39,31 @@ import java.time.temporal.ChronoUnit
 
 class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
 
-    override val viewModel: TripsViewModel by viewModel()
+    override val viewModel: TripsViewModel by activityViewModel()
     private val authRepository: AuthRepository by inject()
-    private val discoverRepository: DiscoverRepository by inject()
     private val tripRepository: TripRepository by inject()
     private val sessionManager: SessionManager by inject()
-
-    // Track currently selected tab
-    private var currentTab = TAB_ONGOING
     
     // Track adventure section state
     private enum class AdventureSectionState {
         UPCOMING_TRIPS,  // Đang hiển thị upcoming trips của user
         DISCOVER_TRIPS   // Đang hiển thị discover trips từ community
     }
-    private var currentAdventureState: AdventureSectionState? = null
-
-    private var isInitialLoadComplete = false
+    private var currentAdventureState: AdventureSectionState? = AdventureSectionState.DISCOVER_TRIPS
+    
+    // Activity result launcher for CreateTripActivity
+    private val createTripLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            // Trip created successfully, refresh data
+            android.util.Log.d("TripsFragment", "Trip created, refreshing data")
+            viewModel.refreshTrips()
+        }
+    }
 
     companion object {
-        private const val TAB_ONGOING = 0
-        private const val TAB_PAST = 1
-        private const val TAB_COMMUNITY = 2
-
-        // Intent extra keys
+        // Intent extra keys (not used but kept for compatibility)
         const val EXTRA_TRIP_ID = "extra_trip_id"
     }
 
@@ -77,10 +79,25 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
     override fun setupUI() {
         // Setup UI components
         loadUserName()
+        setupSwipeRefresh()
         setupAddTripButton()
         setupRecyclerViews()
         observeTrips()
-        loadTrips()
+        
+        // No need to call getTrips() here - MainActivity already loaded data
+        // LiveData will automatically emit cached data to new observers
+    }
+    
+    private fun setupSwipeRefresh() {
+        binding.swipeRefresh.setOnRefreshListener {
+            android.util.Log.d("TripsFragment", "Swipe to refresh triggered")
+            viewModel.refreshTrips()
+        }
+        
+        // Customize refresh colors
+        binding.swipeRefresh.setColorSchemeColors(
+            android.graphics.Color.parseColor("#C9A877")
+        )
     }
 
 
@@ -147,9 +164,9 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
 
     private fun setupAddTripButton() {
         binding.btnAddTripNow.setOnClickListener {
-            // Navigate to CreateTripActivity
+            // Navigate to CreateTripActivity using launcher
             val intent = Intent(requireContext(), CreateTripActivity::class.java)
-            startActivity(intent)
+            createTripLauncher.launch(intent)
         }
 
 //        binding.tvViewAll?.setOnClickListener {
@@ -164,7 +181,8 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
     }
 
     fun refreshTrips() {
-        viewModel.getTrips()
+        android.util.Log.d("TripsFragment", "refreshTrips() called - forcing refresh")
+        viewModel.refreshTrips()
     }
 
     private fun setupRecyclerViews() {
@@ -256,24 +274,30 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
 
         // Observe combined data to ensure consistency
         combinedTripsObserver.observe(viewLifecycleOwner) { (ongoingTrips, upcomingTrips) ->
+            Log.d("TripsFragment", "Observer triggered - Ongoing: ${ongoingTrips.size}, Upcoming: ${upcomingTrips.size}")
             updateCurrentTripCard(ongoingTrips, upcomingTrips)
             updateUpcomingsSection(ongoingTrips, upcomingTrips)
         }
 
         // Observe past trips (endDate < today)
         viewModel.pastTrips.observe(viewLifecycleOwner) { trips ->
+            Log.d("TripsFragment", "Past trips observer - Count: ${trips.size}")
             if (trips.isNotEmpty()) {
                 tripAdapter.updateTrips(trips)
                 binding.rvPastTrips.visibility = View.VISIBLE
+                Log.d("TripsFragment", "Past trips section: VISIBLE")
             } else {
                 binding.rvPastTrips.visibility = View.GONE
+                Log.d("TripsFragment", "Past trips section: GONE")
             }
         }
 
-        viewModel.filteredDiscoverTrips.observe(viewLifecycleOwner) { discoverItems ->
+        // Observe adventure items (optimized API - replaces filteredDiscoverTrips)
+        viewModel.adventureItems.observe(viewLifecycleOwner) { adventureItems ->
+            Log.d("TripsFragment", "Adventure items observer - Count: ${adventureItems.size}, State: $currentAdventureState")
             // Only render if we're in DISCOVER_TRIPS state
             if (currentAdventureState == AdventureSectionState.DISCOVER_TRIPS) {
-                renderDiscoverTrips(discoverItems)
+                renderAdventureTrips(adventureItems)
             }
         }
     }
@@ -342,23 +366,26 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
     private fun renderDiscoverTripsSection() {
         android.util.Log.d("TripsFragment", "renderDiscoverTripsSection")
         
-        // Set state
+        // Set state FIRST so observer can trigger
         currentAdventureState = AdventureSectionState.DISCOVER_TRIPS
 
         binding.tvUpcomingsTitle.text = "Adventure"
-        
 
-        binding.rvAdventure.visibility = View.GONE
-
-        val cachedDiscoverItems = viewModel.filteredDiscoverTrips.value
-        if (cachedDiscoverItems != null && cachedDiscoverItems.isNotEmpty()) {
-            renderDiscoverTrips(cachedDiscoverItems)
+        // Check if adventure data is already available
+        val cachedAdventureItems = viewModel.adventureItems.value
+        if (cachedAdventureItems != null && cachedAdventureItems.isNotEmpty()) {
+            // Data available immediately - render it
+            android.util.Log.d("TripsFragment", "Adventure data available, rendering immediately")
+            renderAdventureTrips(cachedAdventureItems)
         } else {
-            android.util.Log.d("TripsFragment", "No cached discover data yet, waiting for observer")
+            // No data yet - hide view and trigger load
+            android.util.Log.d("TripsFragment", "No adventure data, triggering load")
+            binding.rvAdventure.visibility = View.GONE
+            // Observer will render when data arrives
         }
     }
 
-    private fun renderDiscoverTrips(discoverItems: List<DiscoverItem>) {
+    private fun renderAdventureTrips(adventureItems: List<AdventureItem>) {
         // Check fragment still attached
         if (!isAdded || context == null) {
             android.util.Log.w("TripsFragment", "Fragment detached, skip rendering")
@@ -366,27 +393,43 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
         }
 
         if (currentAdventureState != AdventureSectionState.DISCOVER_TRIPS) {
-            android.util.Log.w("TripsFragment", "State changed, skip rendering discover trips")
+            android.util.Log.w("TripsFragment", "State changed, skip rendering adventure trips")
             return
         }
 
-        android.util.Log.d("TripsFragment", "Rendering ${discoverItems.size} discover items")
+        android.util.Log.d("TripsFragment", "Rendering ${adventureItems.size} adventure items")
 
-        if (discoverItems.isNotEmpty()) {
+        if (adventureItems.isNotEmpty()) {
             // Add padding for Adventure section (peek effect)
             val paddingInDp = 40
             val paddingInPx = (paddingInDp * resources.displayMetrics.density).toInt()
             binding.rvAdventure.setPadding(paddingInPx, 0, paddingInPx, 0)
+            
+            // Convert AdventureItems to DiscoverItems for adapter compatibility
+            val discoverItems = adventureItems.map { adventureItem ->
+                DiscoverItem(
+                    tripId = adventureItem.tripId,
+                    userId = adventureItem.trip.userId,
+                    userName = "${adventureItem.user.firstName} ${adventureItem.user.lastName}",
+                    userAvatar = adventureItem.user.profilePicture,
+                    tripImage = adventureItem.trip.coverPhoto,
+                    caption = adventureItem.trip.content,
+                    tags = adventureItem.trip.tags,
+                    isFollowing = false, // This info is not in adventure response yet
+                    isPublic = adventureItem.trip.isPublic ?: "none",
+                    sharedAt = adventureItem.trip.sharedAt ?: ""
+                )
+            }
             
             val adapter = DiscoverTripAdapter(discoverItems, tripRepository, sessionManager) { item ->
                 handleDiscoverTripClick(item)
             }
             binding.rvAdventure.adapter = adapter
             binding.rvAdventure.visibility = View.VISIBLE
-            android.util.Log.d("TripsFragment", "Rendered ${discoverItems.size} discover trips")
+            android.util.Log.d("TripsFragment", "Rendered ${adventureItems.size} adventure trips")
         } else {
             binding.rvAdventure.visibility = View.GONE
-            android.util.Log.d("TripsFragment", "No discover trips, hiding recycler view")
+            android.util.Log.d("TripsFragment", "No adventure trips, hiding recycler view")
         }
     }
     
@@ -536,5 +579,16 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
     override fun handleLoading(isLoading: Boolean) {
         // Show/hide loading indicator
         binding.progressBar?.visibility = if (isLoading) View.VISIBLE else View.GONE
+        
+        // Stop swipe refresh animation if it's running
+        if (!isLoading && binding.swipeRefresh.isRefreshing) {
+            binding.swipeRefresh.isRefreshing = false
+        }
+    }
+    
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Don't reset isInitialLoadComplete here - we want to keep the flag
+        // It will be reset when the app is truly closed/recreated
     }
 }

@@ -824,4 +824,27 @@ class TripRepository(private val tripApiService: TripApiService) {
             Result.failure(e)
         }
     }
+    
+    /**
+     * Get Adventure trips - optimized endpoint
+     * Returns all trip and user data in 1 API call
+     * Replaces 11 separate API calls
+     */
+    suspend fun getAdventureTrips(userId: String?, limit: Int = 10): Result<com.datn.apptravels.data.model.AdventureResponse> {
+        return try {
+            val response = tripApiService.getAdventureTrips(userId, limit)
+            if (response.isSuccessful) {
+                val adventureResponse = response.body()
+                if (adventureResponse != null) {
+                    Result.success(adventureResponse)
+                } else {
+                    Result.failure(Exception("Adventure response is null"))
+                }
+            } else {
+                Result.failure(Exception("Failed to get adventure trips"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

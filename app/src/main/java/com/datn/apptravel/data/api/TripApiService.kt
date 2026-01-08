@@ -1,6 +1,7 @@
 package com.datn.apptravels.data.api
 
 
+import com.datn.apptravels.data.model.AdventureResponse
 import com.datn.apptravels.data.model.Plan
 import com.datn.apptravels.data.model.Trip
 import com.datn.apptravels.data.model.User
@@ -33,6 +34,17 @@ interface TripApiService {
     suspend fun getTripsByMemberId(
         @Path("userId") userId: String
     ): Response<List<Trip>>
+    
+    /**
+     * Get Adventure trips - optimized endpoint
+     * Returns all trip and user data in 1 API call
+     * Replaces 11 separate calls (1 discover + 10 trip/user details)
+     */
+    @GET("api/trips/adventure")
+    suspend fun getAdventureTrips(
+        @Query("userId") userId: String?,
+        @Query("limit") limit: Int = 10
+    ): Response<AdventureResponse>
     
     @GET("api/users/{userId}")
     suspend fun getUserById(

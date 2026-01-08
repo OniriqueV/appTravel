@@ -21,6 +21,7 @@ import com.datn.apptravels.ui.profile.ProfileFragment
 import com.datn.apptravels.ui.trip.TripsFragment
 import com.datn.apptravels.ui.app.MainViewModel
 import com.datn.apptravels.ui.trip.CreateTripActivity
+import com.datn.apptravels.ui.trip.viewmodel.TripsViewModel
 import com.google.android.material.badge.BadgeDrawable
 import com.datn.apptravels.data.repository.NotificationRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -31,11 +32,23 @@ import org.koin.android.ext.android.inject
 class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
 
     override val viewModel: MainViewModel by viewModel()
+    private val tripsViewModel: TripsViewModel by viewModel()
 
     private var currentTripsFragment: TripsFragment? = null
     private var notificationBadge: BadgeDrawable? = null
     private val notificationRepository: NotificationRepository by inject()
     private var listenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+    
+    // Activity result launcher for CreateTripActivity
+    private val createTripLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            // Trip created successfully, refresh TripsFragment
+            Log.d("MainActivity", "Trip created/updated, refreshing TripsFragment")
+            currentTripsFragment?.refreshTrips()
+        }
+    }
 
     private val notificationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -66,6 +79,10 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
             val tripsFragment = TripsFragment()
             currentTripsFragment = tripsFragment
             replaceFragment(tripsFragment)
+            
+            // Load trips data once on app start
+            android.util.Log.d("MainActivity", "Initial load - loading trips data")
+            tripsViewModel.getTrips(forceRefresh = false)
         }
         intent?.let { handleOpenProfile(it) }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -135,7 +152,8 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
 
     override fun onResume() {
         super.onResume()
-        currentTripsFragment?.refreshTrips()
+        // Don't refresh automatically on resume - let cache handle it
+        // Only refresh when needed (swipe to refresh or after creating trip)
         viewModel.checkLoginStatus()
     }
 
@@ -155,7 +173,9 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
         notificationBadge?.badgeTextColor = getColor(R.color.white)
 
         binding.fabAdd.setOnClickListener {
-            startActivity(Intent(this, CreateTripActivity::class.java))
+            // Use launcher instead of startActivity to get result
+            val intent = Intent(this, CreateTripActivity::class.java)
+            createTripLauncher.launch(intent)
         }
 
         binding.bottomNavigation.setOnItemSelectedListener { item ->

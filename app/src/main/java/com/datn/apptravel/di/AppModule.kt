@@ -98,7 +98,7 @@ val appModule = module {
     viewModel { EditProfileViewModel(get(), get()) }
     viewModel { ChangePasswordViewModel(get()) }
 
-    viewModel { TripsViewModel(get(), get(), get()) }
+    viewModel { TripsViewModel(get(), get()) }
     viewModel { AuthViewModel(get()) }
     viewModel { CreateTripViewModel(get(), get()) }
     viewModel { TripDetailViewModel(get(), get()) }

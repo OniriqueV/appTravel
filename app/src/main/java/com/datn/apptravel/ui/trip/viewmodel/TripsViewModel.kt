@@ -5,11 +5,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.datn.apptravels.data.local.SessionManager
 import com.datn.apptravels.data.local.CachedDiscoverTripDetail
+import com.datn.apptravels.data.model.AdventureItem
 import com.datn.apptravels.data.model.Trip
 import com.datn.apptravels.data.repository.TripRepository
 import com.datn.apptravels.ui.base.BaseViewModel
-import com.datn.apptravels.ui.discover.model.DiscoverItem
-import com.datn.apptravels.ui.discover.network.DiscoverRepository
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -20,8 +19,7 @@ import java.time.temporal.ChronoUnit
 
 class TripsViewModel(
     private val tripRepository: TripRepository,
-    private val sessionManager: SessionManager,
-    private val discoverRepository: DiscoverRepository
+    private val sessionManager: SessionManager
 ) : BaseViewModel() {
 
     private val _trips = MutableLiveData<List<Trip>>()
@@ -36,15 +34,33 @@ class TripsViewModel(
     private val _pastTrips = MutableLiveData<List<Trip>>()
     val pastTrips: LiveData<List<Trip>> = _pastTrips
     
-    private val _discoverTrips = MutableLiveData<List<DiscoverItem>>()
-    val discoverTrips: LiveData<List<DiscoverItem>> = _discoverTrips
+    // Adventure items (optimized - all data in 1 API call)
+    private val _adventureItems = MutableLiveData<List<AdventureItem>>()
+    val adventureItems: LiveData<List<AdventureItem>> = _adventureItems
     
-    // Filtered discover trips ready for display
-    private val _filteredDiscoverTrips = MutableLiveData<List<DiscoverItem>>()
-    val filteredDiscoverTrips: LiveData<List<DiscoverItem>> = _filteredDiscoverTrips
+    // Cache flags
+    var isDataLoaded = false
+        private set
+    private var lastLoadTime = 0L
+    private val CACHE_DURATION = 30 * 60 * 1000L // 30 minutes cache
 
-    fun getTrips() {
+    fun getTrips(forceRefresh: Boolean = false) {
 //        setLoading(true)
+
+        // Check if data is already loaded and not expired (unless force refresh)
+        val currentTime = System.currentTimeMillis()
+        if (!forceRefresh && isDataLoaded && (currentTime - lastLoadTime) < CACHE_DURATION) {
+            android.util.Log.d("TripsViewModel", "Using cached data, age: ${(currentTime - lastLoadTime) / 1000}s")
+            // Re-post current values to trigger observers for UI updates
+            // Use toList() to create new list instances to ensure observers trigger
+            _trips.value = _trips.value?.toList()
+            _ongoingTrips.value = _ongoingTrips.value?.toList()
+            _upcomingTrips.value = _upcomingTrips.value?.toList()
+            _pastTrips.value = _pastTrips.value?.toList()
+            _adventureItems.value = _adventureItems.value?.toList()
+            setLoading(false)
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -52,21 +68,12 @@ class TripsViewModel(
                 if (userId != null) {
                     android.util.Log.d("TripsViewModel", "Fetching trips for userId: $userId")
                     
-                    // Fetch user trips and discover trips IN PARALLEL for faster loading
+                    // Fetch user trips IN PARALLEL for faster loading
                     val ownTripsDeferred = async(Dispatchers.IO) { tripRepository.getTripsByUserId(userId) }
                     val memberTripsDeferred = async(Dispatchers.IO) { tripRepository.getTripsByMemberId(userId) }
-                    val discoverItemsDeferred = async(Dispatchers.IO) {
-                        try {
-                            discoverRepository.getDiscover(userId = userId, page = 0, size = 10)
-                        } catch (e: Exception) {
-                            android.util.Log.e("TripsViewModel", "Error fetching discover trips", e)
-                            emptyList()
-                        }
-                    }
 
                     val ownTripsResult = ownTripsDeferred.await()
                     val memberTripsResult = memberTripsDeferred.await()
-                    val discoverItems = discoverItemsDeferred.await()
                     
                     val ownTrips = ownTripsResult.getOrNull() ?: emptyList()
                     val memberTrips = memberTripsResult.getOrNull() ?: emptyList()
@@ -169,59 +176,90 @@ class TripsViewModel(
                     _ongoingTrips.value = sortedOngoing
                     _upcomingTrips.value = sortedUpcoming
                     _pastTrips.value = sortedPast
-
-                    android.util.Log.d("TripsViewModel", "Fetching ${discoverItems.size} discover items")
                     
-                    val deferredResults = discoverItems.map { item ->
-                        async(Dispatchers.IO) {
-                            try {
-                                val tripResult = tripRepository.getTripById(item.tripId).getOrNull()
-                                if (tripResult != null) {
-                                    val userResult = tripRepository.getUserById(tripResult.userId).getOrNull()
-                                    if (userResult != null) {
-                                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-                                        val startDate = LocalDate.parse(tripResult.startDate, formatter)
-                                        val endDate = LocalDate.parse(tripResult.endDate, formatter)
-                                        val duration = ChronoUnit.DAYS.between(startDate, endDate).toInt() + 1
-                                        val monthName = startDate.month.toString().lowercase().replaceFirstChar { it.uppercase() }
-                                        val year = startDate.year
-                                        val startDateText = "$monthName $year"
-                                        val durationText = "$duration days"
-                                        
-                                        val cachedDetail = CachedDiscoverTripDetail(
-                                            trip = tripResult,
-                                            user = userResult,
-                                            duration = duration,
-                                            startDateText = startDateText,
-                                            durationText = durationText
-                                        )
-                                        sessionManager.cacheDiscoverTripDetail(item.tripId, cachedDetail)
-                                        true
-                                    } else false
-                                } else false
-                            } catch (e: Exception) {
-                                android.util.Log.e("TripsViewModel", "Error caching trip ${item.tripId}", e)
-                                false
+                    // Debug log to verify trip categorization
+                    android.util.Log.d("TripsViewModel", "Ongoing trips: ${sortedOngoing.size}")
+                    android.util.Log.d("TripsViewModel", "Upcoming trips: ${sortedUpcoming.size}")
+                    android.util.Log.d("TripsViewModel", "Past trips: ${sortedPast.size}")
+                    sortedOngoing.forEach { android.util.Log.d("TripsViewModel", "  Ongoing: ${it.title} (${it.startDate} to ${it.endDate})") }
+                    sortedUpcoming.forEach { android.util.Log.d("TripsViewModel", "  Upcoming: ${it.title} (${it.startDate} to ${it.endDate})") }
+                    sortedPast.forEach { android.util.Log.d("TripsViewModel", "  Past: ${it.title} (${it.startDate} to ${it.endDate})") }
+
+                    // Fetch adventure trips using optimized API (1 call instead of 11)
+                    android.util.Log.d("TripsViewModel", "Fetching adventure trips with optimized API")
+                    val adventureResult = tripRepository.getAdventureTrips(userId, 10)
+                    
+                    if (adventureResult.isSuccess) {
+                        val adventureResponse = adventureResult.getOrNull()
+                        if (adventureResponse != null) {
+                            // Cache trip details for later use
+                            adventureResponse.items.forEach { item ->
+                                try {
+                                    // Convert TripDetail to Trip model
+                                    val trip = Trip(
+                                        id = item.trip.id,
+                                        userId = item.trip.userId,
+                                        title = item.trip.title,
+                                        startDate = item.trip.startDate,
+                                        endDate = item.trip.endDate,
+                                        isPublic = item.trip.isPublic ?: "none",
+                                        coverPhoto = item.trip.coverPhoto,
+                                        content = item.trip.content,
+                                        tags = item.trip.tags,
+                                        plans = item.trip.plans,
+                                        members = item.trip.members,
+                                        sharedWithUsers = item.trip.sharedWithUsers,
+                                        createdAt = null,
+                                        sharedAt = null
+                                    )
+                                    
+                                    // Convert UserDetail to User model
+                                    val user = com.datn.apptravels.data.model.User(
+                                        id = item.user.id,
+                                        firstName = item.user.firstName,
+                                        lastName = item.user.lastName,
+                                        email = item.user.email ?: "",
+                                        role = item.user.role ?: "user",
+                                        profilePicture = item.user.profilePicture,
+                                        provider = null,
+                                        providerId = null,
+                                        enabled = true,
+                                        createdAt = null,
+                                        updatedAt = null
+                                    )
+                                    
+                                    val cachedDetail = CachedDiscoverTripDetail(
+                                        trip = trip,
+                                        user = user,
+                                        duration = item.duration,
+                                        startDateText = item.startDateText,
+                                        durationText = item.durationText
+                                    )
+                                    sessionManager.cacheDiscoverTripDetail(item.tripId, cachedDetail)
+                                } catch (e: Exception) {
+                                    android.util.Log.e("TripsViewModel", "Error caching adventure item ${item.tripId}", e)
+                                }
                             }
+                            
+                            _adventureItems.value = adventureResponse.items
+                            android.util.Log.d("TripsViewModel", "Loaded ${adventureResponse.items.size} adventure items")
                         }
+                    } else {
+                        android.util.Log.e("TripsViewModel", "Failed to fetch adventure trips", adventureResult.exceptionOrNull())
+                        _adventureItems.value = emptyList()
                     }
                     
-                    // Wait for all caching to complete
-                    deferredResults.awaitAll()
-                    android.util.Log.d("TripsViewModel", "Cached discover trip details")
-                    
-                    // Emit discover items
-                    _discoverTrips.value = discoverItems
-                    
-                    // Filter discover trips for display
-                    filterDiscoverTrips(discoverItems, userId)
+                    // Mark data as loaded with timestamp
+                    isDataLoaded = true
+                    lastLoadTime = System.currentTimeMillis()
+                    android.util.Log.d("TripsViewModel", "Data loaded and cached at ${lastLoadTime}")
                     
                 } else {
                     _trips.value = emptyList()
                     _ongoingTrips.value = emptyList()
                     _upcomingTrips.value = emptyList()
                     _pastTrips.value = emptyList()
-                    _discoverTrips.value = emptyList()
+                    _adventureItems.value = emptyList()
                 }
             } catch (e: Exception) {
                 setError(e.message ?: "An error occurred")
@@ -229,28 +267,22 @@ class TripsViewModel(
                 _ongoingTrips.value = emptyList()
                 _upcomingTrips.value = emptyList()
                 _pastTrips.value = emptyList()
-                _discoverTrips.value = emptyList()
+                _adventureItems.value = emptyList()
             } finally {
                 setLoading(false)
             }
         }
     }
+
+    fun refreshTrips() {
+        android.util.Log.d("TripsViewModel", "Force refreshing trips data")
+        getTrips(forceRefresh = true)
+    }
     
-    private fun filterDiscoverTrips(items: List<DiscoverItem>, userId: String) {
-        viewModelScope.launch(Dispatchers.Default) {
-            try {
-                val filtered = items.filter { item ->
-                    val detail = sessionManager.getCachedDiscoverTripDetail(item.tripId)
-                    detail != null && 
-                    detail.trip.isPublic == "public" && 
-                    detail.trip.userId != userId
-                }
-                _filteredDiscoverTrips.postValue(filtered)
-                android.util.Log.d("TripsViewModel", "Filtered ${items.size} -> ${filtered.size} discover trips")
-            } catch (e: Exception) {
-                android.util.Log.e("TripsViewModel", "Error filtering discover trips", e)
-                _filteredDiscoverTrips.postValue(emptyList())
-            }
-        }
+
+    fun invalidateCache() {
+        android.util.Log.d("TripsViewModel", "Cache invalidated")
+        isDataLoaded = false
+        lastLoadTime = 0L
     }
 }

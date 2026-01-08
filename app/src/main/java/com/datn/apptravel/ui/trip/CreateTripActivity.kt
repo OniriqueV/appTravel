@@ -128,10 +128,14 @@ class CreateTripActivity : AppCompatActivity() {
         viewModel.createTripResult.observe(this) { trip ->
             if (trip != null && isEditMode !=true) {
                 Toast.makeText(this, "Trip created successfully!", Toast.LENGTH_SHORT).show()
-
+                
+                // Set result to OK so TripsFragment knows to refresh
+                setResult(RESULT_OK)
             }else{
                 Toast.makeText(this, "Change information successfully!", Toast.LENGTH_SHORT).show()
-
+                
+                // Set result to OK for edit mode too
+                setResult(RESULT_OK)
             }
             navigateToTripDetail(trip?.id.toString())
         }
