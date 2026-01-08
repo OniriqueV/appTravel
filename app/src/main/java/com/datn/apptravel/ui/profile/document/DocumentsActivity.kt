@@ -2,6 +2,7 @@ package com.datn.apptravels.ui.profile.documents
 
 import android.Manifest
 import android.content.ContentValues
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -14,12 +15,16 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Base64
 import android.view.View
+import android.widget.EditText
+import android.widget.RadioGroup
+import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.datn.apptravels.R
 import com.datn.apptravels.data.model.Document
 import com.datn.apptravels.data.repository.DocumentRepository
 import com.datn.apptravels.databinding.ActivityDocumentsBinding
@@ -108,63 +113,117 @@ class DocumentsActivity : AppCompatActivity() {
         val fileType = getFileType(uri)
         val fileSize = getFileSize(uri)
 
-        // Check file size (max 700KB)
-        if (fileSize > 700 * 1024) {
-            showToast("File quá lớn. Kích thước tối đa: 700KB")
-            return
-        }
+        // Show file size info
+        val sizeMB = String.format("%.2f", fileSize / (1024f * 1024f))
 
-        showUploadDialog(uri, fileName, fileType)
+        // Warning for large files
+        if (fileSize > 1024 * 1024) { // > 1MB
+            MaterialAlertDialogBuilder(this)
+                .setTitle("File lớn")
+                .setMessage("File của bạn có kích thước $sizeMB MB.\n\n" +
+                        "Ảnh sẽ được tự động nén để phù hợp với giới hạn 1MB.\n" +
+                        "PDF và file khác phải nhỏ hơn 1MB.")
+                .setPositiveButton("Tiếp tục") { _, _ ->
+                    showUploadDialog(uri, fileName, fileType)
+                }
+                .setNegativeButton("Hủy", null)
+                .show()
+        } else {
+            showUploadDialog(uri, fileName, fileType)
+        }
     }
 
     private fun showUploadDialog(uri: Uri, fileName: String, fileType: String) {
-        val categories = arrayOf("Vé máy bay", "Booking khách sạn", "Lịch trình", "Visa", "Khác")
-        var selectedCategory = "OTHER"
+        val dialogView = layoutInflater.inflate(R.layout.dialog_upload_document, null)
+
+        // Set file info
+        dialogView.findViewById<TextView>(R.id.tvFileName).text = fileName
+        dialogView.findViewById<TextView>(R.id.tvFileSize).text =
+            "Kích thước: ${formatFileSize(getFileSize(uri))}"
+
+        val etTitle = dialogView.findViewById<EditText>(R.id.etTitle)
+        val etDescription = dialogView.findViewById<EditText>(R.id.etDescription)
+        val radioGroup = dialogView.findViewById<RadioGroup>(R.id.radioGroupCategory)
+
+        // Auto-fill title with filename (without extension)
+        val titleSuggestion = fileName.substringBeforeLast(".")
+        etTitle.setText(titleSuggestion)
+        etTitle.selectAll()
 
         MaterialAlertDialogBuilder(this)
-            .setTitle("Tải lên tài liệu")
-            .setMessage("File: $fileName\nKích thước: ${formatFileSize(getFileSize(uri))}")
-            .setSingleChoiceItems(categories, 4) { _, which ->
-                selectedCategory = when (which) {
-                    0 -> "TICKET"
-                    1 -> "BOOKING"
-                    2 -> "ITINERARY"
-                    3 -> "VISA"
+            .setView(dialogView)
+            .setPositiveButton("Tải lên") { _, _ ->
+                val title = etTitle.text.toString().trim()
+
+                if (title.isEmpty()) {
+                    showToast("Vui lòng nhập tiêu đề")
+                    return@setPositiveButton
+                }
+
+                val selectedCategory = when (radioGroup.checkedRadioButtonId) {
+                    R.id.rbTicket -> "TICKET"
+                    R.id.rbBooking -> "BOOKING"
+                    R.id.rbItinerary -> "ITINERARY"
+                    R.id.rbVisa -> "VISA"
                     else -> "OTHER"
                 }
-            }
-            .setPositiveButton("Tải lên") { _, _ ->
-                uploadDocument(uri, fileName, fileType, selectedCategory)
+
+                val description = etDescription.text.toString().trim()
+                    .ifEmpty { null }
+
+                uploadDocument(uri, title, fileName, fileType, selectedCategory, description)
             }
             .setNegativeButton("Hủy", null)
             .show()
+
+        // Show keyboard and focus on title
+        etTitle.requestFocus()
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? android.view.inputmethod.InputMethodManager
+        imm?.showSoftInput(etTitle, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 
     private fun uploadDocument(
         uri: Uri,
+        title: String,
         fileName: String,
         fileType: String,
-        category: String
+        category: String,
+        description: String?
     ) {
         val userId = auth.currentUser?.uid ?: return
 
+        // Show progress with message
         binding.progressBar.visibility = View.VISIBLE
+
+        val fileSize = getFileSize(uri)
+        val isLargeImage = fileType == "IMAGE" && fileSize > 1024 * 1024
+
+        if (isLargeImage) {
+            showToast("Đang nén ảnh, vui lòng đợi...")
+        }
 
         lifecycleScope.launch {
             val result = documentRepository.uploadDocument(
                 userId = userId,
                 fileUri = uri,
+                title = title,
                 fileName = fileName,
                 fileType = fileType,
                 category = category,
-                description = null,
+                description = description,
                 tripId = null
             )
 
             binding.progressBar.visibility = View.GONE
 
             result.onSuccess {
-                showToast("Tải lên thành công")
+                if (isLargeImage) {
+                    val originalSizeMB = String.format("%.2f", fileSize / (1024f * 1024f))
+                    val compressedSizeKB = it.fileSize / 1024
+                    showToast("Tải lên thành công! Đã nén từ $originalSizeMB MB → $compressedSizeKB KB")
+                } else {
+                    showToast("Tải lên thành công")
+                }
                 loadDocuments()
             }.onFailure {
                 showToast("Lỗi: ${it.message}")

@@ -3,6 +3,7 @@ package com.datn.apptravels.ui.profile.documents
 import android.graphics.BitmapFactory
 import android.util.Base64
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.datn.apptravels.R
@@ -24,8 +25,19 @@ class DocumentsAdapter(
 
         fun bind(document: Document) {
             binding.apply {
-                // Set file name
-                tvFileName.text = document.fileName
+                // Set title (main heading - bold)
+                if (document.title.isNotBlank()) {
+                    tvDocumentTitle.text = document.title
+                    tvDocumentTitle.visibility = View.VISIBLE
+                    // Show filename below title in smaller font
+                    tvFileName.text = document.fileName
+                    tvFileName.visibility = View.VISIBLE
+                } else {
+                    // If no title, show filename as main heading
+                    tvDocumentTitle.text = document.fileName
+                    tvDocumentTitle.visibility = View.VISIBLE
+                    tvFileName.visibility = View.GONE
+                }
 
                 // Set category
                 tvCategory.text = getCategoryName(document.category)
@@ -60,6 +72,14 @@ class DocumentsAdapter(
                 // Set date
                 val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 tvDate.text = dateFormat.format(Date(document.createdAt))
+
+                // Set description if available
+                if (!document.description.isNullOrEmpty()) {
+                    tvDescription.visibility = View.VISIBLE
+                    tvDescription.text = "Ghi chú: ${document.description}"
+                } else {
+                    tvDescription.visibility = View.GONE
+                }
 
                 // Click listeners
                 root.setOnClickListener { onItemClick(document) }

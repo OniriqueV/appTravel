@@ -4,13 +4,15 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingVertical="12dp">
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:gravity="center_vertical"
+        android:minHeight="48dp">
 
         <!-- Icon -->
         <ImageView
@@ -40,17 +42,19 @@
             android:textSize="16sp"
             android:textStyle="bold"
             android:textColor="#333333"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="8dp"
+            android:minWidth="32dp"
+            android:gravity="end" />
 
         <!-- Percentage -->
         <TextView
             android:id="@+id/tvPercentage"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="45%"
+            android:text="45.0%"
             android:textSize="14sp"
             android:textColor="#666666"
-            android:minWidth="50dp"
+            android:minWidth="60dp"
             android:gravity="end" />
     </LinearLayout>
 
@@ -59,8 +63,8 @@
         android:id="@+id/progressBar"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
-        android:layout_height="8dp"
-        android:layout_marginTop="8dp"
+        android:layout_height="6dp"
+        android:layout_marginTop="4dp"
         android:progressTint="#FF6B35"
         android:progressBackgroundTint="#EEEEEE"
         android:max="100"
