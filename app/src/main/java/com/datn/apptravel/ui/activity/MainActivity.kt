@@ -23,6 +23,8 @@ import com.datn.apptravels.ui.app.MainViewModel
 import com.datn.apptravels.ui.trip.CreateTripActivity
 import com.google.android.material.badge.BadgeDrawable
 import com.datn.apptravels.data.repository.NotificationRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.android.ext.android.inject
 
@@ -103,13 +105,13 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     }
 
     private fun setupNotificationListener() {
-        val userId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId == null) {
             Log.e("MainActivity", "User not logged in - cannot setup listener")
             return
         }
 
-        listenerRegistration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        listenerRegistration = FirebaseFirestore.getInstance()
             .collection("notifications")
             .whereEqualTo("userId", userId)
             .whereEqualTo("isRead", false)
@@ -126,7 +128,7 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     private fun observeLoginStatus() {
         viewModel.isUserLoggedIn.observe(this) { isLoggedIn ->
             if (!isLoggedIn) {
-                // TODO: navigate to login later
+
             }
         }
     }
@@ -198,7 +200,7 @@ class MainActivity : BaseActivity<ActivityMainBinding, MainViewModel>() {
     private fun replaceFragment(fragment: Fragment) {
         supportFragmentManager.beginTransaction()
             .replace(R.id.nav_host_fragment, fragment)
-            .addToBackStack(null) // ✅ back quay lại feed
+            .addToBackStack(null) //  back quay lại feed
             .commit()
     }
 

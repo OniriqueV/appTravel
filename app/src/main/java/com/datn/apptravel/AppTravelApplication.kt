@@ -59,23 +59,23 @@ class AppTravelApplication : Application() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 val token = task.result
-                Log.d(TAG, "✅ FCM Token obtained: $token")
+                Log.d(TAG, "FCM Token obtained: $token")
                 
                 // Save token to backend
                 applicationScope.launch {
                     try {
                         val result = notificationRepository.saveFcmToken(token)
                         result.onSuccess {
-                            Log.d(TAG, "✅ FCM token saved to backend successfully")
+                            Log.d(TAG, "FCM token saved to backend successfully")
                         }.onFailure { error ->
-                            Log.e(TAG, "❌ Failed to save FCM token: ${error.message}")
+                            Log.e(TAG, " Failed to save FCM token: ${error.message}")
                         }
                     } catch (e: Exception) {
-                        Log.e(TAG, "❌ Error saving FCM token", e)
+                        Log.e(TAG, "Error saving FCM token", e)
                     }
                 }
             } else {
-                Log.e(TAG, "❌ Failed to get FCM token", task.exception)
+                Log.e(TAG, "Failed to get FCM token", task.exception)
             }
         }
     }

@@ -37,7 +37,7 @@ android {
         buildConfigField("String", "OSRM_BASE_URL", "\"${localProperties.getProperty("OSRM_BASE_URL")}\"")
         buildConfigField("String", "NOMINATIM_BASE_URL", "\"${localProperties.getProperty("NOMINATIM_BASE_URL")}\"")
         buildConfigField("String", "AUTH_BASE_URL", "\"${localProperties.getProperty("AUTH_BASE_URL")}\"")
-        buildConfigField("String", "DISCOVER_SERVICE_BASE_URL", "\"${localProperties.getProperty("DISCOVER_SERVICE_BASE_URL", "http://10.0.2.2:8082/")}\"")
+        buildConfigField("String", "DISCOVER_SERVICE_BASE_URL", "\"${localProperties.getProperty("AUTH_BASE_URL")}\"")
         buildConfigField("String", "TRIP_SERVICE_BASE_URL", "\"$tripServiceBaseUrl\"")
         buildConfigField("String", "UPLOAD_BASE_URL", "\"${tripServiceBaseUrl}uploads/\"")
         buildConfigField("String", "GOOGLE_API_BASE_URL", "\"${localProperties.getProperty("GOOGLE_API_BASE_URL")}\"")
