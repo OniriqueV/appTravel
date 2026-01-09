@@ -18,7 +18,11 @@ class ProfileUserViewModel(
     fun loadTrips(userId: String, viewerId: String?) {
         viewModelScope.launch {
             try {
-                _trips.value = profileRepository.getUserTrips(userId, viewerId)
+                val allTrips = profileRepository.getUserTrips(userId, viewerId)
+                // Chỉ hiển thị trips đã được chia sẻ (isPublic != "none")
+                _trips.value = allTrips.filter { trip ->
+                    trip.isPublic != "none"
+                }
             } catch (e: Exception) {
                 _trips.value = emptyList()
             }

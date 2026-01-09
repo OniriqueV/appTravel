@@ -2,6 +2,7 @@ package com.datn.apptravels.ui.trip
 
 import android.app.Dialog
 import android.content.Intent
+import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -169,9 +170,29 @@ class TripsFragment : BaseFragment<FragmentTripsBinding, TripsViewModel>() {
             createTripLauncher.launch(intent)
         }
 
-//        binding.tvViewAll?.setOnClickListener {
-//            // Show all past trips
-//        }
+        binding.tvViewAll?.setOnClickListener {
+            // Navigate to UserProfileFragment to show all past trips
+            lifecycleScope.launch {
+                try {
+                    val currentUser = authRepository.currentUser.firstOrNull()
+                    if (currentUser != null) {
+                        val fragment = com.datn.apptravels.ui.discover.profileFollow.UserProfileFragment().apply {
+                            arguments = Bundle().apply {
+                                putString("userId", currentUser.id)
+                                putBoolean("isSelfProfile", true) // Mark as self-profile
+                            }
+                        }
+                        
+                        parentFragmentManager.beginTransaction()
+                            .replace(R.id.nav_host_fragment, fragment)
+                            .addToBackStack(null)
+                            .commit()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("TripsFragment", "Error navigating to profile", e)
+                }
+            }
+        }
     }
 
     private fun loadTrips() {

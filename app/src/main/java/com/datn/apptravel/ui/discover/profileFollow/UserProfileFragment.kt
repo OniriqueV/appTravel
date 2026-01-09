@@ -36,10 +36,12 @@ class UserProfileFragment : Fragment() {
 
     private lateinit var targetUserId: String
     private val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+    private var isSelfProfile: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         targetUserId = requireArguments().getString("userId")!!
+        isSelfProfile = requireArguments().getBoolean("isSelfProfile", false)
     }
 
     override fun onCreateView(
@@ -106,7 +108,8 @@ class UserProfileFragment : Fragment() {
     // ================= FOLLOW STATE =================
     private fun checkFollowState() {
         val me = currentUserId ?: return
-        if (me == targetUserId) {
+        // Hide follow button if viewing own profile
+        if (isSelfProfile || me == targetUserId) {
             binding.btnFollow.visibility = View.GONE
             return
         }
@@ -118,7 +121,8 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun renderFollowButton(isFollowing: Boolean) {
-        if (currentUserId == targetUserId) {
+        // Hide follow button if viewing own profile
+        if (isSelfProfile || currentUserId == targetUserId) {
             binding.btnFollow.visibility = View.GONE
             return
         }
