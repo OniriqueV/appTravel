@@ -33,9 +33,10 @@
             android:textStyle="bold"/>
     </androidx.appcompat.widget.Toolbar>
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
+        android:fillViewport="true"
         app:layout_constraintTop_toBottomOf="@id/toolbar"
         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -94,6 +95,7 @@
 
             <!-- Earned Badges Section -->
             <TextView
+                android:id="@+id/tvEarnedTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Đã đạt được"
@@ -107,10 +109,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
                 android:layout_marginBottom="24dp"/>
 
             <!-- Available Badges Section -->
             <TextView
+                android:id="@+id/tvLockedTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Chưa đạt được"
@@ -123,10 +127,12 @@
                 android:id="@+id/recyclerViewLockedBadges"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"/>
+                android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
+                android:paddingBottom="16dp"/>
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
     <!-- Loading -->
     <ProgressBar

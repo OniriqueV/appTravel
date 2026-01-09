@@ -156,42 +156,18 @@
                         app:tint="#9CA3AF" />
                 </LinearLayout>
 
-                <LinearLayout
-                    android:id="@+id/btnSelectEndTime"
-                    android:layout_width="0dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_input_field"
-                    android:clickable="true"
-                    android:focusable="true"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="12dp">
 
-                    <TextView
-                        android:id="@+id/tvEndTime"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Kết thúc"
-                        android:textColor="#6B7280"
-                        android:textSize="15sp" />
 
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:src="@drawable/ic_time"
-                        app:tint="#9CA3AF" />
-                </LinearLayout>
             </LinearLayout>
 
+            <!-- Cost -->
             <!-- Cost -->
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilCost"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
+                android:layout_marginBottom="16dp"
                 android:hint="Chi phí (VNĐ)"
                 app:boxCornerRadiusBottomEnd="8dp"
                 app:boxCornerRadiusBottomStart="8dp"
@@ -207,28 +183,8 @@
                     android:textSize="15sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <!-- Notes -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilNotes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Ghi chú (tùy chọn)"
-                app:boxCornerRadiusBottomEnd="8dp"
-                app:boxCornerRadiusBottomStart="8dp"
-                app:boxCornerRadiusTopEnd="8dp"
-                app:boxCornerRadiusTopStart="8dp">
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etNotes"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="top|start"
-                    android:inputType="textMultiLine|textCapSentences"
-                    android:maxLines="4"
-                    android:minLines="2"
-                    android:textSize="15sp" />
-            </com.google.android.material.textfield.TextInputLayout>
+
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

@@ -27,7 +27,6 @@ class EditPlanDialogFragment : DialogFragment() {
     // Date and time tracking
     private var selectedDate: Calendar = Calendar.getInstance()
     private var startTime: Calendar = Calendar.getInstance()
-    private var endTime: Calendar = Calendar.getInstance()
 
     // Trip constraints
     private var tripStartDate: Calendar? = null
@@ -125,13 +124,6 @@ class EditPlanDialogFragment : DialogFragment() {
                     tvStartTime.text = timeFormat.format(startDate)
                     tvStartTime.setTextColor(resources.getColor(R.color.black, null))
                 }
-
-                val endDate = apiDateTimeFormat.parse(currentPlan.endTime)
-                if (endDate != null) {
-                    endTime.time = endDate
-                    tvEndTime.text = timeFormat.format(endDate)
-                    tvEndTime.setTextColor(resources.getColor(R.color.black, null))
-                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -140,9 +132,6 @@ class EditPlanDialogFragment : DialogFragment() {
             currentPlan.expense?.takeIf { it > 0 }?.let {
                 etCost.setText(it.toString())
             }
-
-            // Set notes
-            etNotes.setText(currentPlan.notes ?: "")
         }
     }
 
@@ -153,11 +142,7 @@ class EditPlanDialogFragment : DialogFragment() {
             }
 
             btnSelectStartTime.setOnClickListener {
-                showTimePicker(true)
-            }
-
-            btnSelectEndTime.setOnClickListener {
-                showTimePicker(false)
+                showTimePicker()
             }
 
             btnCancel.setOnClickListener {
@@ -180,9 +165,10 @@ class EditPlanDialogFragment : DialogFragment() {
                 binding.tvSelectedDate.text = dateFormat.format(selectedDate.time)
                 binding.tvSelectedDate.setTextColor(resources.getColor(R.color.black, null))
 
-                // Update start and end time calendars with new date
-                startTime.set(year, month, dayOfMonth)
-                endTime.set(year, month, dayOfMonth)
+                // Update start time calendar with new date
+                startTime.set(Calendar.YEAR, year)
+                startTime.set(Calendar.MONTH, month)
+                startTime.set(Calendar.DAY_OF_MONTH, dayOfMonth)
             },
             selectedDate.get(Calendar.YEAR),
             selectedDate.get(Calendar.MONTH),
@@ -198,26 +184,19 @@ class EditPlanDialogFragment : DialogFragment() {
         }.show()
     }
 
-    private fun showTimePicker(isStartTime: Boolean) {
-        val calendar = if (isStartTime) startTime else endTime
-
+    private fun showTimePicker() {
         TimePickerDialog(
             requireContext(),
             { _, hourOfDay, minute ->
-                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay)
-                calendar.set(Calendar.MINUTE, minute)
-                calendar.set(Calendar.SECOND, 0)
+                startTime.set(Calendar.HOUR_OF_DAY, hourOfDay)
+                startTime.set(Calendar.MINUTE, minute)
+                startTime.set(Calendar.SECOND, 0)
 
-                if (isStartTime) {
-                    binding.tvStartTime.text = timeFormat.format(calendar.time)
-                    binding.tvStartTime.setTextColor(resources.getColor(R.color.black, null))
-                } else {
-                    binding.tvEndTime.text = timeFormat.format(calendar.time)
-                    binding.tvEndTime.setTextColor(resources.getColor(R.color.black, null))
-                }
+                binding.tvStartTime.text = timeFormat.format(startTime.time)
+                binding.tvStartTime.setTextColor(resources.getColor(R.color.black, null))
             },
-            calendar.get(Calendar.HOUR_OF_DAY),
-            calendar.get(Calendar.MINUTE),
+            startTime.get(Calendar.HOUR_OF_DAY),
+            startTime.get(Calendar.MINUTE),
             true
         ).show()
     }
@@ -245,25 +224,15 @@ class EditPlanDialogFragment : DialogFragment() {
                 return false
             }
 
-            if (tvEndTime.text == "Kết thúc") {
-                Toast.makeText(requireContext(), "Vui lòng chọn giờ kết thúc", Toast.LENGTH_SHORT).show()
-                return false
-            }
-
-            // Validate end time is after start time
-            if (endTime.timeInMillis <= startTime.timeInMillis) {
-                Toast.makeText(requireContext(), "Giờ kết thúc phải sau giờ bắt đầu", Toast.LENGTH_SHORT).show()
-                return false
-            }
-
             // Validate within trip date range
             if (tripStartDate != null && startTime.before(tripStartDate)) {
-                Toast.makeText(requireContext(), "Thời gian nằm ngoài chuyến đi", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Thời gian bắt đầu phải sau ngày bắt đầu chuyến đi", Toast.LENGTH_SHORT).show()
                 return false
             }
 
-            if (tripEndDate != null && endTime.after(tripEndDate)) {
-                Toast.makeText(requireContext(), "Thời gian nằm ngoài chuyến đi", Toast.LENGTH_SHORT).show()
+            // FIXED: Check if startTime is AFTER tripEndDate
+            if (tripEndDate != null && startTime.after(tripEndDate)) {
+                Toast.makeText(requireContext(), "Thời gian bắt đầu phải trước ngày kết thúc chuyến đi", Toast.LENGTH_SHORT).show()
                 return false
             }
 
@@ -273,12 +242,10 @@ class EditPlanDialogFragment : DialogFragment() {
 
                 try {
                     val planStart = apiDateTimeFormat.parse(plan.startTime)?.time ?: 0
-                    val planEnd = apiDateTimeFormat.parse(plan.endTime)?.time ?: 0
                     val newStart = startTime.timeInMillis
-                    val newEnd = endTime.timeInMillis
 
-                    // Check for overlap
-                    (newStart < planEnd && newEnd > planStart)
+                    // Check if same start time (within 5 minutes)
+                    Math.abs(newStart - planStart) < 5 * 60 * 1000
                 } catch (e: Exception) {
                     false
                 }
@@ -298,15 +265,12 @@ class EditPlanDialogFragment : DialogFragment() {
             // Get cost
             val cost = etCost.text.toString().trim().toDoubleOrNull()
 
-
             // Create updated plan
             val updatedPlan = currentPlan.copy(
                 title = planName,
                 type = planType,
                 startTime = apiDateTimeFormat.format(startTime.time),
-                endTime = apiDateTimeFormat.format(endTime.time),
-                expense = cost,
-                notes = etNotes.text.toString().trim().takeIf { it.isNotEmpty() }
+                expense = cost
             )
 
             onSaveListener?.invoke(updatedPlan)

@@ -8,6 +8,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import java.text.SimpleDateFormat
+import java.util.*
 
 class AIRepository(
     private val groqService: GroqService,
@@ -95,6 +97,10 @@ class AIRepository(
 
                 try {
                     val typeString = plan.getString("type")
+                    val startTimeStr = plan.getString("startTime")
+
+                    // Calculate endTime based on plan type if not provided
+
 
                     suggestions.add(AISuggestedPlan(
                         id = "ai_${System.currentTimeMillis()}_$j",
@@ -103,7 +109,8 @@ class AIRepository(
                         address = plan.getString("address"),
                         lat = plan.getDouble("lat"),
                         lng = plan.getDouble("lng"),
-                        startTime = plan.getString("startTime"),
+                        startTime = startTimeStr,
+
                         expense = if (plan.has("expense") && !plan.isNull("expense")) {
                             plan.getDouble("expense")
                         } else null,
@@ -127,7 +134,6 @@ class AIRepository(
 
         return suggestions
     }
-
     private suspend fun enrichWithImages(suggestions: List<AISuggestedPlan>): List<AISuggestedPlan> {
         return withContext(Dispatchers.IO) {
             Log.d(TAG, "Starting to enrich ${suggestions.size} plans with images")
@@ -158,13 +164,14 @@ class AIRepository(
     }
 
     suspend fun generatePlansForMultipleCities(
-        cities: List<CityPlan>
+        cities: List<CityPlan>,
+        userNotes: String? = null
     ): Result<List<AISuggestedPlan>> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Generating AI plans for ${cities.size} cities")
 
-            // Build multi-city prompt with transportation
-            val prompt = buildMultiCityPrompt(cities)
+            // Build multi-city prompt with transportation and user notes
+            val prompt = buildMultiCityPrompt(cities, userNotes)
 
             // Call Groq AI API
             val aiResponse = callGroqAPI(prompt)
@@ -194,32 +201,49 @@ class AIRepository(
     }
 
     /**
-     * Build AI prompt for multiple cities with transportation
+     * Build AI prompt for multiple cities with transportation and user notes
      */
-    private fun buildMultiCityPrompt(cities: List<CityPlan>): String {
+    private fun buildMultiCityPrompt(cities: List<CityPlan>, userNotes: String?): String {
         // Check if any city has budget or numberOfPlans constraints
         val hasBudgetConstraints = cities.any { it.budget != null }
         val hasPlansConstraints = cities.any { it.numberOfPlans != null }
-        
+
         val citiesDescription = cities.mapIndexed { index, city ->
             val budgetInfo = if (city.budget != null) {
                 "\n   ⚠️ STRICT BUDGET LIMIT: ${city.budget} VND - TOTAL expenses MUST be LESS than this"
             } else if (hasBudgetConstraints) {
                 "\n   💰 Budget: Flexible (use mid-range prices ~2-3M VND total)"
             } else ""
-            
+
             val plansInfo = if (city.numberOfPlans != null) {
                 "\n   ⚠️ EXACT COUNT REQUIRED: ${city.numberOfPlans} plans - NO MORE, NO LESS"
             } else if (hasPlansConstraints) {
                 "\n   📋 Plans count: Flexible (8-12 plans)"
             } else ""
-            
+
             "${index + 1}. ${city.cityName}: ${city.startDate} to ${city.endDate}$budgetInfo$plansInfo"
         }.joinToString("\n\n")
+
+        val userNotesSection = if (!userNotes.isNullOrBlank()) {
+            """
+═══════════════════════════════════════
+💬 USER PREFERENCES (PRIORITY):
+═══════════════════════════════════════
+$userNotes
+
+⚠️ Incorporate these preferences into your recommendations:
+- Food preferences → Choose matching restaurants
+- Activity preferences → Select suitable attractions
+- Budget hints → Adjust expense levels
+- Special requirements → Accommodate in itinerary
+
+"""
+        } else ""
 
         return """
 You are a travel AI. Generate itinerary for multi-city trip.
 
+$userNotesSection
 ═══════════════════════════════════════
 CITIES WITH CONSTRAINTS (STRICT RULES):
 ═══════════════════════════════════════
@@ -282,10 +306,10 @@ ${if (hasPlansConstraints) """
 ${if (hasBudgetConstraints) """
 ${if (hasPlansConstraints) "2" else "1"}. Calculate SUM of expenses per city → Verify < budget
 """ else ""}
-${if (hasPlansConstraints || hasBudgetConstraints) 
-    "${if (hasPlansConstraints && hasBudgetConstraints) "3" else "2"}." else "1."} All fields complete (type, title, address, lat, lng, startTime, expense, description)
-${if (hasPlansConstraints || hasBudgetConstraints) 
-    "${if (hasPlansConstraints && hasBudgetConstraints) "4" else "3"}." else "2."} Valid JSON array format
+${if (hasPlansConstraints || hasBudgetConstraints)
+            "${if (hasPlansConstraints && hasBudgetConstraints) "3" else "2"}." else "1."} All fields complete (type, title, address, lat, lng, startTime, endTime, expense, description)
+${if (hasPlansConstraints || hasBudgetConstraints)
+            "${if (hasPlansConstraints && hasBudgetConstraints) "4" else "3"}." else "2."} Valid JSON array format
 
 ═══════════════════════════════════════
 RESPONSE FORMAT (ONLY JSON, NO TEXT):
@@ -308,6 +332,7 @@ RESPONSE FORMAT (ONLY JSON, NO TEXT):
     "lat": 10.123456,
     "lng": 106.123456,
     "startTime": "2026-01-16T18:00:00",
+    "endTime": "2026-01-16T19:30:00",
     "expense": 250000,
     "description": "Vietnamese cuisine"
   }
@@ -315,25 +340,8 @@ RESPONSE FORMAT (ONLY JSON, NO TEXT):
 
 Valid types: LODGING, RESTAURANT, ACTIVITY, TOUR, FLIGHT, TRAIN, BOAT, CAR_RENTAL, THEATER, SHOPPING, CAMPING, RELIGION
 
-⚠️ VERIFY BUDGET + PLANS COUNT BEFORE RETURNING
+⚠️ VERIFY BUDGET + PLANS COUNT + USER PREFERENCES BEFORE RETURNING
 Return ONLY JSON array - NO explanations, NO markdown, NO extra text.
-    "description": "What to do"
-  },
-  {
-    "type": "FLIGHT",
-    "title": "Flight from City 1 to City 2",
-    "address": "Departure airport to Arrival airport",
-    "lat": departure_lat,
-    "lng": departure_lng,
-    "startTime": "yyyy-MM-ddTHH:mm:ss",
-    "expense": price_in_VND,
-    "description": "Flight details"
-  }
-]
-
-Valid types: LODGING, RESTAURANT, ACTIVITY, TOUR, FLIGHT, BOAT, TRAIN, CAR_RENTAL, CAMPING, THEATER, SHOPPING, RELIGION
-
-Generate comprehensive plans covering all cities with appropriate transportation. Return ONLY the JSON array.
 """.trimIndent()
     }
 }

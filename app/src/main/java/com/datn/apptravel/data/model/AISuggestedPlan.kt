@@ -17,7 +17,7 @@ data class AISuggestedPlan(
     val lng: Double,
 
     val startTime: String, // ISO: 2024-12-30T14:00:00
-    val endTime: String,   // ISO: 2024-12-30T16:30:00
+
 
     val expense: Double? = null,
     val photoUrl: String? = null,
