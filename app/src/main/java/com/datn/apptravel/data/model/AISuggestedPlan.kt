@@ -9,19 +9,24 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 data class AISuggestedPlan(
-    val id: String = "", // Temporary ID for UI
+    val id: String = "",
     val type: PlanType,
     val title: String,
     val address: String,
     val lat: Double,
     val lng: Double,
-    val startTime: String, // ISO 8601 format: "2024-12-30T14:00:00"
+
+    val startTime: String, // ISO: 2024-12-30T14:00:00
+
+
     val expense: Double? = null,
     val photoUrl: String? = null,
     val description: String? = null,
     val notes: String? = null,
-    val isSelected: Boolean = false // For UI selection
+
+    val isSelected: Boolean = false
 ) : Parcelable
+
 
 
 /**

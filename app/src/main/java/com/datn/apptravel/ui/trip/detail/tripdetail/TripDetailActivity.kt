@@ -44,6 +44,9 @@ import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat  // ← Thêm import này
+import java.util.Date
+import java.util.Locale
 
 class TripDetailActivity : AppCompatActivity() {
 
@@ -134,39 +137,51 @@ class TripDetailActivity : AppCompatActivity() {
         setupRecyclerView()
     }
 
+    // Chỉ cần thay thế 2 methods này trong TripDetailActivity
+
     private fun showAISimpleInputDialog() {
         val trip = currentTrip
         if (trip == null) {
             Toast.makeText(this, "Không tìm thấy thông tin chuyến đi", Toast.LENGTH_SHORT).show()
             return
         }
-        
+
         val dialog = AIDialogFragment.newInstance(trip.startDate, trip.endDate)
 
-        dialog.setOnResultListener { cities ->
-            // User đã nhập các thành phố và dates
-            generateAIPlansForCities(cities)
+        dialog.setOnResultListener { cities, userNotes ->
+            // User đã nhập các thành phố, dates và userNotes
+            generateAIPlansForCities(cities, userNotes)
         }
 
         dialog.show(supportFragmentManager, "AISimpleInputDialog")
     }
 
-    private fun generateAIPlansForCities(cities: List<CityPlan>) {
+    private fun generateAIPlansForCities(cities: List<CityPlan>, userNotes: String?) {
         if (cities.isEmpty()) {
             Toast.makeText(this, "Vui lòng thêm ít nhất 1 thành phố", Toast.LENGTH_SHORT).show()
             return
         }
 
         // Show loading
-        Toast.makeText(this, "Đang tạo lịch trình với AI...", Toast.LENGTH_LONG).show()
+        val notesInfo = if (!userNotes.isNullOrBlank()) " (với ghi chú)" else ""
+        Toast.makeText(this, "Đang tạo lịch trình với AI$notesInfo...", Toast.LENGTH_LONG).show()
 
-        // Call ViewModel to generate plans (without saving)
-        viewModel.generateAIPlansForCities(cities)
+        // Call ViewModel to generate plans (with userNotes)
+        viewModel.generateAIPlansForCities(cities, userNotes)
     }
 
     private fun showAIPlanPreviewDialog(plans: List<AISuggestedPlan>) {
-        val dialog = AIPlanPreviewDialogFragment.newInstance()
-        
+        val trip = currentTrip
+        if (trip == null) {
+            Toast.makeText(this, "Không tìm thấy thông tin chuyến đi", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialog = AIPlanPreviewDialogFragment.newInstance(
+            tripStartDate = trip.startDate,
+            tripEndDate = trip.endDate
+        )
+
         dialog.setPlans(plans)
         dialog.setOnSaveListener { confirmedPlans ->
             // User confirmed, now save to Firestore
@@ -174,7 +189,7 @@ class TripDetailActivity : AppCompatActivity() {
             Toast.makeText(this, "Đang lưu ${confirmedPlans.size} kế hoạch...", Toast.LENGTH_SHORT).show()
             viewModel.saveAIPlans(this, currentTripId, confirmedPlans)
         }
-        
+
         dialog.show(supportFragmentManager, "AIPlanPreviewDialog")
     }
 
@@ -393,6 +408,8 @@ class TripDetailActivity : AppCompatActivity() {
         }
     }
 
+    // Chỉ cần thay thế method updateUI() trong TripDetailActivity
+
     private fun updateUI(trip: Trip?) {
         // Get views from included layout using root view
         val tvTripName = findViewById<TextView>(R.id.tvTripName)
@@ -411,19 +428,19 @@ class TripDetailActivity : AppCompatActivity() {
         tvTripName?.text = trip.title ?: "Untitled Trip"
 
         // Format dates from yyyy-MM-dd to dd-MM-yyyy
-        val inputFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        val outputFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+        val inputFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val outputFormatter = SimpleDateFormat("dd-MM-yyyy", Locale.getDefault())
 
         val formattedStartDate = try {
-            val date = LocalDate.parse(trip.startDate, inputFormatter)
-            date.format(outputFormatter)
+            val date = inputFormatter.parse(trip.startDate)
+            if (date != null) outputFormatter.format(date) else trip.startDate
         } catch (e: Exception) {
             trip.startDate
         }
 
         val formattedEndDate = try {
-            val date = LocalDate.parse(trip.endDate, inputFormatter)
-            date.format(outputFormatter)
+            val date = inputFormatter.parse(trip.endDate)
+            if (date != null) outputFormatter.format(date) else trip.endDate
         } catch (e: Exception) {
             trip.endDate
         }
@@ -756,7 +773,9 @@ class TripDetailActivity : AppCompatActivity() {
             val sharedAtValue = if (trip?.sharedAt != null) {
                 trip.sharedAt // Keep existing timestamp
             } else if (selectedPrivacy != "none") {
-                java.time.LocalDateTime.now().toString() // First time sharing
+                val now = Date()
+                val isoFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                val nowString = isoFormatter.format(now) // First time sharing
             } else {
                 null // Not sharing
             }
@@ -769,10 +788,17 @@ class TripDetailActivity : AppCompatActivity() {
             }
 
             // Call API to update trip
-            shareTrip(feelings, tags, selectedPrivacy, sharedAtValue, sharedUsersList, dialog)
+            shareTrip(
+                feelings,
+                tags,
+                selectedPrivacy,
+                sharedAtValue as? String,
+                sharedUsersList,
+                dialog
+            )
         }
 
-        dialog.show()
+            dialog.show()
     }
 
     private fun shareTrip(content: String, tags: String, isPublic: String, sharedAt: String?, sharedWithUsers: List<User>?, dialog: Dialog) {

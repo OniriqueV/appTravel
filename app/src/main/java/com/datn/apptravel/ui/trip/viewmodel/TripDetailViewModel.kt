@@ -26,62 +26,61 @@ import com.datn.apptravels.ui.trip.model.ScheduleDay
 import com.datn.apptravels.ui.base.BaseViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class TripDetailViewModel(
     private val tripRepository: TripRepository,
     private val aiRepository: AIRepository
 ) : BaseViewModel() {
-    
+
     // Trip details
     private val _tripDetails = MutableLiveData<Trip?>()
     val tripDetails: LiveData<Trip?> = _tripDetails
-    
+
     // Schedule days
     private val _scheduleDays = MutableLiveData<List<ScheduleDay>>()
     val scheduleDays: LiveData<List<ScheduleDay>> = _scheduleDays
-    
+
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
-    
+
     // Processed data for UI
     private val _displayMembers = MutableLiveData<List<User>>()
     val displayMembers: LiveData<List<User>> = _displayMembers
-    
+
     private val _planButtonText = MutableLiveData<String>()
     val planButtonText: LiveData<String> = _planButtonText
-    
+
     private val _isTripEnded = MutableLiveData<Boolean>()
     val isTripEnded: LiveData<Boolean> = _isTripEnded
-    
+
     private val _canViewMap = MutableLiveData<Boolean>()
     val canViewMap: LiveData<Boolean> = _canViewMap
-    
+
     private val _showShareButton = MutableLiveData<Boolean>()
     val showShareButton: LiveData<Boolean> = _showShareButton
-    
+
     private val _deleteSuccess = MutableLiveData<Boolean>()
     val deleteSuccess: LiveData<Boolean> = _deleteSuccess
-    
+
     private val _shareSuccess = MutableLiveData<Boolean>()
     val shareSuccess: LiveData<Boolean> = _shareSuccess
-    
+
     private val _followers = MutableLiveData<List<User>>()
     val followers: LiveData<List<User>> = _followers
-    
+
     // Ownership/membership status exposed to UI
     private val _isOwner = MutableLiveData<Boolean>()
     val isOwner: LiveData<Boolean> = _isOwner
-    
+
     private val _isMember = MutableLiveData<Boolean>()
     val isMember: LiveData<Boolean> = _isMember
-    
+
     // Current user info
     private var currentUserId: String? = null
-    
+
     fun setCurrentUser(userId: String) {
         currentUserId = userId
         // Recalculate permissions if trip is already loaded
@@ -89,13 +88,13 @@ class TripDetailViewModel(
             calculatePermissions(trip)
         }
     }
-    
+
     private fun calculatePermissions(trip: Trip) {
         val userId = currentUserId ?: return
-        
+
         val owner = trip.userId == userId
         val member = trip.members?.any { it.id == userId } == true
-        
+
         Log.d("TripDetailViewModel", "=== calculatePermissions ===")
         Log.d("TripDetailViewModel", "Trip: ${trip.title} (id: ${trip.id})")
         Log.d("TripDetailViewModel", "Trip userId: ${trip.userId} (type: ${trip.userId::class.simpleName})")
@@ -104,21 +103,21 @@ class TripDetailViewModel(
         Log.d("TripDetailViewModel", "owner check: ${trip.userId} == $userId = $owner")
         Log.d("TripDetailViewModel", "member check: ${trip.members?.any { it.id == userId }} = $member")
         Log.d("TripDetailViewModel", "============================")
-        
+
         _isOwner.value = owner
         _isMember.value = member
-        
+
         // Update UI states based on permissions
         _showShareButton.value = owner
         updateTripEndedStatus(trip)
         updateDisplayMembers(trip)
-        
+
         Log.d("TripDetailViewModel", "Permissions - isOwner: $owner, isMember: $member")
     }
 
     fun getTripDetails(tripId: String) {
         setLoading(true)
-        
+
         viewModelScope.launch {
             try {
                 if (tripId.isBlank()) {
@@ -126,7 +125,7 @@ class TripDetailViewModel(
                     setLoading(false)
                     return@launch
                 }
-                
+
                 // Load trip details
                 val tripResult = tripRepository.getTripById(tripId)
                 tripResult.onSuccess { trip ->
@@ -136,7 +135,7 @@ class TripDetailViewModel(
                     _errorMessage.value = exception.message ?: "Failed to load trip"
                     _tripDetails.value = null
                 }
-                
+
                 // Load plans separately
                 val plansResult = tripRepository.getPlansByTripId(tripId)
                 plansResult.onSuccess { plans ->
@@ -145,7 +144,7 @@ class TripDetailViewModel(
                     _errorMessage.value = exception.message ?: "Failed to load plans"
                     _scheduleDays.value = emptyList()
                 }
-                
+
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "An error occurred"
                 _tripDetails.value = null
@@ -161,38 +160,42 @@ class TripDetailViewModel(
             _scheduleDays.value = emptyList()
             return
         }
-        
+
         // Group plans by date
+        val isoDateTimeFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-        val displayDateFormat = SimpleDateFormat("EEE, MMM dd", Locale.getDefault())
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-        
+        val displayDateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
         val plansByDate = plans.groupBy { plan ->
             try {
                 // Parse ISO datetime and extract date
-                val dateTime = LocalDateTime.parse(
-                    plan.startTime,
-                    DateTimeFormatter.ISO_DATE_TIME
-                )
-                dateTime.toLocalDate().toString()
+                val dateTime = isoDateTimeFormat.parse(plan.startTime)
+                if (dateTime != null) {
+                    dateFormat.format(dateTime)
+                } else {
+                    "Unknown"
+                }
             } catch (e: Exception) {
                 "Unknown"
             }
         }
-        
+
         // Create ScheduleDay for each date
         val scheduleDaysList = plansByDate.map { (dateString, plansForDay) ->
             val activities = plansForDay.map { plan ->
                 val startTime = try {
-                    val dateTime = LocalDateTime.parse(
-                        plan.startTime,
-                        DateTimeFormatter.ISO_DATE_TIME
-                    )
-                    String.format("%02d:%02d", dateTime.hour, dateTime.minute)
+                    val dateTime = isoDateTimeFormat.parse(plan.startTime)
+                    if (dateTime != null) {
+                        val calendar = Calendar.getInstance()
+                        calendar.time = dateTime
+                        String.format("%02d:%02d", calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE))
+                    } else {
+                        "00:00"
+                    }
                 } catch (e: Exception) {
                     "00:00"
                 }
-                
+
                 ScheduleActivity(
                     id = plan.id,
                     tripId = plan.tripId,
@@ -213,14 +216,14 @@ class TripDetailViewModel(
                     reservationTime = plan.reservationTime
                 )
             }
-            
+
             val displayDate = try {
-                val date = LocalDate.parse(dateString)
-                date.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                val date = dateFormat.parse(dateString)
+                if (date != null) displayDateFormat.format(date) else dateString
             } catch (e: Exception) {
                 dateString
             }
-            
+
             ScheduleDay(
                 dayNumber = 0,
                 title = displayDate,
@@ -230,19 +233,15 @@ class TripDetailViewModel(
         }.sortedBy { scheduleDay ->
             // Sort by date
             try {
-                val date = LocalDate.parse(
-                    scheduleDay.date,
-                    DateTimeFormatter.ofPattern("dd/MM/yyyy")
-                )
-                date.toString()
+                displayDateFormat.parse(scheduleDay.date)?.time ?: 0
             } catch (e: Exception) {
-                scheduleDay.date
+                0
             }
         }
-        
+
         _scheduleDays.value = scheduleDaysList
     }
-    
+
     private fun getIconForPlanType(planType: PlanType): Int {
         return when (planType) {
             PlanType.LODGING -> R.drawable.ic_lodgingsss
@@ -285,37 +284,37 @@ class TripDetailViewModel(
         data class Error(val message: String) : AIGenerationStatus()
     }
 
-    fun generateAIPlansForCities(cities: List<CityPlan>) {
+    fun generateAIPlansForCities(cities: List<CityPlan>, userNotes: String?) {
         viewModelScope.launch {
             try {
                 _aiGenerationStatus.value = AIGenerationStatus.Loading
+
                 Log.d("TripDetailViewModel", "Generating AI plans for ${cities.size} cities")
+                if (!userNotes.isNullOrBlank()) {
+                    Log.d("TripDetailViewModel", "User notes: $userNotes")
+                }
 
-                // Generate AI suggestions for all cities
-                val suggestionsResult = aiRepository.generatePlansForMultipleCities(cities)
+                // Call repository with userNotes
+                val result = aiRepository.generatePlansForMultipleCities(cities, userNotes)
 
-                if (suggestionsResult.isFailure) {
+                if (result.isSuccess) {
+                    val plans = result.getOrNull() ?: emptyList()
+                    Log.d("TripDetailViewModel", "Successfully generated ${plans.size} plans")
+
+                    // Store plans for preview
+                    _aiGeneratedPlans.value = plans
+
+                    // Don't show success status here - wait for user to confirm in preview
+                } else {
+                    val error = result.exceptionOrNull()
+                    Log.e("TripDetailViewModel", "Failed to generate plans", error)
                     _aiGenerationStatus.value = AIGenerationStatus.Error(
-                        suggestionsResult.exceptionOrNull()?.message ?: "Không thể tạo kế hoạch"
+                        error?.message ?: "Unknown error occurred"
                     )
-                    return@launch
                 }
-
-                val suggestions = suggestionsResult.getOrNull() ?: emptyList()
-                Log.d("TripDetailViewModel", "Generated ${suggestions.size} AI suggestions")
-
-                if (suggestions.isEmpty()) {
-                    _aiGenerationStatus.value = AIGenerationStatus.Error("AI không tạo được kế hoạch nào")
-                    return@launch
-                }
-
-                // Emit suggestions to show preview dialog
-                _aiGeneratedPlans.value = suggestions
-                _aiGenerationStatus.value = AIGenerationStatus.Idle
-
             } catch (e: Exception) {
-                Log.e("TripDetailViewModel", "Error in AI generation", e)
-                _aiGenerationStatus.value = AIGenerationStatus.Error(e.message ?: "Đã xảy ra lỗi")
+                Log.e("TripDetailViewModel", "Error in generateAIPlansForCities", e)
+                _aiGenerationStatus.value = AIGenerationStatus.Error(e.message ?: "Unknown error")
             }
         }
     }
@@ -352,16 +351,34 @@ class TripDetailViewModel(
         }
     }
 
+    private fun calculateEndTime(startTime: String, durationInHours: Int): String {
+        return try {
+            val isoDateTimeFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val startDateTime = isoDateTimeFormat.parse(startTime)
+
+            if (startDateTime != null) {
+                val calendar = Calendar.getInstance()
+                calendar.time = startDateTime
+                calendar.add(Calendar.HOUR_OF_DAY, durationInHours)
+                isoDateTimeFormat.format(calendar.time)
+            } else {
+                startTime
+            }
+        } catch (e: Exception) {
+            Log.e("TripDetailViewModel", "Error calculating end time", e)
+            startTime
+        }
+    }
 
     private suspend fun createPlanFromSuggestion(context: Context, tripId: String, suggestion: AISuggestedPlan): Result<Plan> {
         // Download and upload image if photoUrl is provided
         var uploadedFilename: String? = null
-        
+
         Log.d("TripDetailViewModel", "=== Processing plan: ${suggestion.title} ===")
         Log.d("TripDetailViewModel", "photoUrl value: '${suggestion.photoUrl}'")
         Log.d("TripDetailViewModel", "photoUrl isNullOrEmpty: ${suggestion.photoUrl.isNullOrEmpty()}")
         Log.d("TripDetailViewModel", "photoUrl startsWith http: ${suggestion.photoUrl?.startsWith("http")}")
-        
+
         if (!suggestion.photoUrl.isNullOrEmpty() && suggestion.photoUrl.startsWith("http")) {
             Log.d("TripDetailViewModel", "✓ Valid URL detected! Downloading and uploading image for: ${suggestion.title}")
             val uploadResult = tripRepository.downloadAndUploadImage(context, suggestion.photoUrl)
@@ -384,7 +401,7 @@ class TripDetailViewModel(
                     address = suggestion.address,
                     location = "${suggestion.lat},${suggestion.lng}",
                     startTime = suggestion.startTime,
-                    endTime = calculateEndTime(suggestion.startTime, 2), // Default 2 hours duration
+                    endTime = calculateEndTime(suggestion.startTime, 2), // Auto-calculate 2 hours
                     expense = suggestion.expense,
                     photoUrl = uploadedFilename,
                     type = suggestion.type.name
@@ -399,7 +416,7 @@ class TripDetailViewModel(
                     address = suggestion.address,
                     location = "${suggestion.lat},${suggestion.lng}",
                     startTime = suggestion.startTime,
-                    endTime = calculateEndTime(suggestion.startTime, 1), // Default 1 hour duration
+                    endTime = calculateEndTime(suggestion.startTime, 1), // Auto-calculate 1 hour
                     expense = suggestion.expense,
                     photoUrl = uploadedFilename,
                     type = "RESTAURANT"
@@ -414,7 +431,7 @@ class TripDetailViewModel(
                     address = suggestion.address,
                     location = "${suggestion.lat},${suggestion.lng}",
                     startTime = suggestion.startTime,
-                    endTime = calculateEndTime(suggestion.startTime, 24), // Default 1 day
+                    endTime = calculateEndTime(suggestion.startTime, 24), // Auto-calculate 24 hours
                     expense = suggestion.expense,
                     photoUrl = uploadedFilename,
                     type = "LODGING",
@@ -431,7 +448,7 @@ class TripDetailViewModel(
                     address = suggestion.address,
                     location = "${suggestion.lat},${suggestion.lng}",
                     startTime = suggestion.startTime,
-                    endTime = calculateEndTime(suggestion.startTime, 3), // Default 3 hours
+                    endTime =  calculateEndTime(suggestion.startTime, 2), // Use suggestion's endTime or calculate
                     expense = suggestion.expense,
                     photoUrl = uploadedFilename,
                     type = "FLIGHT"
@@ -446,7 +463,7 @@ class TripDetailViewModel(
                     address = suggestion.address,
                     location = "${suggestion.lat},${suggestion.lng}",
                     startTime = suggestion.startTime,
-                    endTime = calculateEndTime(suggestion.startTime, 4), // Default 4 hours
+                    endTime = calculateEndTime(suggestion.startTime, 3), // Use suggestion's endTime or calculate
                     expense = suggestion.expense,
                     photoUrl = uploadedFilename,
                     type = "TRAIN"
@@ -461,7 +478,7 @@ class TripDetailViewModel(
                     address = suggestion.address,
                     location = "${suggestion.lat},${suggestion.lng}",
                     startTime = suggestion.startTime,
-                    endTime = calculateEndTime(suggestion.startTime, 2), // Default 2 hours
+                    endTime =  calculateEndTime(suggestion.startTime, 2), // Use suggestion's endTime or calculate
                     expense = suggestion.expense,
                     photoUrl = uploadedFilename,
                     type = "BOAT"
@@ -476,7 +493,7 @@ class TripDetailViewModel(
                     address = suggestion.address,
                     location = "${suggestion.lat},${suggestion.lng}",
                     startTime = suggestion.startTime,
-                    endTime = calculateEndTime(suggestion.startTime, 8), // Default 8 hours
+                    endTime =  calculateEndTime(suggestion.startTime, 24), // Use suggestion's endTime or calculate
                     expense = suggestion.expense,
                     photoUrl = uploadedFilename,
                     type = "CAR_RENTAL"
@@ -492,7 +509,7 @@ class TripDetailViewModel(
                     address = suggestion.address,
                     location = "${suggestion.lat},${suggestion.lng}",
                     startTime = suggestion.startTime,
-                    endTime = calculateEndTime(suggestion.startTime, 2),
+                    endTime =  calculateEndTime(suggestion.startTime, 2), // Use suggestion's endTime or calculate
                     expense = suggestion.expense,
                     photoUrl = uploadedFilename,
                     type = "ACTIVITY"
@@ -502,35 +519,30 @@ class TripDetailViewModel(
         }
     }
 
-    private fun calculateEndTime(startTime: String, hoursToAdd: Int): String {
-        return try {
-            val dateTime = LocalDateTime.parse(startTime, DateTimeFormatter.ISO_DATE_TIME)
-            val endDateTime = dateTime.plusHours(hoursToAdd.toLong())
-            endDateTime.format(DateTimeFormatter.ISO_DATE_TIME)
-        } catch (e: Exception) {
-            startTime // Return same time if parsing fails
-        }
-    }
-
     fun resetAIGenerationStatus() {
         _aiGenerationStatus.value = AIGenerationStatus.Idle
     }
-    
+
     private fun updateTripEndedStatus(trip: Trip) {
         val ended = try {
-            val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-            val endDate = LocalDate.parse(trip.endDate, dateFormatter)
-            val today = LocalDate.now()
-            endDate.isBefore(today)
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val endDate = dateFormat.parse(trip.endDate)
+            val today = Date()
+
+            if (endDate != null) {
+                endDate.before(today)
+            } else {
+                false
+            }
         } catch (e: Exception) {
             false
         }
-        
+
         _isTripEnded.value = ended
         _canViewMap.value = !ended
         _planButtonText.value = if (ended) "View Map" else "Add new plan"
     }
-    
+
     private fun updateDisplayMembers(trip: Trip) {
         viewModelScope.launch {
             try {
@@ -538,7 +550,7 @@ class TripDetailViewModel(
                 val owner = _isOwner.value ?: false
                 val member = _isMember.value ?: false
                 val displayList = mutableListOf<User>()
-                
+
                 if (owner) {
                     // Owner: Show all members except self
                     trip.members?.forEach { m ->
@@ -552,14 +564,14 @@ class TripDetailViewModel(
                     ownerResult.onSuccess { owner ->
                         displayList.add(owner)
                     }
-                    
+
                     trip.members?.forEach { m ->
                         if (m.id != userId) {
                             displayList.add(m)
                         }
                     }
                 }
-                
+
                 _displayMembers.postValue(displayList)
                 Log.d("TripDetailViewModel", "Display members: ${displayList.size}")
             } catch (e: Exception) {
@@ -568,13 +580,13 @@ class TripDetailViewModel(
             }
         }
     }
-    
+
     fun deleteTrip(tripId: String) {
         viewModelScope.launch {
             try {
                 setLoading(true)
                 val result = tripRepository.deleteTrip(tripId)
-                
+
                 result.onSuccess {
                     _deleteSuccess.postValue(true)
                     Log.d("TripDetailViewModel", "Trip deleted successfully")
@@ -590,7 +602,7 @@ class TripDetailViewModel(
             }
         }
     }
-    
+
     fun shareTrip(
         tripId: String,
         userId: String,
@@ -621,9 +633,9 @@ class TripDetailViewModel(
                     sharedWithUsers = sharedWithUsers,
                     sharedAt = sharedAt
                 )
-                
+
                 val result = tripRepository.updateTrip(tripId, updateRequest)
-                
+
                 result.onSuccess {
                     _shareSuccess.postValue(true)
                     // Reload trip to get updated data
@@ -640,12 +652,12 @@ class TripDetailViewModel(
             }
         }
     }
-    
+
     fun loadFollowers(userId: String) {
         viewModelScope.launch {
             try {
                 val result = tripRepository.getFollowers(userId)
-                
+
                 result.onSuccess { followersList ->
                     _followers.postValue(followersList)
                 }.onFailure { exception ->

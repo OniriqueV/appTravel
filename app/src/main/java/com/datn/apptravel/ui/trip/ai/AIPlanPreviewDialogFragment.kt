@@ -15,10 +15,14 @@ class AIPlanPreviewDialogFragment : DialogFragment() {
 
     private var _binding: DialogAiPlanPreviewBinding? = null
     private val binding get() = _binding!!
-    
+
     private lateinit var adapter: AIPlanPreviewAdapter
     private var scheduleDays = mutableListOf<PreviewScheduleDay>()
     private var onSaveListener: ((plans: List<AISuggestedPlan>) -> Unit)? = null
+
+    // Trip constraints for validation
+    private var tripStartDate: String = ""
+    private var tripEndDate: String = ""
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,30 +35,33 @@ class AIPlanPreviewDialogFragment : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-        // Set dialog to 75% screen width with wrap content height
         dialog?.window?.apply {
             setLayout(
                 (resources.displayMetrics.widthPixels * 0.75).toInt(),
                 (resources.displayMetrics.heightPixels * 0.85).toInt()
             )
-            // Set transparent background to show rounded corners
             setBackgroundDrawableResource(android.R.color.transparent)
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         setupRecyclerView()
         setupListeners()
     }
 
     private fun setupRecyclerView() {
-        adapter = AIPlanPreviewAdapter(scheduleDays) {
-            // Called when any plan is deleted
-            checkIfEmpty()
-        }
-        
+        adapter = AIPlanPreviewAdapter(
+            scheduleDays,
+            onPlanDeleted = {
+                checkIfEmpty()
+            },
+            onPlanEdit = { plan, position ->
+                showEditPlanDialog(plan, position)
+            }
+        )
+
         binding.rvPlans.layoutManager = LinearLayoutManager(requireContext())
         binding.rvPlans.adapter = adapter
     }
@@ -65,7 +72,6 @@ class AIPlanPreviewDialogFragment : DialogFragment() {
         }
 
         binding.btnSaveAll.setOnClickListener {
-            // Flatten all plans from all days
             val allPlans = scheduleDays.flatMap { it.plans }
             if (allPlans.isNotEmpty()) {
                 onSaveListener?.invoke(allPlans)
@@ -74,11 +80,39 @@ class AIPlanPreviewDialogFragment : DialogFragment() {
         }
     }
 
+    private fun showEditPlanDialog(plan: AISuggestedPlan, position: AIPlanPreviewAdapter.DayPlanPosition) {
+        // Get all plans for overlap validation
+        val allPlans = scheduleDays.flatMap { it.plans }
+
+        val editDialog = EditPlanDialogFragment.newInstance(
+            plan,
+            tripStartDate,
+            tripEndDate,
+            allPlans
+        )
+
+        editDialog.setOnSaveListener { updatedPlan ->
+            // Update the plan in the list
+            adapter.updatePlan(position, updatedPlan)
+
+            // Re-sort plans if date/time changed
+            resortPlansIfNeeded()
+        }
+
+        editDialog.show(childFragmentManager, "EditPlanDialog")
+    }
+
+    private fun resortPlansIfNeeded() {
+        // Re-group and sort all plans by date
+        val allPlans = scheduleDays.flatMap { it.plans }
+        scheduleDays.clear()
+        scheduleDays.addAll(groupPlansByDate(allPlans))
+        adapter.notifyDataSetChanged()
+    }
+
     private fun checkIfEmpty() {
-        // Remove empty days
         scheduleDays.removeAll { it.plans.isEmpty() }
-        
-        // If no days left, dismiss dialog
+
         if (scheduleDays.isEmpty()) {
             dismiss()
         } else {
@@ -87,11 +121,10 @@ class AIPlanPreviewDialogFragment : DialogFragment() {
     }
 
     fun setPlans(planList: List<AISuggestedPlan>) {
-        // Group plans by date
         scheduleDays.clear()
         val groupedPlans = groupPlansByDate(planList)
         scheduleDays.addAll(groupedPlans)
-        
+
         if (::adapter.isInitialized) {
             adapter.notifyDataSetChanged()
         }
@@ -100,7 +133,7 @@ class AIPlanPreviewDialogFragment : DialogFragment() {
     private fun groupPlansByDate(plans: List<AISuggestedPlan>): List<PreviewScheduleDay> {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         val dateTimeFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-        
+
         // Group by date
         val grouped = plans.groupBy { plan ->
             try {
@@ -110,17 +143,31 @@ class AIPlanPreviewDialogFragment : DialogFragment() {
                 "unknown"
             }
         }
-        
+
         // Sort by date and create PreviewScheduleDay objects
         return grouped.entries
             .sortedBy { it.key }
             .mapIndexed { index, entry ->
+                // Sort plans within each day by start time
+                val sortedPlans = entry.value.sortedBy { plan ->
+                    try {
+                        dateTimeFormat.parse(plan.startTime)?.time ?: 0
+                    } catch (e: Exception) {
+                        0
+                    }
+                }
+
                 PreviewScheduleDay(
                     date = entry.key,
                     dayNumber = index + 1,
-                    plans = entry.value.toMutableList()
+                    plans = sortedPlans.toMutableList()
                 )
             }
+    }
+
+    fun setTripConstraints(startDate: String, endDate: String) {
+        tripStartDate = startDate
+        tripEndDate = endDate
     }
 
     fun setOnSaveListener(listener: (plans: List<AISuggestedPlan>) -> Unit) {
@@ -133,8 +180,10 @@ class AIPlanPreviewDialogFragment : DialogFragment() {
     }
 
     companion object {
-        fun newInstance(): AIPlanPreviewDialogFragment {
-            return AIPlanPreviewDialogFragment()
+        fun newInstance(tripStartDate: String, tripEndDate: String): AIPlanPreviewDialogFragment {
+            return AIPlanPreviewDialogFragment().apply {
+                setTripConstraints(tripStartDate, tripEndDate)
+            }
         }
     }
 }
