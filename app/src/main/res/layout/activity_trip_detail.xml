@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F2C594"
+    android:background="#F6E9D4"
     tools:context=".ui.trip.detail.tripdetail.TripDetailActivity">
 
     <!-- Top Navigation Bar -->
@@ -12,7 +12,7 @@
         android:id="@+id/top_bar"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="#F2C594"
+        android:background="#F6E9D4"
         android:elevation="4dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -284,5 +284,18 @@
             android:textSize="16sp" />
 
     </LinearLayout>
+
+    <!-- Loading Overlay -->
+    <FrameLayout
+        android:id="@+id/loadingOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#80000000"
+        android:visibility="visible"
+        android:elevation="999dp"
+        android:translationZ="999dp">
+
+        <include layout="@layout/dialog_loading"/>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

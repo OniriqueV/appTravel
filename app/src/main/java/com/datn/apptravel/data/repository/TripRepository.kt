@@ -57,6 +57,30 @@ class TripRepository(private val tripApiService: TripApiService) {
         }
     }
     
+    /**
+     * Get trip with full plan details - optimized method
+     * Returns trip WITH all complete plan information in 1 API call
+     * Use this when you need to display all plan details immediately
+     */
+    suspend fun getTripWithFullPlans(tripId: String): Result<Trip> {
+        return try {
+            val response = tripApiService.getTripWithFullPlans(tripId)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val trip = response.body()?.data
+                if (trip != null) {
+                    Result.success(trip)
+                } else {
+                    Result.failure(Exception("Trip not found"))
+                }
+            } else {
+                val errorMessage = response.body()?.message ?: "Failed to get trip with plans"
+                Result.failure(Exception(errorMessage))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun getUserById(userId: String): Result<com.datn.apptravels.data.model.User> {
         return try {
             val response = tripApiService.getUserById(userId)
@@ -814,14 +838,47 @@ class TripRepository(private val tripApiService: TripApiService) {
             if (parentId != null) {
                 body["parentId"] = parentId
             }
-            val response = tripApiService.postComment(planId, userId, body)
-            if (response.isSuccessful) {
-                Result.success(Unit)
-            } else {
-                Result.failure(Exception("Failed to post comment"))
+            
+            // Retry logic for 502 errors (Bad Gateway)
+            var lastException: Exception? = null
+            var successResult: Result<Unit>? = null
+            
+            for (attempt in 0 until 3) {
+                try {
+                    val response = tripApiService.postComment(planId, userId, body)
+                    if (response.isSuccessful) {
+                        successResult = Result.success(Unit)
+                        break
+                    } else if (response.code() == 502 && attempt < 2) {
+                        // Retry on 502 error (except last attempt)
+                        kotlinx.coroutines.delay(1000L * (attempt + 1)) // Exponential backoff
+                        lastException = Exception("Server temporarily unavailable (502). Retrying...")
+                    } else {
+                        // For other errors or last attempt, fail
+                        val errorMsg = when (response.code()) {
+                            502 -> "Server is temporarily unavailable. Please try again later."
+                            500 -> "Server error. Please try again later."
+                            404 -> "Plan not found."
+                            else -> "Failed to post comment (${response.code()})"
+                        }
+                        lastException = Exception(errorMsg)
+                        break
+                    }
+                } catch (e: Exception) {
+                    if (attempt < 2) {
+                        kotlinx.coroutines.delay(1000L * (attempt + 1))
+                        lastException = e
+                    } else {
+                        lastException = e
+                        break
+                    }
+                }
             }
+            
+            // Return success if we got it, otherwise return failure
+            successResult ?: Result.failure(lastException ?: Exception("Failed to post comment after retries"))
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Network error: ${e.message}"))
         }
     }
     

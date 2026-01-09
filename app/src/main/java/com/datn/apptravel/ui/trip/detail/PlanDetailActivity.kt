@@ -49,6 +49,7 @@ class PlanDetailActivity : AppCompatActivity() {
     private lateinit var photoAdapter: PhotoCollectionAdapter
     private lateinit var commentAdapter: CommentAdapter
     private var commentDialog: AlertDialog? = null
+    private var isPostingComment = false
 
     // Activity result launcher for edit plan
     private val editPlanLauncher = registerForActivityResult(
@@ -165,6 +166,13 @@ class PlanDetailActivity : AppCompatActivity() {
         // Observe comment posted
         viewModel.commentPosted.observe(this) { posted ->
             if (posted) {
+                isPostingComment = false
+                // Dismiss dialog after successful post
+                commentDialog?.dismiss()
+                // Show success message
+                if (!isFinishing && !isDestroyed) {
+                    Toast.makeText(this, "Comment posted successfully!", Toast.LENGTH_SHORT).show()
+                }
                 viewModel.resetCommentPosted()
             }
         }
@@ -177,7 +185,13 @@ class PlanDetailActivity : AppCompatActivity() {
         // Observe errors
         viewModel.error.observe(this) { error ->
             error?.let {
-                Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                isPostingComment = false
+                // Dismiss dialog on error
+                commentDialog?.dismiss()
+                // Only show error if activity is still active
+                if (!isFinishing && !isDestroyed) {
+                    Toast.makeText(this, it, Toast.LENGTH_LONG).show()
+                }
                 viewModel.clearError()
             }
         }
@@ -296,10 +310,20 @@ class PlanDetailActivity : AppCompatActivity() {
         }
         binding.tvExpense.visibility = View.VISIBLE
 
+        // Try to load from cache first (from TripDetailActivity)
+        val loadedFromCache = planId?.let { viewModel.tryLoadPlanFromCache(it) } ?: false
+        
         // Load photos and comments from API if planId and tripId are available
         if (planId != null && tripId != null) {
-            viewModel.loadPlanPhotos(tripId!!, planId!!)
-            viewModel.loadComments()
+            // Skip API call if already loaded from cache
+            viewModel.loadPlanPhotos(tripId!!, planId!!, skipIfCached = loadedFromCache)
+            
+            // Only load comments if not already loaded from cache
+            if (!loadedFromCache) {
+                viewModel.loadComments()
+            } else {
+                Log.d("PlanDetailActivity", "Plan and comments loaded from cache, skipping API calls")
+            }
         }
     }
 
@@ -606,24 +630,18 @@ class PlanDetailActivity : AppCompatActivity() {
 
             btnPost.setOnClickListener {
                 val comment = etComment.text.toString().trim()
-                if (comment.isNotEmpty()) {
-                    // Disable button to prevent double posting
-                    btnPost.isEnabled = false
+                if (comment.isNotEmpty() && !isPostingComment) {
+                    // Set posting state and disable button to prevent double posting
+                    isPostingComment = true
+                    btnCancel.isEnabled = false // Prevent cancel during posting
                     
                     // Post comment with parentId if replying
                     val parentId = replyTo?.id?.toString()
                     viewModel.postComment(comment, parentId)
                     
-                    // Dismiss dialog immediately after posting
+                    // Dialog will be dismissed by observer when success/error
+                    // Dismiss dialog after posting initiated
                     commentDialog?.dismiss()
-                    
-                    // Show confirmation toast
-                    val message = if (replyTo != null) {
-                        "Reply posted!"
-                    } else {
-                        "Comment posted!"
-                    }
-                    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
                 }
             }
 

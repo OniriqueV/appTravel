@@ -1,5 +1,7 @@
 package com.datn.apptravels.data.model
 
+import com.datn.apptravels.ui.discover.model.CommentDto
+
 open class Plan(
     open val id: String? = null,
     open val tripId: String,
@@ -13,6 +15,7 @@ open class Plan(
     open val type: PlanType,
     open val likesCount: Int = 0,        // Simplified - count instead of full list
     open val commentsCount: Int = 0,     // Simplified - count instead of full list
+    open val comments: List<CommentDto>? = null,  // Full list of comments from backend
     open val createdAt: String? = null,
     
     // ActivityPlan specific field

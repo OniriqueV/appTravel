@@ -10,6 +10,8 @@ import com.datn.apptravels.data.model.Plan
 import com.datn.apptravels.data.repository.TripRepository
 import com.datn.apptravels.ui.base.BaseViewModel
 import com.datn.apptravels.ui.discover.model.CommentDto
+import com.datn.apptravels.utils.PlanCache
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class PlanDetailViewModel(
@@ -49,12 +51,25 @@ class PlanDetailViewModel(
         _photos.value = emptyList()
     }
 
-    fun loadPlanPhotos(tripId: String, planId: String) {
+    fun loadPlanPhotos(tripId: String, planId: String, skipIfCached: Boolean = false) {
         currentPlanId = planId
+
+        if (skipIfCached && _plan.value != null) {
+            Log.d("PlanDetailViewModel", "Plan already loaded from cache, skipping API call")
+            // Just update photos from cached plan
+            _plan.value?.photos?.let { photosList ->
+                if (photosList.isNotEmpty()) {
+                    _photos.value = photosList
+                    Log.d("PlanDetailViewModel", "Using ${photosList.size} photos from cache")
+                }
+            }
+            return
+        }
+        
         viewModelScope.launch {
             try {
                 setLoading(true)
-                Log.d("PlanDetailViewModel", "Loading photos - tripId: $tripId, planId: $planId")
+                Log.d("PlanDetailViewModel", "Loading photos from API - tripId: $tripId, planId: $planId")
                 
                 val result = tripRepository.getPlanById(tripId, planId)
                 
@@ -168,6 +183,8 @@ class PlanDetailViewModel(
                 
                 Log.d("PlanDetailViewModel", "Posting comment: $comment, parentId: $parentId")
                 
+                setLoading(true)
+                
                 val result = tripRepository.postComment(planId, userId, comment, parentId)
                 
                 result.onSuccess {
@@ -176,14 +193,28 @@ class PlanDetailViewModel(
                     // Reload comments after posting
                     loadComments()
                 }.onFailure { exception ->
+                    // Ignore cancellation exceptions (when user navigates away)
+                    if (exception is CancellationException) {
+                        Log.d("PlanDetailViewModel", "Comment posting cancelled (user navigated away)")
+                        return@launch
+                    }
+                    
                     Log.e("PlanDetailViewModel", "Failed to post comment", exception)
-                    setError("Failed to post comment: ${exception.message}")
+                    // Show user-friendly error message
+                    val errorMsg = exception.message ?: "Failed to post comment"
+                    setError(errorMsg)
                     _commentPosted.value = false
                 }
+                
+                setLoading(false)
+            } catch (e: CancellationException) {
+                // Ignore cancellation when ViewModel is cleared
+                Log.d("PlanDetailViewModel", "Comment posting cancelled (ViewModel cleared)")
             } catch (e: Exception) {
                 Log.e("PlanDetailViewModel", "Error posting comment", e)
                 setError("Error posting comment: ${e.message}")
                 _commentPosted.value = false
+                setLoading(false)
             }
         }
     }
@@ -194,6 +225,28 @@ class PlanDetailViewModel(
     
     fun setUserId(userId: String) {
         currentUserId = userId
+    }
+    fun tryLoadPlanFromCache(planId: String): Boolean {
+        val cachedPlan = PlanCache.get(planId)
+        return if (cachedPlan != null) {
+            Log.d("PlanDetailViewModel", "Loaded plan from cache: $planId")
+            _plan.value = cachedPlan
+            currentPlanId = planId
+            
+            // Load comments from cached plan if available
+            cachedPlan.comments?.let { commentsList ->
+                if (commentsList.isNotEmpty()) {
+                    _comments.value = commentsList
+                    _commentsCount.value = commentsList.size
+                    Log.d("PlanDetailViewModel", "Loaded ${commentsList.size} comments from cached plan")
+                }
+            }
+            
+            true
+        } else {
+            Log.d("PlanDetailViewModel", "Plan not found in cache: $planId")
+            false
+        }
     }
 
     fun resetUploadSuccess() {
@@ -214,6 +267,8 @@ class PlanDetailViewModel(
                 
                 result.onSuccess {
                     Log.d("PlanDetailViewModel", "Plan deleted successfully")
+                    // Remove from cache after successful deletion
+                    PlanCache.remove(planId)
                     _deletePlanSuccess.postValue(true)
                 }.onFailure { exception ->
                     Log.e("PlanDetailViewModel", "Failed to delete plan", exception)

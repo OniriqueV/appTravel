@@ -65,8 +65,13 @@ class TripDetailActivity : AppCompatActivity() {
         binding = ActivityTripDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
         
-        // Hide UI initially until ownership is verified
-        binding.root.visibility = View.GONE
+        // Loading overlay is visible by default in XML
+        // Hide main content until data is loaded
+        binding.topBar.visibility = View.GONE
+        binding.tripHeader.visibility = View.GONE
+        binding.actionButtonsContainer.visibility = View.GONE
+        binding.recyclerViewSchedule.visibility = View.GONE
+        binding.emptyPlansContainer.visibility = View.GONE
 
         isReadOnly = intent.getBooleanExtra("READ_ONLY", false) // cho Discover_service
 
@@ -244,7 +249,9 @@ class TripDetailActivity : AppCompatActivity() {
             
             // Don't check permissions here - let the permission observer handle redirect
             // Just update UI
-            binding.root.visibility = View.VISIBLE
+            binding.topBar.visibility = View.VISIBLE
+            binding.tripHeader.visibility = View.VISIBLE
+            binding.actionButtonsContainer.visibility = View.VISIBLE
             updateUI(trip)
         }
         
@@ -349,6 +356,12 @@ class TripDetailActivity : AppCompatActivity() {
                 // Show preview dialog with generated plans
                 showAIPlanPreviewDialog(plans)
             }
+        }
+        
+        // Observe loading state
+        viewModel.isLoading.observe(this) { isLoading ->
+            Log.d("TripDetailActivity", "Loading state changed: $isLoading")
+            binding.loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
         
         // Observe display members

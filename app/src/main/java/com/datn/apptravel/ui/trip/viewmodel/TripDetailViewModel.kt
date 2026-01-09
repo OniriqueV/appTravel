@@ -24,6 +24,7 @@ import com.datn.apptravels.data.repository.TripRepository
 import com.datn.apptravels.ui.trip.model.ScheduleActivity
 import com.datn.apptravels.ui.trip.model.ScheduleDay
 import com.datn.apptravels.ui.base.BaseViewModel
+import com.datn.apptravels.utils.PlanCache
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -126,22 +127,20 @@ class TripDetailViewModel(
                     return@launch
                 }
 
-                // Load trip details
-                val tripResult = tripRepository.getTripById(tripId)
+                // Load trip details WITH all plan details in 1 API call (optimized)
+                val tripResult = tripRepository.getTripWithFullPlans(tripId)
                 tripResult.onSuccess { trip ->
                     _tripDetails.value = trip
                     calculatePermissions(trip)
+
+                    val plans = trip.plans ?: emptyList()
+
+                    PlanCache.putAll(plans)
+                    
+                    generateScheduleDaysFromPlans(plans)
                 }.onFailure { exception ->
                     _errorMessage.value = exception.message ?: "Failed to load trip"
                     _tripDetails.value = null
-                }
-
-                // Load plans separately
-                val plansResult = tripRepository.getPlansByTripId(tripId)
-                plansResult.onSuccess { plans ->
-                    generateScheduleDaysFromPlans(plans)
-                }.onFailure { exception ->
-                    _errorMessage.value = exception.message ?: "Failed to load plans"
                     _scheduleDays.value = emptyList()
                 }
 

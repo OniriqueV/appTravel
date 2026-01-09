@@ -25,6 +25,16 @@ interface TripApiService {
         @Path("id") tripId: String
     ): Response<TripResponse>
     
+    /**
+     * Get trip with full plan details - optimized endpoint
+     * Returns trip WITH all complete plan information in 1 API call
+     * Use this instead of getTripById + multiple plan detail calls
+     */
+    @GET("api/trips/{id}/with-plans")
+    suspend fun getTripWithFullPlans(
+        @Path("id") tripId: String
+    ): Response<TripResponse>
+    
     @GET("api/trips/user/{userId}")
     suspend fun getTripsByUserId(
         @Path("userId") userId: String
