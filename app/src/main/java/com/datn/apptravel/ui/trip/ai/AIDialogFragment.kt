@@ -27,8 +27,8 @@ class AIDialogFragment : DialogFragment() {
     private val apiDateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
     private val tripDateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
-    private var onResultListener: ((cities: List<CityPlan>) -> Unit)? = null
-    
+    private var onResultListener: ((cities: List<CityPlan>, userNotes: String?) -> Unit)? = null
+
     // Trip date range for validation
     private var tripStartDate: Calendar? = null
     private var tripEndDate: Calendar? = null
@@ -54,23 +54,18 @@ class AIDialogFragment : DialogFragment() {
 
     override fun onStart() {
         super.onStart()
-        // Set dialog size
         dialog?.window?.apply {
             setLayout(
                 (resources.displayMetrics.widthPixels * 0.95).toInt(),
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
-            // Set transparent background to show rounded corners
             setBackgroundDrawableResource(android.R.color.transparent)
         }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
-        // Add first city by default
         addCityPlan()
-        
         setupListeners()
     }
 
@@ -86,26 +81,31 @@ class AIDialogFragment : DialogFragment() {
         binding.btnGenerate.setOnClickListener {
             if (validateAndGenerate()) {
                 val plans = cityPlans.mapNotNull { item ->
-                    // Update values from EditText before creating CityPlan
                     val etCityName = item.view.findViewById<TextInputEditText>(R.id.etCityName)
                     val etBudget = item.view.findViewById<TextInputEditText>(R.id.etBudget)
                     val etNumberOfPlans = item.view.findViewById<TextInputEditText>(R.id.etNumberOfPlans)
-                    
+
                     item.cityName = etCityName.text.toString().trim()
                     item.budget = etBudget.text.toString().trim().toLongOrNull()
                     item.numberOfPlans = etNumberOfPlans.text.toString().trim().toIntOrNull()
-                    
+
                     if (item.cityName.isNotEmpty() && item.startDate != null && item.endDate != null) {
                         CityPlan(
                             cityName = item.cityName,
                             startDate = apiDateFormat.format(item.startDate!!.time),
                             endDate = apiDateFormat.format(item.endDate!!.time),
                             budget = item.budget,
-                            numberOfPlans = item.numberOfPlans
+                            numberOfPlans = item.numberOfPlans,
+                            userNotes = null // Will be set from dialog level
                         )
                     } else null
                 }
-                onResultListener?.invoke(plans)
+
+                // Get user notes from the dialog
+                val userNotes = binding.etUserNotes.text.toString().trim()
+                    .takeIf { it.isNotEmpty() }
+
+                onResultListener?.invoke(plans, userNotes)
                 dismiss()
             }
         }
@@ -113,7 +113,7 @@ class AIDialogFragment : DialogFragment() {
 
     private fun addCityPlan() {
         val itemView = layoutInflater.inflate(R.layout.item_city_plan, binding.containerCities, false)
-        
+
         val etCityName = itemView.findViewById<TextInputEditText>(R.id.etCityName)
         val tvStartDate = itemView.findViewById<TextView>(R.id.tvStartDate)
         val tvEndDate = itemView.findViewById<TextView>(R.id.tvEndDate)
@@ -128,10 +128,8 @@ class AIDialogFragment : DialogFragment() {
         val cityPlanItem = CityPlanItem(view = itemView)
         cityPlans.add(cityPlanItem)
 
-        // Show/hide remove button
         btnRemoveCity.visibility = if (cityPlans.size > 1) View.VISIBLE else View.GONE
 
-        // Expand/Collapse details
         btnExpandDetails.setOnClickListener {
             cityPlanItem.isExpanded = !cityPlanItem.isExpanded
             layoutExpandedDetails.visibility = if (cityPlanItem.isExpanded) View.VISIBLE else View.GONE
@@ -140,14 +138,12 @@ class AIDialogFragment : DialogFragment() {
             )
         }
 
-        // City name input
         etCityName.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 cityPlanItem.cityName = etCityName.text.toString().trim()
             }
         }
 
-        // Budget input
         etBudget.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 val budgetText = etBudget.text.toString().trim()
@@ -155,7 +151,6 @@ class AIDialogFragment : DialogFragment() {
             }
         }
 
-        // Number of plans input
         etNumberOfPlans.setOnFocusChangeListener { _, hasFocus ->
             if (!hasFocus) {
                 val plansText = etNumberOfPlans.text.toString().trim()
@@ -163,24 +158,20 @@ class AIDialogFragment : DialogFragment() {
             }
         }
 
-        // Start date picker
         btnStartDate.setOnClickListener {
             showDatePicker(cityPlanItem, true, tvStartDate)
         }
 
-        // End date picker
         btnEndDate.setOnClickListener {
             showDatePicker(cityPlanItem, false, tvEndDate)
         }
 
-        // Remove city
         btnRemoveCity.setOnClickListener {
             removeCityPlan(cityPlanItem)
         }
 
         binding.containerCities.addView(itemView)
-        
-        // Scroll to bottom
+
         binding.scrollCities.post {
             binding.scrollCities.fullScroll(View.FOCUS_DOWN)
         }
@@ -189,8 +180,7 @@ class AIDialogFragment : DialogFragment() {
     private fun removeCityPlan(item: CityPlanItem) {
         binding.containerCities.removeView(item.view)
         cityPlans.remove(item)
-        
-        // Update remove button visibility
+
         if (cityPlans.size == 1) {
             val firstItem = cityPlans[0]
             firstItem.view.findViewById<ImageButton>(R.id.btnRemoveCity).visibility = View.GONE
@@ -198,8 +188,8 @@ class AIDialogFragment : DialogFragment() {
     }
 
     private fun showDatePicker(item: CityPlanItem, isStartDate: Boolean, textView: TextView) {
-        val calendar = if (isStartDate) item.startDate ?: Calendar.getInstance() 
-                       else item.endDate ?: item.startDate ?: Calendar.getInstance()
+        val calendar = if (isStartDate) item.startDate ?: Calendar.getInstance()
+        else item.endDate ?: item.startDate ?: Calendar.getInstance()
 
         DatePickerDialog(
             requireContext(),
@@ -213,7 +203,6 @@ class AIDialogFragment : DialogFragment() {
                     item.startDate = selectedCalendar
                     textView.text = dateFormat.format(selectedCalendar.time)
                 } else {
-                    // Validate end date is after start date
                     if (item.startDate != null && selectedCalendar.before(item.startDate)) {
                         Toast.makeText(requireContext(), "Ngày về phải sau ngày đến", Toast.LENGTH_SHORT).show()
                         return@DatePickerDialog
@@ -226,11 +215,9 @@ class AIDialogFragment : DialogFragment() {
             calendar.get(Calendar.MONTH),
             calendar.get(Calendar.DAY_OF_MONTH)
         ).apply {
-            // Only set minDate for end date picker based on start date
             if (!isStartDate && item.startDate != null) {
                 datePicker.minDate = item.startDate!!.timeInMillis
             }
-            // Allow selecting any date in calendar - validation happens on generate
         }.show()
     }
 
@@ -258,13 +245,12 @@ class AIDialogFragment : DialogFragment() {
                 Toast.makeText(requireContext(), "Vui lòng chọn ngày về cho ${item.cityName}", Toast.LENGTH_SHORT).show()
                 return false
             }
-            
-            // Final validation: ensure dates are within trip range
+
             if (tripStartDate != null && item.startDate!!.before(tripStartDate)) {
                 Toast.makeText(requireContext(), "Ngoài thời gian chuyến đi. Người dùng phải nhập đúng trong thời gian chuyến đi", Toast.LENGTH_LONG).show()
                 return false
             }
-            
+
             if (tripEndDate != null && item.endDate!!.after(tripEndDate)) {
                 Toast.makeText(requireContext(), "Ngoài thời gian chuyến đi. Người dùng phải nhập đúng trong thời gian chuyến đi", Toast.LENGTH_LONG).show()
                 return false
@@ -274,10 +260,10 @@ class AIDialogFragment : DialogFragment() {
         return true
     }
 
-    fun setOnResultListener(listener: (cities: List<CityPlan>) -> Unit) {
+    fun setOnResultListener(listener: (cities: List<CityPlan>, userNotes: String?) -> Unit) {
         onResultListener = listener
     }
-    
+
     fun setTripDateRange(startDate: String, endDate: String) {
         try {
             tripStartDate = Calendar.getInstance().apply {
@@ -308,7 +294,7 @@ class AIDialogFragment : DialogFragment() {
         fun newInstance(): AIDialogFragment {
             return AIDialogFragment()
         }
-        
+
         fun newInstance(tripStartDate: String, tripEndDate: String): AIDialogFragment {
             return AIDialogFragment().apply {
                 setTripDateRange(tripStartDate, tripEndDate)

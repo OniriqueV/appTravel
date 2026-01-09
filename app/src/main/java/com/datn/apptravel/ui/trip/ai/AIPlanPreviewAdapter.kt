@@ -13,39 +13,48 @@ import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
-
 class AIPlanPreviewAdapter(
     private val scheduleDays: MutableList<PreviewScheduleDay>,
-    private val onPlanDeleted: () -> Unit
+    private val onPlanDeleted: () -> Unit,
+    private val onPlanEdit: (plan: AISuggestedPlan, position: DayPlanPosition) -> Unit
 ) : RecyclerView.Adapter<AIPlanPreviewAdapter.DayViewHolder>() {
 
     private val dayFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     private val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
+    data class DayPlanPosition(
+        val dayIndex: Int,
+        val planIndex: Int
+    )
+
     inner class DayViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val tvDayTitle: MaterialTextView = itemView.findViewById(R.id.tvDayTitle)
         private val tvDayDate: MaterialTextView = itemView.findViewById(R.id.tvDayDate)
         private val rvPlans: RecyclerView = itemView.findViewById(R.id.rvPlans)
-        
-        fun bind(scheduleDay: PreviewScheduleDay) {
+
+        fun bind(scheduleDay: PreviewScheduleDay, dayIndex: Int) {
             tvDayTitle.text = "Ngày ${scheduleDay.dayNumber}"
-            
+
             try {
                 val date = inputFormat.parse(scheduleDay.date)
                 tvDayDate.text = if (date != null) dayFormat.format(date) else scheduleDay.date
             } catch (e: Exception) {
                 tvDayDate.text = scheduleDay.date
             }
-            
+
             // Setup plans RecyclerView
-            val plansAdapter = PlansInDayAdapter(scheduleDay.plans) { deletedPosition ->
-                scheduleDay.plans.removeAt(deletedPosition)
-                rvPlans.adapter?.notifyItemRemoved(deletedPosition)
-                
-                // Notify parent that a plan was deleted
-                onPlanDeleted()
-            }
-            
+            val plansAdapter = PlansInDayAdapter(
+                scheduleDay.plans,
+                onDeleteClick = { deletedPosition ->
+                    scheduleDay.plans.removeAt(deletedPosition)
+                    rvPlans.adapter?.notifyItemRemoved(deletedPosition)
+                    onPlanDeleted()
+                },
+                onEditClick = { plan, planIndex ->
+                    onPlanEdit(plan, DayPlanPosition(dayIndex, planIndex))
+                }
+            )
+
             rvPlans.apply {
                 adapter = plansAdapter
                 layoutManager = LinearLayoutManager(itemView.context)
@@ -60,17 +69,28 @@ class AIPlanPreviewAdapter(
     }
 
     override fun onBindViewHolder(holder: DayViewHolder, position: Int) {
-        holder.bind(scheduleDays[position])
+        holder.bind(scheduleDays[position], position)
     }
 
     override fun getItemCount(): Int = scheduleDays.size
+
+    fun updatePlan(position: DayPlanPosition, updatedPlan: AISuggestedPlan) {
+        if (position.dayIndex in scheduleDays.indices) {
+            val day = scheduleDays[position.dayIndex]
+            if (position.planIndex in day.plans.indices) {
+                day.plans[position.planIndex] = updatedPlan
+                notifyItemChanged(position.dayIndex)
+            }
+        }
+    }
 
     /**
      * Inner adapter for plans within a single day
      */
     private class PlansInDayAdapter(
         private val plans: MutableList<AISuggestedPlan>,
-        private val onDeleteClick: (position: Int) -> Unit
+        private val onDeleteClick: (position: Int) -> Unit,
+        private val onEditClick: (plan: AISuggestedPlan, position: Int) -> Unit
     ) : RecyclerView.Adapter<PlansInDayAdapter.PlanViewHolder>() {
 
         private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
@@ -79,7 +99,7 @@ class AIPlanPreviewAdapter(
         inner class PlanViewHolder(private val binding: ItemAiPlanPreviewBinding) :
             RecyclerView.ViewHolder(binding.root) {
 
-            fun bind(plan: AISuggestedPlan) {
+            fun bind(plan: AISuggestedPlan, position: Int) {
                 binding.apply {
                     tvPlanName.text = plan.title
 
@@ -104,7 +124,7 @@ class AIPlanPreviewAdapter(
                     try {
                         val startDate = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
                             .parse(plan.startTime)
-                        
+
                         if (startDate != null) {
                             tvPlanTime.text = "🕐 ${timeFormat.format(startDate)}"
                         } else {
@@ -121,11 +141,19 @@ class AIPlanPreviewAdapter(
                         tvPlanCost.text = "💰 Miễn phí"
                     }
 
-                    // Delete button - use adapterPosition to avoid closure issues
+                    // Edit button
+                    btnEdit.setOnClickListener {
+                        val pos = adapterPosition
+                        if (pos != RecyclerView.NO_POSITION) {
+                            onEditClick(plans[pos], pos)
+                        }
+                    }
+
+                    // Delete button
                     btnDelete.setOnClickListener {
-                        val position = adapterPosition
-                        if (position != RecyclerView.NO_POSITION) {
-                            onDeleteClick(position)
+                        val pos = adapterPosition
+                        if (pos != RecyclerView.NO_POSITION) {
+                            onDeleteClick(pos)
                         }
                     }
                 }
@@ -142,7 +170,7 @@ class AIPlanPreviewAdapter(
         }
 
         override fun onBindViewHolder(holder: PlanViewHolder, position: Int) {
-            holder.bind(plans[position])
+            holder.bind(plans[position], position)
         }
 
         override fun getItemCount(): Int = plans.size
