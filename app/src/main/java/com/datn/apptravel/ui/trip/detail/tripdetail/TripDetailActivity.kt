@@ -788,7 +788,7 @@ class TripDetailActivity : AppCompatActivity() {
             } else if (selectedPrivacy != "none") {
                 val now = Date()
                 val isoFormatter = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                val nowString = isoFormatter.format(now) // First time sharing
+                isoFormatter.format(now) // First time sharing
             } else {
                 null // Not sharing
             }
